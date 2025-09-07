@@ -1,0 +1,17 @@
+name: hirami
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: hirami-pg
+    environment:
+      POSTGRES_USER: hirami
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: hirami
+    ports:
+      - "5432:5432"
+    volumes:
+      - hirami-pg:/var/lib/postgresql/data
+
+volumes:
+  hirami-pg:

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
@@ -14,6 +16,19 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		panic("Failed to load .env file.")
 	}
+
+	dbURL, ok := os.LookupEnv("DATABASE_URL")
+	if !ok {
+		panic("DATABASE_URL not found.")
+	}
+
+	ctx := context.Background()
+
+	pool, err := pgxpool.New(ctx, dbURL)
+	if err != nil {
+		panic(err)
+	}
+	defer pool.Close()
 
 	router := http.NewServeMux()
 
