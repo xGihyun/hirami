@@ -13,5 +13,14 @@ services:
     volumes:
       - hirami-pg:/var/lib/postgresql/data
 
+  valkey:
+    image: valkey/valkey-bundle:latest
+    container_name: hirami-valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - hirami-valkey:/data
+
 volumes:
   hirami-pg:
+  hirami-valkey:

@@ -10,12 +10,24 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/valkey-io/valkey-go"
 )
 
 func main() {
 	if err := godotenv.Load(); err != nil {
 		panic("Failed to load .env file.")
 	}
+
+	valkeyAddr, ok := os.LookupEnv("VALKEY_ADDRESS")
+	if !ok {
+		panic("VALKEY_ADDRESS not found.")
+	}
+
+	valkeyClient, err := valkey.NewClient(valkey.ClientOption{InitAddress: []string{valkeyAddr}})
+	if err != nil {
+		panic(err)
+	}
+	defer valkeyClient.Close()
 
 	dbURL, ok := os.LookupEnv("DATABASE_URL")
 	if !ok {
