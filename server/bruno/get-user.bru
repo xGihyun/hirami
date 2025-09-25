@@ -1,0 +1,19 @@
+meta {
+  name: get-user
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/users/{{id}}
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  id: 320ffc44-20dc-461f-8163-c291cdf90f91
+}
+
+settings {
+  encodeUrl: true
+}

@@ -12,7 +12,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/valkey-io/valkey-go"
+	"github.com/xGihyun/hirami/user"
 )
+
+type app struct {
+	user user.Server
+}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -46,6 +51,12 @@ func main() {
 	router := http.NewServeMux()
 
 	router.HandleFunc("GET /", health)
+
+	app := app{
+		user: *user.NewServer(user.NewRepository(pool)),
+	}
+
+	app.user.SetupRoutes(router)
 
 	host, ok := os.LookupEnv("HOST")
 	if !ok {
