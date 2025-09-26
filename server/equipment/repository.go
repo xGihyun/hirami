@@ -164,6 +164,7 @@ type borrower struct {
 }
 
 type createBorrowResponse struct {
+	BorrowRequestID  string    `json:"id"`
 	Borrower         borrower  `json:"borrower"`
 	Equipment        equipment `json:"equipment"`
 	Location         string    `json:"location"`
@@ -194,6 +195,7 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 			'model', equipment_type.model,
 			'quantity', inserted_request.quantity
 		) AS equipment,
+		inserted_request.borrow_request_id,
 		inserted_request.location,
 		inserted_request.purpose,
 		inserted_request.expected_return_at
@@ -217,6 +219,7 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 	if err := row.Scan(
 		&res.Borrower,
 		&res.Equipment,
+		&res.BorrowRequestID,
 		&res.Location,
 		&res.Purpose,
 		&res.ExpectedReturnAt,
