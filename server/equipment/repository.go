@@ -9,7 +9,7 @@ import (
 )
 
 type Repository interface {
-	createEquipment(ctx context.Context, arg createEquipmentRequest) error
+	createEquipment(ctx context.Context, arg createRequest) error
 	getAll(ctx context.Context) ([]equipment, error)
 }
 
@@ -32,7 +32,7 @@ const (
 
 // TODO: Remove serial number on database schema
 
-type createEquipmentRequest struct {
+type createRequest struct {
 	Name            string    `json:"name"`
 	Brand           *string   `json:"brand"`
 	Model           *string   `json:"model"`
