@@ -21,6 +21,10 @@ body:json {
   }
 }
 
+vars:post-response {
+  borrowRequestId: {{res.body.data.id}}
+}
+
 settings {
   encodeUrl: true
 }

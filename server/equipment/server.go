@@ -24,6 +24,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
 
 	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
+	mux.Handle("PATCH /borrow-requests/{id}", api.Handler(s.reviewBorrowRequest))
 }
 
 func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Response {
@@ -128,6 +129,45 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully created borrow request.",
+		Data:    res,
+	}
+}
+
+func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	var data reviewBorrowRequest
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("review borrow request: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid review borrow request.",
+		}
+	}
+
+	borrowRequestID := r.PathValue("id")
+	if data.BorrowRequestID != borrowRequestID {
+		return api.Response{
+			Error:   fmt.Errorf("borrow request ID mismatch: path=%s, body=%s", borrowRequestID, data.BorrowRequestID),
+			Code:    http.StatusBadRequest,
+			Message: "Borrow request ID in URL does not match ID in request body.",
+		}
+	}
+
+	res, err := s.repository.reviewBorrowRequest(ctx, data)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("review borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to review borrow request.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully reviewed borrow request.",
 		Data:    res,
 	}
 }

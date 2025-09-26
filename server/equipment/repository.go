@@ -2,10 +2,12 @@ package equipment
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/xGihyun/hirami/user"
 )
 
 type Repository interface {
@@ -13,6 +15,7 @@ type Repository interface {
 	getAll(ctx context.Context) ([]equipment, error)
 	update(ctx context.Context, arg updateRequest) error
 	createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error)
+	reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error)
 }
 
 type repository struct {
@@ -25,11 +28,11 @@ func NewRepository(querier *pgxpool.Pool) Repository {
 	}
 }
 
-type status string
+type equipmentStatus string
 
 const (
-	available status = "available"
-	borrowed  status = "borrowed"
+	available equipmentStatus = "available"
+	borrowed  equipmentStatus = "borrowed"
 )
 
 // TODO: Remove serial number on database schema
@@ -77,12 +80,12 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) err
 }
 
 type equipment struct {
-	EquipmentTypeID string  `json:"id"`
-	Name            string  `json:"name"`
-	Brand           *string `json:"brand"`
-	Model           *string `json:"model"`
-	Quantity        uint    `json:"quantity"`
-	Status          status  `json:"status,omitzero"`
+	EquipmentTypeID string          `json:"id"`
+	Name            string          `json:"name"`
+	Brand           *string         `json:"brand"`
+	Model           *string         `json:"model"`
+	Quantity        uint            `json:"quantity"`
+	Status          equipmentStatus `json:"status,omitzero"`
 }
 
 func (r *repository) getAll(ctx context.Context) ([]equipment, error) {
@@ -217,6 +220,140 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		&res.ExpectedReturnAt,
 	); err != nil {
 		return createBorrowResponse{}, err
+	}
+
+	return res, nil
+}
+
+type borrowRequestStatus string
+
+const (
+	pending  borrowRequestStatus = "pending"
+	approved borrowRequestStatus = "approved"
+	rejected borrowRequestStatus = "rejected"
+)
+
+type reviewBorrowRequest struct {
+	BorrowRequestID string              `json:"id"`
+	ReviewedBy      string              `json:"reviewedBy"`
+	Remarks         *string             `json:"remarks"`
+	Status          borrowRequestStatus `json:"status"`
+}
+
+type reviewBorrowResponse struct {
+	BorrowRequestID string              `json:"id"`
+	ReviewedBy      user.BasicInfo      `json:"reviewedBy"`
+	Remarks         *string             `json:"remarks"`
+	Status          borrowRequestStatus `json:"status"`
+}
+
+func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error) {
+	tx, err := r.querier.Begin(ctx)
+	if err != nil {
+		return reviewBorrowResponse{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	query := `
+	WITH reviewed_request AS (
+		UPDATE borrow_request
+		SET status = $1, reviewed_by = $2, remarks = $3, reviewed_at = now()
+		WHERE borrow_request_id = $4
+		RETURNING *
+	)
+	SELECT 
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS reviewedBy,
+		reviewed_request.borrow_request_id,
+		reviewed_request.remarks,
+		reviewed_request.status,
+		reviewed_request.quantity,
+		reviewed_request.equipment_type_id
+	FROM reviewed_request
+	JOIN person ON person.person_id = reviewed_request.reviewed_by
+	`
+
+	row := tx.QueryRow(
+		ctx,
+		query,
+		arg.Status,
+		arg.ReviewedBy,
+		arg.Remarks,
+		arg.BorrowRequestID,
+	)
+
+	var (
+		res             reviewBorrowResponse
+		quantity        int
+		equipmentTypeID string
+	)
+
+	if err := row.Scan(
+		&res.ReviewedBy,
+		&res.BorrowRequestID,
+		&res.Remarks,
+		&res.Status,
+		&quantity,
+		&equipmentTypeID,
+	); err != nil {
+		return reviewBorrowResponse{}, err
+	}
+
+	if arg.Status == approved {
+		equipmentQuery := `
+		SELECT equipment_id 
+		FROM equipment 
+		WHERE equipment_type_id = $1 AND status = $2
+		LIMIT $3
+		`
+
+		equipmentRows, err := tx.Query(ctx, equipmentQuery, equipmentTypeID, available, quantity)
+		if err != nil {
+			return reviewBorrowResponse{}, err
+		}
+
+		var equipmentIDs []string
+		for equipmentRows.Next() {
+			var equipmentID string
+			if err := equipmentRows.Scan(&equipmentID); err != nil {
+				return reviewBorrowResponse{}, err
+			}
+			equipmentIDs = append(equipmentIDs, equipmentID)
+		}
+
+		if len(equipmentIDs) < quantity {
+			return reviewBorrowResponse{}, fmt.Errorf("insufficient available equipment: requested %d, available %d", quantity, len(equipmentIDs))
+		}
+
+		transactionQuery := `
+		INSERT INTO borrow_transaction (borrow_request_id, equipment_id)
+		VALUES ($1, $2)
+		`
+
+		for _, equipmentID := range equipmentIDs {
+			if _, err := tx.Exec(ctx, transactionQuery, arg.BorrowRequestID, equipmentID); err != nil {
+				return reviewBorrowResponse{}, err
+			}
+		}
+
+		updateEquipmentQuery := `
+		UPDATE equipment 
+		SET status = $1
+		WHERE equipment_id = ANY($2)
+		`
+
+		if _, err := tx.Exec(ctx, updateEquipmentQuery, borrowed, equipmentIDs); err != nil {
+			return reviewBorrowResponse{}, err
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return reviewBorrowResponse{}, err
 	}
 
 	return res, nil

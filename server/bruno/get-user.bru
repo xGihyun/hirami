@@ -16,6 +16,7 @@ vars:pre-request {
 
 vars:post-response {
   requestedBy: {{res.body.data.id}}
+  reviewedBy: {{res.body.data.id}}
 }
 
 settings {
