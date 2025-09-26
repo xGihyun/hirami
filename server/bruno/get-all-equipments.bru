@@ -1,0 +1,15 @@
+meta {
+  name: get-all-equipments
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/equipments
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
