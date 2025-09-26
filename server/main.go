@@ -12,11 +12,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/valkey-io/valkey-go"
+	"github.com/xGihyun/hirami/equipment"
 	"github.com/xGihyun/hirami/user"
 )
 
 type app struct {
-	user user.Server
+	user      user.Server
+	equipment equipment.Server
 }
 
 func main() {
@@ -53,10 +55,12 @@ func main() {
 	router.HandleFunc("GET /", health)
 
 	app := app{
-		user: *user.NewServer(user.NewRepository(pool)),
+		user:      *user.NewServer(user.NewRepository(pool)),
+		equipment: *equipment.NewServer(equipment.NewRepository(pool)),
 	}
 
 	app.user.SetupRoutes(router)
+	app.equipment.SetupRoutes(router)
 
 	host, ok := os.LookupEnv("HOST")
 	if !ok {
@@ -75,7 +79,9 @@ func main() {
 
 	slog.Info(fmt.Sprintf("Starting server on port: %s", port))
 
-	server.ListenAndServe()
+	if err := server.ListenAndServe(); err != nil {
+		slog.Error(err.Error())
+	}
 }
 
 func health(w http.ResponseWriter, r *http.Request) {
