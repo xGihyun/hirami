@@ -130,6 +130,14 @@ type user struct {
 	AvatarURL  *string   `json:"avatarUrl"`
 }
 
+type BasicInfo struct {
+	UserID     string  `json:"id"`
+	FirstName  string  `json:"firstName"`
+	MiddleName *string `json:"middleName"`
+	LastName   string  `json:"lastName"`
+	AvatarURL  *string `json:"avatarUrl"`
+}
+
 type Role string
 
 const (

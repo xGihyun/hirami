@@ -155,21 +155,13 @@ type createBorrowRequest struct {
 	RequestedBy      string    `json:"requestedBy"`
 }
 
-type borrower struct {
-	UserID     string  `json:"id"`
-	FirstName  string  `json:"firstName"`
-	MiddleName *string `json:"middleName"`
-	LastName   string  `json:"lastName"`
-	AvatarURL  *string `json:"avatarUrl"`
-}
-
 type createBorrowResponse struct {
-	BorrowRequestID  string    `json:"id"`
-	Borrower         borrower  `json:"borrower"`
-	Equipment        equipment `json:"equipment"`
-	Location         string    `json:"location"`
-	Purpose          string    `json:"purpose"`
-	ExpectedReturnAt time.Time `json:"expectedReturnAt"`
+	BorrowRequestID  string         `json:"id"`
+	Borrower         user.BasicInfo `json:"borrower"`
+	Equipment        equipment      `json:"equipment"`
+	Location         string         `json:"location"`
+	Purpose          string         `json:"purpose"`
+	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
 }
 
 func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error) {
