@@ -127,6 +127,7 @@ type user struct {
 	FirstName  string    `json:"firstName"`
 	MiddleName *string   `json:"middleName"`
 	LastName   string    `json:"lastName"`
+	AvatarURL  *string   `json:"avatarUrl"`
 }
 
 type Role string
@@ -145,7 +146,8 @@ func (r *repository) get(ctx context.Context, userID string) (user, error) {
 		email, 
 		first_name,
 		middle_name,
-		last_name
+		last_name,
+		avatar_url
 	FROM person
 	WHERE person_id = ($1)
 	`
@@ -160,6 +162,7 @@ func (r *repository) get(ctx context.Context, userID string) (user, error) {
 		&person.FirstName,
 		&person.MiddleName,
 		&person.LastName,
+		&person.AvatarURL,
 	); err != nil {
 		return user{}, err
 	}
@@ -176,7 +179,8 @@ func (r *repository) getByEmail(ctx context.Context, email string) (user, error)
 		email, 
 		first_name,
 		middle_name,
-		last_name
+		last_name,
+		avatar_url
 	FROM person
 	WHERE email = TRIM($1)
 	`
@@ -191,6 +195,7 @@ func (r *repository) getByEmail(ctx context.Context, email string) (user, error)
 		&person.FirstName,
 		&person.MiddleName,
 		&person.LastName,
+		&person.AvatarURL,
 	); err != nil {
 		return user{}, err
 	}
