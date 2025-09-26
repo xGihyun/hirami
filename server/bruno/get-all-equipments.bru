@@ -10,6 +10,10 @@ get {
   auth: inherit
 }
 
+vars:post-response {
+  equipmentTypeId: {{res.body.data[0].id}}
+}
+
 settings {
   encodeUrl: true
 }

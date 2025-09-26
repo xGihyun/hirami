@@ -21,12 +21,15 @@ func NewServer(repo Repository) *Server {
 func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /equipments", api.Handler(s.createEquipment))
 	mux.Handle("GET /equipments", api.Handler(s.getAll))
+	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
+
+	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
 }
 
 func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	var data createEquipmentRequest
+	var data createRequest
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&data); err != nil {
@@ -67,5 +70,64 @@ func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 		Code:    http.StatusOK,
 		Message: "Successfully fetched equipments.",
 		Data:    equipments,
+	}
+}
+
+func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	var data updateRequest
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update equipment: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid update equipment request.",
+		}
+	}
+
+	data.EquipmentTypeID = r.PathValue("equipmentTypeId")
+	if err := s.repository.update(ctx, data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update equipments: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update equipments.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully updated equipments.",
+	}
+}
+
+func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	var data createBorrowRequest
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid create borrow request.",
+		}
+	}
+
+	res, err := s.repository.createBorrowRequest(ctx, data)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create borrow request.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully created borrow request.",
+		Data:    res,
 	}
 }

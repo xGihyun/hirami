@@ -14,6 +14,10 @@ vars:pre-request {
   id: 320ffc44-20dc-461f-8163-c291cdf90f91
 }
 
+vars:post-response {
+  requestedBy: {{res.body.data.id}}
+}
+
 settings {
   encodeUrl: true
 }
