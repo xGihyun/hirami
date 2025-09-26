@@ -22,10 +22,10 @@ func NewServer(repo Repository) *Server {
 }
 
 func (s *Server) SetupRoutes(mux *http.ServeMux) {
-	mux.Handle("POST /api/sign-up", api.Handler(s.SignUp))
-	mux.Handle("POST /api/sign-in", api.Handler(s.SignIn))
-	mux.Handle("POST /api/sign-out", api.Handler(s.SignOut))
-	mux.Handle("GET /api/users/{id}", api.Handler(s.Get))
+	mux.Handle("POST /sign-up", api.Handler(s.SignUp))
+	mux.Handle("POST /sign-in", api.Handler(s.SignIn))
+	mux.Handle("POST /sign-out", api.Handler(s.SignOut))
+	mux.Handle("GET /users/{id}", api.Handler(s.Get))
 }
 
 func (s *Server) SignUp(w http.ResponseWriter, r *http.Request) api.Response {
