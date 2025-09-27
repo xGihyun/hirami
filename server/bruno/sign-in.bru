@@ -1,7 +1,7 @@
 meta {
   name: sign-in
   type: http
-  seq: 3
+  seq: 4
 }
 
 post {
@@ -15,6 +15,10 @@ body:json {
     "email": "test@test.com",
     "password": "password"
   }
+}
+
+vars:post-response {
+  userId: {{res.body.data.user.id}}
 }
 
 settings {
