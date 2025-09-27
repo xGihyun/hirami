@@ -324,8 +324,26 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 
 	if arg.Status == approved {
 		equipmentQuery := `
+		WITH equipment_with_status AS (
+			SELECT 
+				equipment_type.equipment_type_id,
+				equipment_type.name,
+				equipment_type.brand,
+				equipment_type.model,
+				equipment.equipment_id,
+				CASE 
+					WHEN borrow_transaction.borrow_transaction_id IS NOT NULL 
+						AND return_transaction.return_transaction_id IS NULL THEN 'borrowed'
+					ELSE 'available'
+				END AS status
+			FROM equipment_type
+			JOIN equipment ON equipment.equipment_type_id = equipment_type.equipment_type_id
+			LEFT JOIN borrow_transaction ON equipment.equipment_id = borrow_transaction.equipment_id
+			LEFT JOIN return_transaction 
+				ON return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
+		)
 		SELECT equipment_id 
-		FROM equipment 
+		FROM equipment_with_status
 		WHERE equipment_type_id = $1 AND status = $2
 		LIMIT $3
 		`
@@ -357,16 +375,6 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 			if _, err := tx.Exec(ctx, transactionQuery, arg.BorrowRequestID, equipmentID); err != nil {
 				return reviewBorrowResponse{}, err
 			}
-		}
-
-		updateEquipmentQuery := `
-		UPDATE equipment 
-		SET status = $1
-		WHERE equipment_id = ANY($2)
-		`
-
-		if _, err := tx.Exec(ctx, updateEquipmentQuery, borrowed, equipmentIDs); err != nil {
-			return reviewBorrowResponse{}, err
 		}
 	}
 
