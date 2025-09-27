@@ -42,8 +42,8 @@ func (r *repository) signUp(ctx context.Context, arg signUpRequest) error {
 	}
 
 	query := `
-	INSERT INTO person (email, password_hash, first_name, middle_name, last_name)
-	VALUES ($1, $2, $3, $4, $5)
+	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, role)
+	VALUES ($1, $2, $3, $4, $5, $6)
 	RETURNING person_id
 	`
 
@@ -57,14 +57,9 @@ func (r *repository) signUp(ctx context.Context, arg signUpRequest) error {
 		arg.FirstName,
 		arg.MiddleName,
 		arg.LastName,
+		borrower,
 	)
 	if err := row.Scan(&userID); err != nil {
-		return err
-	}
-
-	// TODO: Might have to simplify this and use a single column for `role`
-	query = `INSERT INTO person_role (person_id, role) VALUES ($1, $2)`
-	if _, err := r.querier.Exec(ctx, query, userID, "borrower"); err != nil {
 		return err
 	}
 
@@ -128,6 +123,7 @@ type user struct {
 	MiddleName *string   `json:"middleName"`
 	LastName   string    `json:"lastName"`
 	AvatarURL  *string   `json:"avatarUrl"`
+	Role       role      `json:"role"`
 }
 
 type BasicInfo struct {
@@ -138,11 +134,11 @@ type BasicInfo struct {
 	AvatarURL  *string `json:"avatarUrl"`
 }
 
-type Role string
+type role string
 
 const (
-	Borrower         Role = "borrower"
-	EquipmentManager Role = "equipment_manager"
+	borrower         role = "borrower"
+	equipmentManager role = "equipment_manager"
 )
 
 func (r *repository) get(ctx context.Context, userID string) (user, error) {
@@ -155,7 +151,8 @@ func (r *repository) get(ctx context.Context, userID string) (user, error) {
 		first_name,
 		middle_name,
 		last_name,
-		avatar_url
+		avatar_url,
+		role
 	FROM person
 	WHERE person_id = ($1)
 	`
@@ -171,6 +168,7 @@ func (r *repository) get(ctx context.Context, userID string) (user, error) {
 		&person.MiddleName,
 		&person.LastName,
 		&person.AvatarURL,
+		&person.Role,
 	); err != nil {
 		return user{}, err
 	}
@@ -188,7 +186,8 @@ func (r *repository) getByEmail(ctx context.Context, email string) (user, error)
 		first_name,
 		middle_name,
 		last_name,
-		avatar_url
+		avatar_url,
+		role
 	FROM person
 	WHERE email = TRIM($1)
 	`
@@ -204,6 +203,7 @@ func (r *repository) getByEmail(ctx context.Context, email string) (user, error)
 		&person.MiddleName,
 		&person.LastName,
 		&person.AvatarURL,
+		&person.Role,
 	); err != nil {
 		return user{}, err
 	}
