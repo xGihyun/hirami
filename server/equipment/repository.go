@@ -19,6 +19,7 @@ type Repository interface {
 	reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error)
 	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnRequest, error)
 	getBorrowRequests(ctx context.Context) ([]borrowRequest, error)
+	confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error)
 }
 
 type repository struct {
@@ -246,9 +247,10 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 type borrowRequestStatus string
 
 const (
-	pending  borrowRequestStatus = "pending"
-	approved borrowRequestStatus = "approved"
-	rejected borrowRequestStatus = "rejected"
+	pending   borrowRequestStatus = "pending"
+	approved  borrowRequestStatus = "approved"
+	rejected  borrowRequestStatus = "rejected"
+	fulfilled borrowRequestStatus = "fulfilled"
 )
 
 type reviewBorrowRequest struct {
@@ -449,4 +451,76 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 		return nil, err
 	}
 	return borrowRequests, nil
+}
+
+type confirmReturnRequest struct {
+	ReturnRequestID string `json:"returnRequestId"`
+	ReviewedBy      string `json:"reviewedBy"`
+}
+
+var errReturnRequestAlreadyConfirmed = fmt.Errorf("return request is already confirmed")
+
+func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error) {
+	tx, err := r.querier.Begin(ctx)
+	if err != nil {
+		return confirmReturnRequest{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	checkQuery := `
+	SELECT EXISTS(
+		SELECT 1 FROM return_transaction 
+		WHERE return_request_id = $1
+	)
+	`
+	var exists bool
+	if err := tx.QueryRow(ctx, checkQuery, arg.ReturnRequestID).Scan(&exists); err != nil {
+		return confirmReturnRequest{}, err
+	}
+
+	if exists {
+		return confirmReturnRequest{}, errReturnRequestAlreadyConfirmed
+	}
+
+	query := `
+	UPDATE return_request
+	SET reviewed_by = $1
+	WHERE return_request_id = $2
+	RETURNING borrow_request_id
+	`
+
+	row := tx.QueryRow(ctx, query, arg.ReviewedBy, arg.ReturnRequestID)
+
+	var borrowRequestID string
+	if err := row.Scan(&borrowRequestID); err != nil {
+		return confirmReturnRequest{}, err
+	}
+
+	query = `
+	UPDATE borrow_request
+	SET status = $1
+	WHERE borrow_request_id = $2
+	`
+	if _, err := tx.Exec(ctx, query, fulfilled, borrowRequestID); err != nil {
+		return confirmReturnRequest{}, err
+	}
+
+	query = `
+	INSERT INTO return_transaction (borrow_transaction_id, return_request_id)
+	SELECT 
+		borrow_transaction.borrow_transaction_id,
+		$1
+	FROM borrow_transaction
+	JOIN borrow_request ON borrow_transaction.borrow_request_id = borrow_request.borrow_request_id
+	WHERE borrow_request.borrow_request_id = $2
+	`
+	if _, err := tx.Exec(ctx, query, arg.ReturnRequestID, borrowRequestID); err != nil {
+		return confirmReturnRequest{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return confirmReturnRequest{}, err
+	}
+
+	return arg, nil
 }

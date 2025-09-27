@@ -2,6 +2,7 @@ package equipment
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -27,6 +28,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("PATCH /borrow-requests/{id}", api.Handler(s.reviewBorrowRequest))
 	mux.Handle("GET /borrow-requests", api.Handler(s.getBorrowRequests))
 	mux.Handle("POST /return-requests", api.Handler(s.createReturnRequest))
+	mux.Handle("PATCH /return-requests/{id}", api.Handler(s.confirmReturnRequest))
 }
 
 func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Response {
@@ -220,5 +222,52 @@ func (s *Server) getBorrowRequests(w http.ResponseWriter, r *http.Request) api.R
 		Code:    http.StatusOK,
 		Message: "Successfully fetched borrow requests.",
 		Data:    borrowRequests,
+	}
+}
+
+func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	var data confirmReturnRequest
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("confirm return request: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid confirm return request.",
+		}
+	}
+
+	returnRequestID := r.PathValue("id")
+	if data.ReturnRequestID != returnRequestID {
+		return api.Response{
+			Error:   fmt.Errorf("return request ID mismatch: path=%s, body=%s", returnRequestID, data.ReturnRequestID),
+			Code:    http.StatusBadRequest,
+			Message: "Return request ID in URL does not match ID in request body.",
+		}
+	}
+
+	res, err := s.repository.confirmReturnRequest(ctx, data)
+	if err != nil {
+		if errors.Is(err, errReturnRequestAlreadyConfirmed) {
+			return api.Response{
+				Error:   fmt.Errorf("confirm return request: %w", err),
+				Code:    http.StatusConflict,
+				Message: "Return request has already been confirmed.",
+			}
+		}
+
+		return api.Response{
+			Error:   fmt.Errorf("confirm return request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to confirm return request.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully confirmed return request.",
+		Data:    res,
 	}
 }
