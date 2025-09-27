@@ -419,22 +419,40 @@ type createReturnResponse struct {
 	Quantity        uint   `json:"quantity"`
 }
 
-var errBorrowRequestNotApproved = fmt.Errorf("borrow request is not approved")
+var (
+	errBorrowRequestNotApproved         = fmt.Errorf("borrow request is not approved")
+	errExceedsRemainingBorrowedQuantity = fmt.Errorf("return quantity exceeds remaining borrowed quantity")
+)
 
 func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error) {
-	statusQuery := `
-	SELECT status 
-	FROM borrow_request 
-	WHERE borrow_request_id = $1
+	// Get the borrow request status and remaining borrowed quantity
+	// We use `SUM()` since multiple return requests in the case of 
+	// partial returns is possible
+	validationQuery := `
+	SELECT 
+		borrow_request.status,
+		borrow_request.quantity - COALESCE(SUM(return_request.quantity), 0) as remaining_quantity
+	FROM borrow_request
+	LEFT JOIN return_request ON borrow_request.borrow_request_id = return_request.borrow_request_id
+		AND EXISTS (SELECT 1 FROM return_transaction WHERE return_transaction.return_request_id = return_request.return_request_id)
+	WHERE borrow_request.borrow_request_id = $1
+	GROUP BY borrow_request.borrow_request_id, borrow_request.status, borrow_request.quantity
 	`
 
-	var status borrowRequestStatus
-	if err := r.querier.QueryRow(ctx, statusQuery, arg.BorrowRequestID).Scan(&status); err != nil {
+	var (
+		status            borrowRequestStatus
+		remainingQuantity uint
+	)
+	if err := r.querier.QueryRow(ctx, validationQuery, arg.BorrowRequestID).Scan(&status, &remainingQuantity); err != nil {
 		return createReturnResponse{}, err
 	}
 
 	if status != approved {
 		return createReturnResponse{}, errBorrowRequestNotApproved
+	}
+
+	if arg.Quantity > remainingQuantity {
+		return createReturnResponse{}, errExceedsRemainingBorrowedQuantity
 	}
 
 	query := `
@@ -540,23 +558,59 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 	UPDATE return_request
 	SET reviewed_by = $1
 	WHERE return_request_id = $2
-	RETURNING borrow_request_id
+	RETURNING borrow_request_id, quantity
 	`
 
 	row := tx.QueryRow(ctx, query, arg.ReviewedBy, arg.ReturnRequestID)
 
-	var borrowRequestID string
-	if err := row.Scan(&borrowRequestID); err != nil {
+	var (
+		borrowRequestID string
+		returnQuantity  uint
+	)
+	if err := row.Scan(&borrowRequestID, &returnQuantity); err != nil {
 		return confirmReturnRequest{}, err
 	}
 
-	query = `
-	UPDATE borrow_request
-	SET status = $1
-	WHERE borrow_request_id = $2
+	quantityCheckQuery := `
+	SELECT quantity FROM borrow_request WHERE borrow_request_id = $1
 	`
-	if _, err := tx.Exec(ctx, query, fulfilled, borrowRequestID); err != nil {
+	var totalBorrowedQuantity uint
+	if err := tx.QueryRow(ctx, quantityCheckQuery, borrowRequestID).Scan(&totalBorrowedQuantity); err != nil {
 		return confirmReturnRequest{}, err
+	}
+
+	// Validate remaining quantity to check how much is still outstanding
+	// Use the same logic on `createReturnRequest` 
+	remainingQuery := `
+	SELECT 
+		borrow_request.quantity - COALESCE(SUM(return_request.quantity), 0) as remaining_quantity
+	FROM borrow_request
+	LEFT JOIN return_request ON borrow_request.borrow_request_id = return_request.borrow_request_id
+		AND EXISTS (SELECT 1 FROM return_transaction WHERE return_transaction.return_request_id = return_request.return_request_id)
+	WHERE borrow_request.borrow_request_id = $1
+	GROUP BY borrow_request.quantity
+	`
+
+	var remainingQuantity uint
+	if err := tx.QueryRow(ctx, remainingQuery, borrowRequestID).Scan(&remainingQuantity); err != nil {
+		return confirmReturnRequest{}, err
+	}
+
+	if returnQuantity > remainingQuantity {
+		return confirmReturnRequest{}, fmt.Errorf("return quantity (%d) exceeds remaining borrowed quantity (%d)", returnQuantity, remainingQuantity)
+	}
+
+	totalReturnedAfterThis := (totalBorrowedQuantity - remainingQuantity) + returnQuantity
+
+	if totalReturnedAfterThis == totalBorrowedQuantity {
+		query = `
+		UPDATE borrow_request
+		SET status = $1
+		WHERE borrow_request_id = $2
+		`
+		if _, err := tx.Exec(ctx, query, fulfilled, borrowRequestID); err != nil {
+			return confirmReturnRequest{}, err
+		}
 	}
 
 	query = `
@@ -567,8 +621,13 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 	FROM borrow_transaction
 	JOIN borrow_request ON borrow_transaction.borrow_request_id = borrow_request.borrow_request_id
 	WHERE borrow_request.borrow_request_id = $2
+	AND borrow_transaction.borrow_transaction_id NOT IN (
+		-- Exclude already returned items
+		SELECT borrow_transaction_id FROM return_transaction
+	)
+	LIMIT $3
 	`
-	if _, err := tx.Exec(ctx, query, arg.ReturnRequestID, borrowRequestID); err != nil {
+	if _, err := tx.Exec(ctx, query, arg.ReturnRequestID, borrowRequestID, returnQuantity); err != nil {
 		return confirmReturnRequest{}, err
 	}
 

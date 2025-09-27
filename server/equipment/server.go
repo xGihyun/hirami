@@ -208,6 +208,14 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 			}
 		}
 
+		if errors.Is(err, errExceedsRemainingBorrowedQuantity) {
+			return api.Response{
+				Error:   fmt.Errorf("create return request: %w", err),
+				Code:    http.StatusBadRequest,
+				Message: "Return quantity exceeds remaining borrowed equipment.",
+			}
+		}
+
 		return api.Response{
 			Error:   fmt.Errorf("create return request: %w", err),
 			Code:    http.StatusInternalServerError,
