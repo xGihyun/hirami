@@ -123,6 +123,14 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 
 	res, err := s.repository.createBorrowRequest(ctx, data)
 	if err != nil {
+		if errors.Is(err, errInsufficientEquipmentQuantity) {
+			return api.Response{
+				Error:   fmt.Errorf("create borrow request: %w", err),
+				Code:    http.StatusBadRequest,
+				Message: "Requested quantity exceeds available equipment.",
+			}
+		}
+
 		return api.Response{
 			Error:   fmt.Errorf("create borrow request: %w", err),
 			Code:    http.StatusInternalServerError,
@@ -192,6 +200,14 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 
 	res, err := s.repository.createReturnRequest(ctx, data)
 	if err != nil {
+		if errors.Is(err, errBorrowRequestNotApproved) {
+			return api.Response{
+				Error:   fmt.Errorf("create return request: %w", err),
+				Code:    http.StatusBadRequest,
+				Message: "Cannot create return request for unapproved borrow request.",
+			}
+		}
+
 		return api.Response{
 			Error:   fmt.Errorf("create return request: %w", err),
 			Code:    http.StatusInternalServerError,

@@ -187,7 +187,27 @@ type createBorrowResponse struct {
 	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
 }
 
+var errInsufficientEquipmentQuantity = fmt.Errorf("requested quantity exceeds available equipment")
+
 func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error) {
+	availabilityQuery := `
+	SELECT COUNT(equipment.equipment_id) AS available_quantity
+	FROM equipment
+	LEFT JOIN borrow_transaction ON equipment.equipment_id = borrow_transaction.equipment_id
+	LEFT JOIN return_transaction ON borrow_transaction.borrow_transaction_id = return_transaction.borrow_transaction_id
+	WHERE equipment.equipment_type_id = $1
+	AND (borrow_transaction.borrow_transaction_id IS NULL OR return_transaction.return_transaction_id IS NOT NULL)
+	`
+
+	var availableQuantity uint
+	if err := r.querier.QueryRow(ctx, availabilityQuery, arg.EquipmentTypeID).Scan(&availableQuantity); err != nil {
+		return createBorrowResponse{}, err
+	}
+
+	if arg.Quantity > availableQuantity {
+		return createBorrowResponse{}, errInsufficientEquipmentQuantity
+	}
+
 	query := `
 	WITH inserted_request AS (
 		INSERT INTO borrow_request 
@@ -399,7 +419,24 @@ type createReturnResponse struct {
 	Quantity        uint   `json:"quantity"`
 }
 
+var errBorrowRequestNotApproved = fmt.Errorf("borrow request is not approved")
+
 func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error) {
+	statusQuery := `
+	SELECT status 
+	FROM borrow_request 
+	WHERE borrow_request_id = $1
+	`
+
+	var status borrowRequestStatus
+	if err := r.querier.QueryRow(ctx, statusQuery, arg.BorrowRequestID).Scan(&status); err != nil {
+		return createReturnResponse{}, err
+	}
+
+	if status != approved {
+		return createReturnResponse{}, errBorrowRequestNotApproved
+	}
+
 	query := `
 	INSERT INTO return_request (borrow_request_id, quantity)
 	VALUES ($1, $2)
@@ -416,7 +453,7 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	res := createReturnResponse{
 		ReturnRequestID: returnRequestID,
 		BorrowRequestID: arg.BorrowRequestID,
-		Quantity: arg.Quantity,
+		Quantity:        arg.Quantity,
 	}
 
 	return res, nil
