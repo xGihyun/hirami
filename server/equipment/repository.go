@@ -98,13 +98,15 @@ func (r *repository) getAll(ctx context.Context) ([]equipment, error) {
 			equipment_type.model,
 			equipment.equipment_id,
 			CASE 
-				WHEN borrow_transaction.borrow_transaction_id IS NOT NULL AND return_transaction.return_transaction_id IS NULL THEN 'borrowed'
+				WHEN borrow_transaction.borrow_transaction_id IS NOT NULL 
+					AND return_transaction.return_transaction_id IS NULL THEN 'borrowed'
 				ELSE 'available'
 			END AS status
 		FROM equipment_type
 		JOIN equipment ON equipment.equipment_type_id = equipment_type.equipment_type_id
 		LEFT JOIN borrow_transaction ON equipment.equipment_id = borrow_transaction.equipment_id
-		LEFT JOIN return_transaction ON return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
+		LEFT JOIN return_transaction 
+			ON return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
 	)
 	SELECT
 		equipment_type_id,
