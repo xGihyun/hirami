@@ -16,6 +16,7 @@ type Repository interface {
 	update(ctx context.Context, arg updateRequest) error
 	createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error)
 	reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error)
+	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnRequest, error)
 }
 
 type repository struct {
@@ -372,4 +373,22 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 	}
 
 	return res, nil
+}
+
+type createReturnRequest struct {
+	BorrowRequestID string `json:"borrowRequestId"`
+	Quantity        uint   `json:"quantity"`
+}
+
+func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnRequest, error) {
+	query := `
+	INSERT INTO return_request (borrow_request_id, quantity)
+	VALUES ($1, $2)
+	`
+
+	if _, err := r.querier.Exec(ctx, query, arg.BorrowRequestID, arg.Quantity); err != nil {
+		return createReturnRequest{}, err
+	}
+
+	return arg, nil
 }

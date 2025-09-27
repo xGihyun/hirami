@@ -1,0 +1,22 @@
+meta {
+  name: create-return-request
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/return-requests
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "borrowRequestId": "{{borrowRequestId}}",
+    "quantity": 1
+  }
+}
+
+settings {
+  encodeUrl: true
+}

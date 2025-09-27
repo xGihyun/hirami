@@ -25,6 +25,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 
 	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
 	mux.Handle("PATCH /borrow-requests/{id}", api.Handler(s.reviewBorrowRequest))
+	mux.Handle("POST /return-requests", api.Handler(s.createReturnRequest))
 }
 
 func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Response {
@@ -168,6 +169,36 @@ func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully reviewed borrow request.",
+		Data:    res,
+	}
+}
+
+func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	var data createReturnRequest
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create return request: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid create return request.",
+		}
+	}
+
+	res, err := s.repository.createReturnRequest(ctx, data)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create return request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create return request.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully created return request.",
 		Data:    res,
 	}
 }
