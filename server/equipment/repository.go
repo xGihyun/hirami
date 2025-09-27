@@ -17,8 +17,9 @@ type Repository interface {
 
 	createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error)
 	reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error)
-	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnRequest, error)
 	getBorrowRequests(ctx context.Context) ([]borrowRequest, error)
+
+	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error)
 	confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error)
 }
 
@@ -392,17 +393,33 @@ type createReturnRequest struct {
 	Quantity        uint   `json:"quantity"`
 }
 
-func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnRequest, error) {
+type createReturnResponse struct {
+	ReturnRequestID string `json:"id"`
+	BorrowRequestID string `json:"borrowRequestId"`
+	Quantity        uint   `json:"quantity"`
+}
+
+func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error) {
 	query := `
 	INSERT INTO return_request (borrow_request_id, quantity)
 	VALUES ($1, $2)
+	RETURNING return_request_id
 	`
 
-	if _, err := r.querier.Exec(ctx, query, arg.BorrowRequestID, arg.Quantity); err != nil {
-		return createReturnRequest{}, err
+	var returnRequestID string
+
+	row := r.querier.QueryRow(ctx, query, arg.BorrowRequestID, arg.Quantity)
+	if err := row.Scan(&returnRequestID); err != nil {
+		return createReturnResponse{}, err
 	}
 
-	return arg, nil
+	res := createReturnResponse{
+		ReturnRequestID: returnRequestID,
+		BorrowRequestID: arg.BorrowRequestID,
+		Quantity: arg.Quantity,
+	}
+
+	return res, nil
 }
 
 type borrowRequest struct {
