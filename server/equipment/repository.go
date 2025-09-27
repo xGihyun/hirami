@@ -14,9 +14,11 @@ type Repository interface {
 	createEquipment(ctx context.Context, arg createRequest) error
 	getAll(ctx context.Context) ([]equipment, error)
 	update(ctx context.Context, arg updateRequest) error
+
 	createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error)
 	reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error)
 	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnRequest, error)
+	getBorrowRequests(ctx context.Context) ([]borrowRequest, error)
 }
 
 type repository struct {
@@ -391,4 +393,52 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	}
 
 	return arg, nil
+}
+
+type borrowRequest struct {
+	BorrowRequestID  string         `json:"id"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	Borrower         user.BasicInfo `json:"borrower"`
+	Equipment        equipment      `json:"equipment"`
+	Location         string         `json:"location"`
+	Purpose          string         `json:"purpose"`
+	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
+}
+
+func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, error) {
+	query := `
+	SELECT 
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS borrower,
+		jsonb_build_object(
+			'id', equipment_type.equipment_type_id,
+			'name', equipment_type.name,
+			'brand', equipment_type.brand,
+			'model', equipment_type.model,
+			'quantity', borrow_request.quantity
+		) AS equipment,
+		borrow_request.borrow_request_id,
+		borrow_request.location,
+		borrow_request.purpose,
+		borrow_request.expected_return_at,
+		borrow_request.created_at
+	FROM borrow_request
+	JOIN person ON person.person_id = borrow_request.requested_by
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request.equipment_type_id
+	`
+
+	rows, err := r.querier.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	borrowRequests, err := pgx.CollectRows(rows, pgx.RowToStructByName[borrowRequest])
+	if err != nil {
+		return nil, err
+	}
+	return borrowRequests, nil
 }
