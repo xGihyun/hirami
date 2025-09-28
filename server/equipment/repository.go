@@ -226,9 +226,16 @@ type createBorrowResponse struct {
 	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
 }
 
-var errInsufficientEquipmentQuantity = fmt.Errorf("requested quantity exceeds available equipment")
+var (
+	errInsufficientEquipmentQuantity = fmt.Errorf("requested quantity exceeds available equipment")
+	errInvalidBorrowQuantity         = fmt.Errorf("borrow quantity must be greater than zero")
+)
 
 func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error) {
+	if arg.Quantity <= 0 {
+		return createBorrowResponse{}, errInvalidBorrowQuantity
+	}
+
 	availabilityQuery := `
 	SELECT COUNT(equipment.equipment_id) AS available_quantity
 	FROM equipment

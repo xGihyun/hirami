@@ -127,6 +127,14 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 
 	res, err := s.repository.createBorrowRequest(ctx, data)
 	if err != nil {
+		if errors.Is(err, errInvalidBorrowQuantity) {
+			return api.Response{
+				Error:   fmt.Errorf("create borrow request: %w", err),
+				Code:    http.StatusBadRequest,
+				Message: "Borrow quantity must be greater than zero.",
+			}
+		}
+
 		if errors.Is(err, errInsufficientEquipmentQuantity) {
 			return api.Response{
 				Error:   fmt.Errorf("create borrow request: %w", err),
