@@ -69,15 +69,14 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) err
 	}
 
 	query = `
-	INSERT INTO equipment (equipment_type_id, status, acquired_at)
-	SELECT $1, $2, $3
-	FROM generate_series(1, $4)
+	INSERT INTO equipment (equipment_type_id, acquired_at)
+	SELECT $1, $2
+	FROM generate_series(1, $3)
 	`
 	if _, err := r.querier.Exec(
 		ctx,
 		query,
 		equipmentTypeID,
-		available,
 		arg.AcquisitionDate,
 		arg.Quantity,
 	); err != nil {
