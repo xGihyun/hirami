@@ -12,7 +12,7 @@ import (
 
 type Repository interface {
 	createEquipment(ctx context.Context, arg createRequest) error
-	getAll(ctx context.Context) ([]equipment, error)
+	getAll(ctx context.Context) ([]equipmentWithBorrower, error)
 	update(ctx context.Context, arg updateRequest) error
 
 	createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error)
@@ -96,7 +96,13 @@ type equipment struct {
 	Status          equipmentStatus `json:"status,omitzero"`
 }
 
-func (r *repository) getAll(ctx context.Context) ([]equipment, error) {
+type equipmentWithBorrower struct {
+	equipment
+
+	Borrower *user.BasicInfo `json:"borrower"`
+}
+
+func (r *repository) getAll(ctx context.Context) ([]equipmentWithBorrower, error) {
 	query := `
 	WITH equipment_with_status AS (
 		SELECT
@@ -116,7 +122,37 @@ func (r *repository) getAll(ctx context.Context) ([]equipment, error) {
 					)
 				) THEN 'borrowed'
 				ELSE 'available'
-			END AS status
+			END AS status,
+			CASE
+				WHEN EXISTS (
+					SELECT 1 FROM borrow_transaction
+					WHERE borrow_transaction.equipment_id = equipment.equipment_id
+					AND NOT EXISTS (
+						SELECT 1 
+						FROM return_transaction 
+						WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
+					)
+				) THEN (
+					SELECT jsonb_build_object(
+						'id', person.person_id,
+						'firstName', person.first_name,
+						'middleName', person.middle_name,
+						'lastName', person.last_name,
+						'avatarUrl', person.avatar_url
+					)
+					FROM borrow_transaction
+					JOIN borrow_request ON borrow_request.borrow_request_id = borrow_transaction.borrow_request_id
+					JOIN person ON person.person_id = borrow_request.requested_by
+					WHERE borrow_transaction.equipment_id = equipment.equipment_id
+					AND NOT EXISTS (
+						SELECT 1 FROM return_transaction 
+						WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
+					)
+					ORDER BY borrow_transaction.created_at DESC
+					LIMIT 1
+				)
+				ELSE NULL
+			END AS borrower
 		FROM equipment_type
 		JOIN equipment ON equipment.equipment_type_id = equipment_type.equipment_type_id
 	)
@@ -126,15 +162,16 @@ func (r *repository) getAll(ctx context.Context) ([]equipment, error) {
 		brand,
 		model,
 		status,
-		COUNT(equipment_id) AS quantity
+		COUNT(equipment_id) AS quantity,
+		borrower
 	FROM equipment_with_status
-	GROUP BY equipment_type_id, name, brand, model, status
+	GROUP BY equipment_type_id, name, brand, model, status, borrower
 	`
 	rows, err := r.querier.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	equipments, err := pgx.CollectRows(rows, pgx.RowToStructByName[equipment])
+	equipments, err := pgx.CollectRows(rows, pgx.RowToStructByName[equipmentWithBorrower])
 	if err != nil {
 		return nil, err
 	}
