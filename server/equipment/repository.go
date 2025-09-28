@@ -513,6 +513,8 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 	FROM borrow_request
 	JOIN person ON person.person_id = borrow_request.requested_by
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request.equipment_type_id
+	LEFT JOIN borrow_transaction ON borrow_transaction.borrow_request_id = borrow_request.borrow_request_id
+	WHERE borrow_transaction.borrow_transaction_id IS NULL
 	`
 
 	rows, err := r.querier.Query(ctx, query)
