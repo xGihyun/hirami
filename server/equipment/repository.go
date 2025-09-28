@@ -22,6 +22,8 @@ type Repository interface {
 	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error)
 	confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error)
 	getReturnRequests(ctx context.Context) ([]returnRequest, error)
+
+	getBorrowHistory(ctx context.Context) ([]borrowTransaction, error)
 }
 
 type repository struct {
@@ -687,4 +689,72 @@ func (r *repository) getReturnRequests(ctx context.Context) ([]returnRequest, er
 		return nil, err
 	}
 	return returnRequests, nil
+}
+
+type borrowTransaction struct {
+	BorrowRequestID string         `json:"borrowRequestId"`
+	BorrowedAt      time.Time      `json:"borrowedAt"`
+	Borrower        user.BasicInfo `json:"borrower"`
+	Equipment       equipment      `json:"equipment"`
+	Location        string         `json:"location"`
+	Purpose         string         `json:"purpose"`
+
+	ExpectedReturnAt time.Time           `json:"expectedReturnAt"`
+	ActualReturnAt   *time.Time          `json:"actualReturnAt"`
+	Status           borrowRequestStatus `json:"status"`
+	ReviewedBy       user.BasicInfo      `json:"reviewedBy"`
+	Remarks          *string             `json:"remarks"`
+}
+
+func (r *repository) getBorrowHistory(ctx context.Context) ([]borrowTransaction, error) {
+	query := `
+	SELECT 
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS borrower,
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS reviewed_by,
+		jsonb_build_object(
+			'id', equipment_type.equipment_type_id,
+			'name', equipment_type.name,
+			'brand', equipment_type.brand,
+			'model', equipment_type.model,
+			'quantity', borrow_request.quantity
+		) AS equipment,
+		borrow_request.borrow_request_id,
+		borrow_request.created_at AS borrowed_at,
+		borrow_request.location,
+		borrow_request.purpose,
+		borrow_request.expected_return_at,
+		return_request.created_at AS actual_return_at,
+		borrow_request.status,
+		borrow_request.remarks
+	FROM borrow_request
+	JOIN person ON person.person_id = borrow_request.requested_by
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request.equipment_type_id
+	LEFT JOIN borrow_transaction 
+		ON borrow_transaction.borrow_request_id = borrow_request.borrow_request_id
+	LEFT JOIN return_request
+		ON return_request.borrow_request_id = borrow_request.borrow_request_id
+	WHERE borrow_transaction.borrow_transaction_id IS NOT NULL
+	`
+
+	rows, err := r.querier.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	history, err := pgx.CollectRows(rows, pgx.RowToStructByName[borrowTransaction])
+	if err != nil {
+		return nil, err
+	}
+	return history, nil
 }

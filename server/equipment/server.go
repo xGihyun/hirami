@@ -31,6 +31,8 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /return-requests", api.Handler(s.createReturnRequest))
 	mux.Handle("PATCH /return-requests/{id}", api.Handler(s.confirmReturnRequest))
 	mux.Handle("GET /return-requests", api.Handler(s.getReturnRequests))
+
+	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
 }
 
 func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Response {
@@ -314,5 +316,24 @@ func (s *Server) getReturnRequests(w http.ResponseWriter, r *http.Request) api.R
 		Code:    http.StatusOK,
 		Message: "Successfully fetched return requests.",
 		Data:    returnRequests,
+	}
+}
+
+func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	history, err := s.repository.getBorrowHistory(ctx)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get borrow history: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get borrow history.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched borrow history.",
+		Data:    history,
 	}
 }

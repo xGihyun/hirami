@@ -1,0 +1,15 @@
+meta {
+  name: get-borrow-history
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/borrow-history
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
