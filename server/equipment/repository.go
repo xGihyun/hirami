@@ -239,10 +239,15 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 	availabilityQuery := `
 	SELECT COUNT(equipment.equipment_id) AS available_quantity
 	FROM equipment
-	LEFT JOIN borrow_transaction ON equipment.equipment_id = borrow_transaction.equipment_id
-	LEFT JOIN return_transaction ON borrow_transaction.borrow_transaction_id = return_transaction.borrow_transaction_id
 	WHERE equipment.equipment_type_id = $1
-	AND (borrow_transaction.borrow_transaction_id IS NULL OR return_transaction.return_transaction_id IS NOT NULL)
+	AND NOT EXISTS (
+		SELECT 1 FROM borrow_transaction
+		WHERE borrow_transaction.equipment_id = equipment.equipment_id
+		AND NOT EXISTS (
+			SELECT 1 FROM return_transaction 
+			WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
+		)
+	)
 	`
 
 	var availableQuantity uint
