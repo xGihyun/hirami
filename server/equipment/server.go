@@ -204,6 +204,14 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 
 	res, err := s.repository.createReturnRequest(ctx, data)
 	if err != nil {
+		if errors.Is(err, errInvalidReturnQuantity) {
+			return api.Response{
+				Error:   fmt.Errorf("create return request: %w", err),
+				Code:    http.StatusBadRequest,
+				Message: "Return quantity must be greater than zero.",
+			}
+		}
+
 		if errors.Is(err, errBorrowRequestNotApproved) {
 			return api.Response{
 				Error:   fmt.Errorf("create return request: %w", err),

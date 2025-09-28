@@ -461,9 +461,14 @@ type createReturnResponse struct {
 var (
 	errBorrowRequestNotApproved         = fmt.Errorf("borrow request is not approved")
 	errExceedsRemainingBorrowedQuantity = fmt.Errorf("return quantity exceeds remaining borrowed quantity")
+	errInvalidReturnQuantity            = fmt.Errorf("return quantity must be greater than zero")
 )
 
 func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error) {
+	if arg.Quantity <= 0 {
+		return createReturnResponse{}, errInvalidReturnQuantity
+	}
+
 	// Get the borrow request status and remaining borrowed quantity
 	// We use `SUM()` since multiple return requests in the case of
 	// partial returns is possible
