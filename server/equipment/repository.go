@@ -99,22 +99,26 @@ type equipment struct {
 func (r *repository) getAll(ctx context.Context) ([]equipment, error) {
 	query := `
 	WITH equipment_with_status AS (
-		SELECT 
+		SELECT
 			equipment_type.equipment_type_id,
 			equipment_type.name,
 			equipment_type.brand,
 			equipment_type.model,
 			equipment.equipment_id,
-			CASE 
-				WHEN borrow_transaction.borrow_transaction_id IS NOT NULL 
-					AND return_transaction.return_transaction_id IS NULL THEN 'borrowed'
+			CASE
+				WHEN EXISTS (
+					SELECT 1 FROM borrow_transaction
+					WHERE borrow_transaction.equipment_id = equipment.equipment_id
+					AND NOT EXISTS (
+						SELECT 1 
+						FROM return_transaction 
+						WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
+					)
+				) THEN 'borrowed'
 				ELSE 'available'
 			END AS status
 		FROM equipment_type
 		JOIN equipment ON equipment.equipment_type_id = equipment_type.equipment_type_id
-		LEFT JOIN borrow_transaction ON equipment.equipment_id = borrow_transaction.equipment_id
-		LEFT JOIN return_transaction 
-			ON return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
 	)
 	SELECT
 		equipment_type_id,
@@ -124,12 +128,7 @@ func (r *repository) getAll(ctx context.Context) ([]equipment, error) {
 		status,
 		COUNT(equipment_id) AS quantity
 	FROM equipment_with_status
-	GROUP BY 
-		equipment_type_id,
-		name, 
-		brand,
-		model,
-		status
+	GROUP BY equipment_type_id, name, brand, model, status
 	`
 	rows, err := r.querier.Query(ctx, query)
 	if err != nil {
@@ -351,26 +350,26 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 	if arg.Status == approved {
 		equipmentQuery := `
 		WITH equipment_with_status AS (
-			SELECT 
-				equipment_type.equipment_type_id,
-				equipment_type.name,
-				equipment_type.brand,
-				equipment_type.model,
+			SELECT DISTINCT
 				equipment.equipment_id,
 				CASE 
-					WHEN borrow_transaction.borrow_transaction_id IS NOT NULL 
-						AND return_transaction.return_transaction_id IS NULL THEN 'borrowed'
+					WHEN EXISTS (
+						SELECT 1 FROM borrow_transaction
+						WHERE borrow_transaction.equipment_id = equipment.equipment_id
+						AND NOT EXISTS (
+							SELECT 1 FROM return_transaction
+							WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
+						)
+					) THEN 'borrowed'
 					ELSE 'available'
 				END AS status
-			FROM equipment_type
-			JOIN equipment ON equipment.equipment_type_id = equipment_type.equipment_type_id
-			LEFT JOIN borrow_transaction ON equipment.equipment_id = borrow_transaction.equipment_id
-			LEFT JOIN return_transaction 
-				ON return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
+			FROM equipment
+			WHERE equipment.equipment_type_id = $1
 		)
 		SELECT equipment_id 
 		FROM equipment_with_status
-		WHERE equipment_type_id = $1 AND status = $2
+		WHERE status = $2
+		ORDER BY equipment_id
 		LIMIT $3
 		`
 
