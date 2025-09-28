@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/xGihyun/hirami/api"
 )
@@ -47,6 +48,18 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 			Code:    http.StatusBadRequest,
 			Message: "Invalid create equipment request.",
 		}
+	}
+
+	data.Name = strings.TrimSpace(data.Name)
+
+	if data.Brand != nil {
+		trimmedBrand := strings.TrimSpace(*data.Brand)
+		data.Brand = &trimmedBrand
+	}
+
+	if data.Model != nil {
+		trimmedModel := strings.TrimSpace(*data.Model)
+		data.Model = &trimmedModel
 	}
 
 	if err := s.repository.createEquipment(ctx, data); err != nil {
