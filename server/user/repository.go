@@ -210,3 +210,84 @@ func (r *repository) getByEmail(ctx context.Context, email string) (user, error)
 
 	return person, nil
 }
+
+//
+// User Management
+//
+// TODO: Add profile picture upload
+
+type createRequest struct {
+	Email      string  `json:"email"`
+	Password   string  `json:"password"`
+	FirstName  string  `json:"firstName"`
+	MiddleName *string `json:"middleName"`
+	LastName   string  `json:"lastName"`
+	Role       role    `json:"role"`
+}
+
+func (r *repository) create(ctx context.Context, arg createRequest) error {
+	passwordHash, err := hashPassword(arg.Password)
+	if err != nil {
+		return err
+	}
+
+	query := `
+	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, role)
+	VALUES ($1, $2, $3, $4, $5, $6)
+	RETURNING person_id
+	`
+
+	var userID string
+
+	row := r.querier.QueryRow(
+		ctx,
+		query,
+		arg.Email,
+		passwordHash,
+		arg.FirstName,
+		arg.MiddleName,
+		arg.LastName,
+		arg.Role,
+	)
+	if err := row.Scan(&userID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type updateRequest struct {
+	PersonID   string  `json:"id"`
+	Email      string  `json:"email"`
+	FirstName  string  `json:"firstName"`
+	MiddleName *string `json:"middleName"`
+	LastName   string  `json:"lastName"`
+	Role       role    `json:"role"`
+}
+
+func (r *repository) update(ctx context.Context, arg updateRequest) error {
+	query := `
+	UPDATE person
+	SET email = $1,
+		first_name = $2,
+		middle_name = $3,
+		last_name = $4,
+		role = $5
+	WHERE person.person_id = $6
+	`
+
+	if _, err := r.querier.Exec(
+		ctx,
+		query,
+		arg.Email,
+		arg.FirstName,
+		arg.MiddleName,
+		arg.LastName,
+		arg.Role,
+		arg.PersonID,
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
