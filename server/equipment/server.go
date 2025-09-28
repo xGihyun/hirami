@@ -27,8 +27,10 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
 	mux.Handle("PATCH /borrow-requests/{id}", api.Handler(s.reviewBorrowRequest))
 	mux.Handle("GET /borrow-requests", api.Handler(s.getBorrowRequests))
+
 	mux.Handle("POST /return-requests", api.Handler(s.createReturnRequest))
 	mux.Handle("PATCH /return-requests/{id}", api.Handler(s.confirmReturnRequest))
+	mux.Handle("GET /return-requests", api.Handler(s.getReturnRequests))
 }
 
 func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Response {
@@ -293,5 +295,24 @@ func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) ap
 		Code:    http.StatusOK,
 		Message: "Successfully confirmed return request.",
 		Data:    res,
+	}
+}
+
+func (s *Server) getReturnRequests(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	returnRequests, err := s.repository.getReturnRequests(ctx)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get return requests: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get return requests.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched return requests.",
+		Data:    returnRequests,
 	}
 }

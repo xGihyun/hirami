@@ -21,6 +21,7 @@ type Repository interface {
 
 	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error)
 	confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error)
+	getReturnRequests(ctx context.Context) ([]returnRequest, error)
 }
 
 type repository struct {
@@ -426,7 +427,7 @@ var (
 
 func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error) {
 	// Get the borrow request status and remaining borrowed quantity
-	// We use `SUM()` since multiple return requests in the case of 
+	// We use `SUM()` since multiple return requests in the case of
 	// partial returns is possible
 	validationQuery := `
 	SELECT 
@@ -580,7 +581,7 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 	}
 
 	// Validate remaining quantity to check how much is still outstanding
-	// Use the same logic on `createReturnRequest` 
+	// Use the same logic on `createReturnRequest`
 	remainingQuery := `
 	SELECT 
 		borrow_request.quantity - COALESCE(SUM(return_request.quantity), 0) as remaining_quantity
@@ -636,4 +637,52 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 	}
 
 	return arg, nil
+}
+
+type returnRequest struct {
+	ReturnRequestID  string         `json:"id"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	Borrower         user.BasicInfo `json:"borrower"`
+	Equipment        equipment      `json:"equipment"`
+	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
+}
+
+func (r *repository) getReturnRequests(ctx context.Context) ([]returnRequest, error) {
+	query := `
+	SELECT 
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS borrower,
+		jsonb_build_object(
+			'id', equipment_type.equipment_type_id,
+			'name', equipment_type.name,
+			'brand', equipment_type.brand,
+			'model', equipment_type.model,
+			'quantity', return_request.quantity
+		) AS equipment,
+		return_request.return_request_id,
+		borrow_request.expected_return_at,
+		return_request.created_at
+	FROM return_request
+	JOIN borrow_request ON borrow_request.borrow_request_id = return_request.borrow_request_id
+	JOIN person ON person.person_id = borrow_request.requested_by
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request.equipment_type_id
+	LEFT JOIN return_transaction 
+		ON return_transaction.return_request_id = return_request.return_request_id
+	WHERE return_transaction.return_transaction_id IS NULL
+	`
+
+	rows, err := r.querier.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	returnRequests, err := pgx.CollectRows(rows, pgx.RowToStructByName[returnRequest])
+	if err != nil {
+		return nil, err
+	}
+	return returnRequests, nil
 }
