@@ -716,11 +716,11 @@ func (r *repository) getBorrowHistory(ctx context.Context) ([]borrowTransaction,
 			'avatarUrl', person.avatar_url
 		) AS borrower,
 		jsonb_build_object(
-			'id', person.person_id,
-			'firstName', person.first_name,
-			'middleName', person.middle_name,
-			'lastName', person.last_name,
-			'avatarUrl', person.avatar_url
+			'id', reviewed_person.person_id,
+			'firstName', reviewed_person.first_name,
+			'middleName', reviewed_person.middle_name,
+			'lastName', reviewed_person.last_name,
+			'avatarUrl', reviewed_person.avatar_url
 		) AS reviewed_by,
 		jsonb_build_object(
 			'id', equipment_type.equipment_type_id,
@@ -734,17 +734,22 @@ func (r *repository) getBorrowHistory(ctx context.Context) ([]borrowTransaction,
 		borrow_request.location,
 		borrow_request.purpose,
 		borrow_request.expected_return_at,
-		return_request.created_at AS actual_return_at,
+		latest_return.created_at AS actual_return_at,
 		borrow_request.status,
 		borrow_request.remarks
 	FROM borrow_request
 	JOIN person ON person.person_id = borrow_request.requested_by
+	JOIN person reviewed_person ON reviewed_person.person_id = borrow_request.reviewed_by
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request.equipment_type_id
-	LEFT JOIN borrow_transaction 
-		ON borrow_transaction.borrow_request_id = borrow_request.borrow_request_id
-	LEFT JOIN return_request
-		ON return_request.borrow_request_id = borrow_request.borrow_request_id
-	WHERE borrow_transaction.borrow_transaction_id IS NOT NULL
+	LEFT JOIN LATERAL (
+		SELECT created_at
+		FROM return_request
+		WHERE return_request.borrow_request_id = borrow_request.borrow_request_id
+		ORDER BY created_at DESC
+		LIMIT 1
+	) latest_return ON true
+	WHERE borrow_request.status IN ('approved', 'fulfilled')
+	ORDER BY borrow_request.created_at DESC;
 	`
 
 	rows, err := r.querier.Query(ctx, query)
