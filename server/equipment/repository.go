@@ -23,7 +23,7 @@ type Repository interface {
 	confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error)
 	getReturnRequests(ctx context.Context) ([]returnRequest, error)
 
-	getBorrowHistory(ctx context.Context) ([]borrowTransaction, error)
+	getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error)
 }
 
 type repository struct {
@@ -759,7 +759,11 @@ type borrowTransaction struct {
 	Remarks          *string             `json:"remarks"`
 }
 
-func (r *repository) getBorrowHistory(ctx context.Context) ([]borrowTransaction, error) {
+type borrowHistoryParams struct {
+	userID *string
+}
+
+func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error) {
 	query := `
 	SELECT 
 		jsonb_build_object(
@@ -803,10 +807,17 @@ func (r *repository) getBorrowHistory(ctx context.Context) ([]borrowTransaction,
 		LIMIT 1
 	) latest_return ON true
 	WHERE borrow_request.status IN ('approved', 'fulfilled')
-	ORDER BY borrow_request.created_at DESC;
 	`
 
-	rows, err := r.querier.Query(ctx, query)
+	var args []any
+	if *params.userID != "" {
+		query += " AND borrow_request.requested_by = $1"
+		args = append(args, *params.userID)
+	}
+
+	query += " ORDER BY borrow_request.created_at DESC"
+
+	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

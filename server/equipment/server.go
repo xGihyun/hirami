@@ -338,7 +338,11 @@ func (s *Server) getReturnRequests(w http.ResponseWriter, r *http.Request) api.R
 func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	history, err := s.repository.getBorrowHistory(ctx)
+	userID := r.PathValue("userId")
+	params := borrowHistoryParams{
+		userID: &userID,
+	}
+	history, err := s.repository.getBorrowHistory(ctx, params)
 	if err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("get borrow history: %w", err),
