@@ -26,7 +26,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
 
 	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
-	mux.Handle("PATCH /borrow-requests/{id}", api.Handler(s.reviewBorrowRequest))
+	mux.Handle("PATCH /review-borrow-requests", api.Handler(s.reviewBorrowRequest))
 	mux.Handle("GET /borrow-requests", api.Handler(s.getBorrowRequests))
 
 	mux.Handle("POST /return-requests", api.Handler(s.createReturnRequest))
@@ -184,14 +184,14 @@ func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
-	borrowRequestID := r.PathValue("id")
-	if data.BorrowRequestID != borrowRequestID {
-		return api.Response{
-			Error:   fmt.Errorf("borrow request ID mismatch: path=%s, body=%s", borrowRequestID, data.BorrowRequestID),
-			Code:    http.StatusBadRequest,
-			Message: "Borrow request ID in URL does not match ID in request body.",
-		}
-	}
+	// borrowRequestID := r.PathValue("id")
+	// if data.BorrowRequestID != borrowRequestID {
+	// 	return api.Response{
+	// 		Error:   fmt.Errorf("borrow request ID mismatch: path=%s, body=%s", borrowRequestID, data.BorrowRequestID),
+	// 		Code:    http.StatusBadRequest,
+	// 		Message: "Borrow request ID in URL does not match ID in request body.",
+	// 	}
+	// }
 
 	res, err := s.repository.reviewBorrowRequest(ctx, data)
 	if err != nil {

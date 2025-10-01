@@ -5,14 +5,17 @@ meta {
 }
 
 patch {
-  url: {{baseUrl}}/borrow-requests/{{borrowRequestId}}
+  url: {{baseUrl}}/review-borrow-requests
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "id": "{{borrowRequestId}}",
+    "ids": [
+      "{{createdBorrowRequest.equipments[0].borrowRequestId}}",
+      "{{createdBorrowRequest.equipments[1].borrowRequestId}}"
+    ],
     "reviewedBy": "{{reviewedBy}}",
     "remarks": null,
     "status": "approved"
