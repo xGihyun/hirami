@@ -22,16 +22,16 @@ func NewServer(repo Repository) *Server {
 }
 
 func (s *Server) SetupRoutes(mux *http.ServeMux) {
-	mux.Handle("POST /sign-up", api.Handler(s.SignUp))
-	mux.Handle("POST /sign-in", api.Handler(s.SignIn))
-	mux.Handle("POST /sign-out", api.Handler(s.SignOut))
+	mux.Handle("POST /register", api.Handler(s.Register))
+	mux.Handle("POST /login", api.Handler(s.Login))
+	mux.Handle("POST /logout", api.Handler(s.Logout))
 	mux.Handle("GET /users/{id}", api.Handler(s.Get))
 }
 
-func (s *Server) SignUp(w http.ResponseWriter, r *http.Request) api.Response {
+func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	var data signUpRequest
+	var data registerRequest
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&data); err != nil {
@@ -42,7 +42,7 @@ func (s *Server) SignUp(w http.ResponseWriter, r *http.Request) api.Response {
 		}
 	}
 
-	if err := s.repository.signUp(ctx, data); err != nil {
+	if err := s.repository.register(ctx, data); err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
 			return api.Response{
 				Error:   fmt.Errorf("sign up: %w", err),
@@ -64,10 +64,10 @@ func (s *Server) SignUp(w http.ResponseWriter, r *http.Request) api.Response {
 	}
 }
 
-func (s *Server) SignIn(w http.ResponseWriter, r *http.Request) api.Response {
+func (s *Server) Login(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	var data signInRequest
+	var data loginRequest
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&data); err != nil {
@@ -78,7 +78,7 @@ func (s *Server) SignIn(w http.ResponseWriter, r *http.Request) api.Response {
 		}
 	}
 
-	res, err := s.repository.signIn(ctx, data)
+	res, err := s.repository.login(ctx, data)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return api.Response{
@@ -110,7 +110,7 @@ func (s *Server) SignIn(w http.ResponseWriter, r *http.Request) api.Response {
 	}
 }
 
-func (s *Server) SignOut(w http.ResponseWriter, r *http.Request) api.Response {
+func (s *Server) Logout(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
 	token := r.URL.Query().Get("token")

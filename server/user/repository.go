@@ -9,8 +9,8 @@ import (
 )
 
 type Repository interface {
-	signUp(ctx context.Context, arg signUpRequest) error
-	signIn(ctx context.Context, arg signInRequest) (signInResponse, error)
+	register(ctx context.Context, arg registerRequest) error
+	login(ctx context.Context, arg loginRequest) (signInResponse, error)
 	get(ctx context.Context, userID string) (user, error)
 
 	getByEmail(ctx context.Context, email string) (user, error)
@@ -27,7 +27,7 @@ func NewRepository(querier *pgxpool.Pool) Repository {
 	}
 }
 
-type signUpRequest struct {
+type registerRequest struct {
 	Email      string  `json:"email"`
 	Password   string  `json:"password"`
 	FirstName  string  `json:"firstName"`
@@ -35,7 +35,7 @@ type signUpRequest struct {
 	LastName   string  `json:"lastName"`
 }
 
-func (r *repository) signUp(ctx context.Context, arg signUpRequest) error {
+func (r *repository) register(ctx context.Context, arg registerRequest) error {
 	passwordHash, err := hashPassword(arg.Password)
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func (r *repository) signUp(ctx context.Context, arg signUpRequest) error {
 	return nil
 }
 
-type signInRequest struct {
+type loginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -78,7 +78,7 @@ type signInResponse struct {
 
 var errInvalidPassword = errors.New("invalid password")
 
-func (r *repository) signIn(ctx context.Context, arg signInRequest) (signInResponse, error) {
+func (r *repository) login(ctx context.Context, arg loginRequest) (signInResponse, error) {
 	query := "SELECT password_hash FROM person WHERE email = ($1)"
 
 	var passwordHash string
