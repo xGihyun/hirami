@@ -15,6 +15,8 @@ type Repository interface {
 
 	getByEmail(ctx context.Context, email string) (user, error)
 	invalidateSession(ctx context.Context, token string) error
+	createSession(ctx context.Context, token, userID string) (session, error)
+	validateSessionToken(ctx context.Context, token string) (sessionValidationResponse, error)
 }
 
 type repository struct {

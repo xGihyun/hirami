@@ -26,6 +26,8 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /login", api.Handler(s.Login))
 	mux.Handle("POST /logout", api.Handler(s.Logout))
 	mux.Handle("GET /users/{id}", api.Handler(s.Get))
+
+	mux.Handle("GET /sessions", api.Handler(s.GetSession))
 }
 
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
@@ -146,5 +148,26 @@ func (s *Server) Get(w http.ResponseWriter, r *http.Request) api.Response {
 		Code:    http.StatusOK,
 		Message: "Successfully fetched user account.",
 		Data:    user,
+	}
+}
+
+func (s *Server) GetSession(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	token := r.URL.Query().Get("token")
+
+	result, err := s.repository.validateSessionToken(ctx, token)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get session: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get user session.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched user session.",
+		Data:    result,
 	}
 }

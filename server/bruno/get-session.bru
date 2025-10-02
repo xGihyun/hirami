@@ -1,17 +1,17 @@
 meta {
-  name: get-user-borrow-history
+  name: get-session
   type: http
-  seq: 17
+  seq: 5
 }
 
 get {
-  url: {{baseUrl}}/borrow-history
+  url: {{baseUrl}}/sessions?token={{sessionToken}}
   body: none
   auth: inherit
 }
 
 params:query {
-  ~userId: {{userId}}
+  token: {{sessionToken}}
 }
 
 settings {
