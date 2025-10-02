@@ -17,22 +17,28 @@ import { toast } from "sonner";
 import type { ApiResponse } from "@/lib/api";
 import type { User } from "@/lib/user";
 import { useMutation } from "@tanstack/react-query";
+import { setCookie } from "@/lib/cookie";
 
 const formSchema = z.object({
 	email: z.email(),
 	password: z.string().nonempty(),
 });
 
+type LoginResponse = {
+	user: User;
+	token: string;
+};
+
 async function login(
 	value: z.infer<typeof formSchema>,
-): Promise<ApiResponse<User>> {
+): Promise<ApiResponse<LoginResponse>> {
 	const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/login`, {
 		method: "POST",
 		body: JSON.stringify(value),
 		headers: { "Content-Type": "application/json" },
 	});
 
-	const result: ApiResponse<User> = await response.json();
+	const result: ApiResponse<LoginResponse> = await response.json();
 	if (!response.ok) {
 		throw new Error(result.message || "Login failed");
 	}
@@ -55,8 +61,9 @@ export function LoginForm(): JSX.Element {
 		onMutate: () => {
 			return toast.loading("Logging in");
 		},
-		onSuccess: (data, _variables, toastId) => {
-			toast.success(data.message, { id: toastId });
+		onSuccess: (result, _variables, toastId) => {
+			setCookie("session", result.data.token);
+			toast.success(result.message, { id: toastId });
 			navigate({ to: "/equipments" });
 		},
 		onError: (error, _variables, toastId) => {
