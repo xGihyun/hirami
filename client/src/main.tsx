@@ -8,7 +8,7 @@ import { routeTree } from "./routeTree.gen";
 import "./styles.css";
 import reportWebVitals from "./reportWebVitals.ts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "./auth.tsx";
+import { AuthProvider, useAuth } from "./auth.tsx";
 
 const queryClient = new QueryClient();
 
@@ -40,11 +40,16 @@ if (rootElement && !rootElement.innerHTML) {
 		<StrictMode>
 			<QueryClientProvider client={queryClient}>
 				<AuthProvider>
-					<RouterProvider router={router} />
+					<App />
 				</AuthProvider>
 			</QueryClientProvider>
 		</StrictMode>,
 	);
+}
+
+function App() {
+	const auth = useAuth();
+	return <RouterProvider router={router} context={{ auth }} />;
 }
 
 // If you want to start measuring performance in your app, pass a function
