@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/equipment"
 	"github.com/xGihyun/hirami/user"
@@ -72,9 +73,10 @@ func main() {
 		panic("PORT not found.")
 	}
 
+	handler := cors.AllowAll().Handler(router)
 	server := http.Server{
 		Addr:    host + ":" + port,
-		Handler: router,
+		Handler: handler,
 	}
 
 	slog.Info(fmt.Sprintf("Starting server on port: %s", port))
