@@ -3,9 +3,9 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanstackDevtools } from "@tanstack/react-devtools";
 import { QueryClient } from "@tanstack/react-query";
 
-import Header from "../components/Header";
 import { Toaster } from "@/components/ui/sonner";
 import type { AuthContextValue } from "@/auth";
+import { Navbar } from "@/components/navbar";
 
 type RouterContext = {
 	auth: AuthContextValue;
@@ -16,7 +16,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 	component: () => (
 		<>
 			<Toaster closeButton />
-			<Header />
+			<Navbar />
 			<Outlet />
 			{/* <TanstackDevtools */}
 			{/* 	config={{ */}
