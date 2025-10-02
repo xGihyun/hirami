@@ -24,7 +24,7 @@ type Borrower = {
 	avatarUrl?: string;
 };
 
-async function getEquipments(): Promise<ApiResponse<Equipment[]>> {
+async function getEquipments(): Promise<Equipment[]> {
 	const response = await fetch(
 		`${import.meta.env.VITE_BACKEND_URL}/equipments`,
 		{
@@ -33,8 +33,11 @@ async function getEquipments(): Promise<ApiResponse<Equipment[]>> {
 	);
 
 	const result: ApiResponse<Equipment[]> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
 
-	return result;
+	return result.data;
 }
 
 export const equipmentsQuery = queryOptions({
