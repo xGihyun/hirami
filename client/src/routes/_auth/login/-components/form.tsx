@@ -14,10 +14,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import type { ApiResponse } from "@/lib/api";
+import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import type { User } from "@/lib/user";
 import { useMutation } from "@tanstack/react-query";
 import { setCookie } from "@/lib/cookie";
+// import { fetch } from '@tauri-apps/plugin-http';
 
 const formSchema = z.object({
 	email: z.email(),
@@ -32,7 +33,8 @@ type LoginResponse = {
 async function login(
 	value: z.infer<typeof formSchema>,
 ): Promise<ApiResponse<LoginResponse>> {
-	const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/login`, {
+    console.log(BACKEND_URL)
+	const response = await fetch(`${BACKEND_URL}/login`, {
 		method: "POST",
 		body: JSON.stringify(value),
 		headers: { "Content-Type": "application/json" },

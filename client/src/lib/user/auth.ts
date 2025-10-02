@@ -1,5 +1,6 @@
 import type { User } from ".";
-import type { ApiResponse } from "../api";
+import { BACKEND_URL, type ApiResponse } from "../api";
+// import { fetch } from '@tauri-apps/plugin-http';
 
 export type Session = {
 	sessionId: string;
@@ -16,7 +17,7 @@ export async function getAuthSession(
 	token: string,
 ): Promise<ApiResponse<AuthSession | null>> {
 	const response = await fetch(
-		`${import.meta.env.VITE_BACKEND_URL}/sessions?token=${token}`,
+		`${BACKEND_URL}/sessions?token=${token}`,
 	);
 
 	const result: ApiResponse<AuthSession> = await response.json();

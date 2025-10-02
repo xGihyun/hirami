@@ -14,8 +14,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import type { ApiResponse } from "@/lib/api";
+import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
+// import { fetch } from '@tauri-apps/plugin-http';
 
 const formSchema = z.object({
 	email: z.email(),
@@ -28,7 +29,7 @@ const formSchema = z.object({
 async function register(
 	value: z.infer<typeof formSchema>,
 ): Promise<ApiResponse> {
-	const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/register`, {
+	const response = await fetch(`${BACKEND_URL}/register`, {
 		method: "POST",
 		body: JSON.stringify(value),
 		headers: { "Content-Type": "application/json" },

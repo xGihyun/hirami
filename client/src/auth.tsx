@@ -9,6 +9,8 @@ import {
 import { type User } from "./lib/user";
 import { type AuthSession, getAuthSession } from "./lib/user/auth";
 import { deleteCookie, getCookie } from "./lib/cookie";
+import { fetch } from '@tauri-apps/plugin-http';
+import { BACKEND_URL } from "./lib/api";
 
 export type AuthContextValue = {
 	user: User | null;
@@ -50,7 +52,7 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
 			return;
 		}
 
-		await fetch(`${import.meta.env.VITE_BACKEND_URL}/logout`, {
+		await fetch(`${BACKEND_URL}/logout`, {
 			method: "POST",
 			body: JSON.stringify({
 				token,

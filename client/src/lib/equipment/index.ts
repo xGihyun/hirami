@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
-import type { ApiResponse } from "../api";
+import { BACKEND_URL, type ApiResponse } from "../api";
+// import { fetch } from '@tauri-apps/plugin-http';
 
 export enum EquipmentStatus {
 	Available = "available",
@@ -26,7 +27,7 @@ type Borrower = {
 
 async function getEquipments(): Promise<Equipment[]> {
 	const response = await fetch(
-		`${import.meta.env.VITE_BACKEND_URL}/equipments`,
+		`${BACKEND_URL}/equipments`,
 		{
 			method: "GET",
 		},

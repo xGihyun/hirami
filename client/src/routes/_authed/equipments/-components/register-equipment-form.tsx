@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import type { ApiResponse } from "@/lib/api";
+import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CalendarIcon } from "lucide-react";
 import {
@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { equipmentsQuery } from "@/lib/equipment";
+// import { fetch } from '@tauri-apps/plugin-http';
 
 const formSchema = z.object({
 	name: z.string().nonempty(),
@@ -39,7 +40,7 @@ async function register(
 ): Promise<ApiResponse> {
 	console.log(value);
 	const response = await fetch(
-		`${import.meta.env.VITE_BACKEND_URL}/equipments`,
+		`${BACKEND_URL}/equipments`,
 		{
 			method: "POST",
 			body: JSON.stringify(value),
