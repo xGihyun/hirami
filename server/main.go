@@ -14,12 +14,14 @@ import (
 	"github.com/rs/cors"
 	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/equipment"
+	"github.com/xGihyun/hirami/sse"
 	"github.com/xGihyun/hirami/user"
 )
 
 type app struct {
 	user      user.Server
 	equipment equipment.Server
+	sse       sse.Server
 }
 
 func main() {
@@ -57,9 +59,11 @@ func main() {
 
 	app := app{
 		user:      *user.NewServer(user.NewRepository(pool)),
-		equipment: *equipment.NewServer(equipment.NewRepository(pool)),
+		equipment: *equipment.NewServer(equipment.NewRepository(pool), valkeyClient),
+		sse:       *sse.NewServer(valkeyClient),
 	}
 
+	router.HandleFunc("GET /events", app.sse.EventsHandler)
 	app.user.SetupRoutes(router)
 	app.equipment.SetupRoutes(router)
 
