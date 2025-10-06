@@ -709,6 +709,7 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 }
 
 type borrowRequest struct {
+	BorrowRequestID  string              `json:"id"`
 	CreatedAt        time.Time           `json:"createdAt"`
 	Borrower         user.BasicInfo      `json:"borrower"`
 	Equipments       []borrowedEquipment `json:"equipments"`
@@ -720,6 +721,7 @@ type borrowRequest struct {
 func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, error) {
 	query := `
 	SELECT 
+		borrow_request.borrow_request_id,
 		borrow_request.created_at,
 		jsonb_build_object(
 			'id', person.person_id,
@@ -730,13 +732,13 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 		) AS borrower,
 		jsonb_agg(
 			jsonb_build_object(
-				'borrowRequestId', borrow_request.borrow_request_id,
+				'borrowRequestItemId', borrow_request_item.borrow_request_item_id,
 				'id', equipment_type.equipment_type_id,
 				'name', equipment_type.name,
 				'brand', equipment_type.brand,
 				'model', equipment_type.model,
 				'imageUrl', equipment_type.image_url,
-				'quantity', borrow_request.quantity
+				'quantity', borrow_request_item.quantity
 			)
 		) AS equipments,
 		borrow_request.location,
@@ -744,10 +746,14 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 		borrow_request.expected_return_at
 	FROM borrow_request
 	JOIN person ON person.person_id = borrow_request.requested_by
-	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request.equipment_type_id
-	LEFT JOIN borrow_transaction ON borrow_transaction.borrow_request_id = borrow_request.borrow_request_id
-	WHERE borrow_transaction.borrow_transaction_id IS NULL
+	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
+	WHERE NOT EXISTS (
+		SELECT 1 FROM borrow_transaction
+		WHERE borrow_transaction.borrow_request_item_id = borrow_request_item.borrow_request_item_id
+	)
 	GROUP BY 
+		borrow_request.borrow_request_id,
 		borrow_request.created_at,
 		person.person_id,
 		person.first_name,
