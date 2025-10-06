@@ -662,43 +662,37 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 		return createReturnResponse{}, err
 	}
 
-	// Insert return_request_item records (one per item, but we track quantity separately)
 	insertItemQuery := `
 	WITH inserted_items AS (
-		INSERT INTO return_request_item (return_request_id, borrow_request_item_id)
+		INSERT INTO return_request_item (return_request_id, borrow_request_item_id, quantity)
 		SELECT 
 			$1,
-			unnest($2::uuid[])
-		RETURNING return_request_item_id, borrow_request_item_id
+			unnest($2::uuid[]),
+			unnest($3::integer[])
+		RETURNING return_request_item_id, borrow_request_item_id, quantity
 	)
 	SELECT 
-		array_agg(inserted_items.return_request_item_id) AS item_ids,
-		array_agg(inserted_items.borrow_request_item_id) AS borrow_item_ids
+		jsonb_agg(
+			jsonb_build_object(
+				'returnRequestItemId', inserted_items.return_request_item_id,
+				'borrowRequestItemId', inserted_items.borrow_request_item_id,
+				'quantity', inserted_items.quantity
+			)
+		) AS items
 	FROM inserted_items
 	`
 
 	// Prepare arrays for PostgreSQL
 	borrowRequestItemIDs := make([]string, len(arg.Items))
+	quantities := make([]int, len(arg.Items))
 	for i, item := range arg.Items {
 		borrowRequestItemIDs[i] = item.BorrowRequestItemID
+		quantities[i] = int(item.Quantity)
 	}
 
-	var (
-		returnRequestItemIDs []string
-		borrowItemIDs        []string
-	)
-	if err := tx.QueryRow(ctx, insertItemQuery, returnRequestID, borrowRequestItemIDs).Scan(&returnRequestItemIDs, &borrowItemIDs); err != nil {
-		return createReturnResponse{}, err
-	}
-
-	// Build response with quantities from input
 	var items []returnedEquipmentItem
-	for i, item := range arg.Items {
-		items = append(items, returnedEquipmentItem{
-			ReturnRequestItemID: returnRequestItemIDs[i],
-			BorrowRequestItemID: item.BorrowRequestItemID,
-			Quantity:            item.Quantity,
-		})
+	if err := tx.QueryRow(ctx, insertItemQuery, returnRequestID, borrowRequestItemIDs, quantities).Scan(&items); err != nil {
+		return createReturnResponse{}, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
