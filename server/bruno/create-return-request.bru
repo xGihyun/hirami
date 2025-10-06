@@ -15,11 +15,11 @@ body:json {
     "borrowRequestId": "{{createdBorrowRequest.borrowRequestId}}",
     "items": [
       {
-        "borrowRequestItemId": "92d45999-c0b4-4d0b-a822-ae3ab0abbc88",
+        "borrowRequestItemId": "{{borrowHistory[0].equipments[0].borrowRequestItemId}}",
         "quantity": 2
       },
       {
-        "borrowRequestItemId": "4e313522-94d0-4305-8be2-9ddd1279dd3f",
+        "borrowRequestItemId": "{{borrowHistory[0].equipments[1].borrowRequestItemId}}",
         "quantity": 2
       }
     ]

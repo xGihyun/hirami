@@ -993,18 +993,19 @@ func (r *repository) getReturnRequests(ctx context.Context) ([]returnRequest, er
 }
 
 type borrowTransaction struct {
-	BorrowRequestID string         `json:"borrowRequestId"`
-	BorrowedAt      time.Time      `json:"borrowedAt"`
-	Borrower        user.BasicInfo `json:"borrower"`
-	Equipment       equipment      `json:"equipment"`
-	Location        string         `json:"location"`
-	Purpose         string         `json:"purpose"`
+	BorrowRequestID string              `json:"borrowRequestId"`
+	BorrowedAt      time.Time           `json:"borrowedAt"`
+	Borrower        user.BasicInfo      `json:"borrower"`
+	Equipments      []borrowedEquipment `json:"equipments"`
+	Location        string              `json:"location"`
+	Purpose         string              `json:"purpose"`
 
-	ExpectedReturnAt time.Time           `json:"expectedReturnAt"`
-	ActualReturnAt   *time.Time          `json:"actualReturnAt"`
-	Status           borrowRequestStatus `json:"status"`
-	ReviewedBy       user.BasicInfo      `json:"reviewedBy"`
-	Remarks          *string             `json:"remarks"`
+	ExpectedReturnAt  time.Time           `json:"expectedReturnAt"`
+	ActualReturnAt    *time.Time          `json:"actualReturnAt"`
+	Status            borrowRequestStatus `json:"status"`
+	BorrowReviewedBy  user.BasicInfo      `json:"borrowReviewedBy"`
+	ReturnConfirmedBy *user.BasicInfo     `json:"returnConfirmedBy"`
+	Remarks           *string             `json:"remarks"`
 }
 
 type borrowHistoryParams struct {
@@ -1022,20 +1023,33 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			'avatarUrl', person.avatar_url
 		) AS borrower,
 		jsonb_build_object(
-			'id', reviewed_person.person_id,
-			'firstName', reviewed_person.first_name,
-			'middleName', reviewed_person.middle_name,
-			'lastName', reviewed_person.last_name,
-			'avatarUrl', reviewed_person.avatar_url
-		) AS reviewed_by,
-		jsonb_build_object(
-			'id', equipment_type.equipment_type_id,
-			'name', equipment_type.name,
-			'brand', equipment_type.brand,
-			'model', equipment_type.model,
-			'imageUrl', equipment_type.image_url,
-			'quantity', borrow_request.quantity
-		) AS equipment,
+			'id', person_borrow_reviewer.person_id,
+			'firstName', person_borrow_reviewer.first_name,
+			'middleName', person_borrow_reviewer.middle_name,
+			'lastName', person_borrow_reviewer.last_name,
+			'avatarUrl', person_borrow_reviewer.avatar_url
+		) AS borrow_reviewed_by,
+		CASE
+		  WHEN person_return_reviewer.person_id IS NULL THEN NULL
+		  ELSE jsonb_build_object(
+			'id', person_return_reviewer.person_id,
+			'firstName', person_return_reviewer.first_name,
+			'middleName', person_return_reviewer.middle_name,
+			'lastName', person_return_reviewer.last_name,
+			'avatarUrl', person_return_reviewer.avatar_url
+		  )
+		END AS return_confirmed_by,
+		jsonb_agg(
+			jsonb_build_object(
+				'equipmentTypeId', equipment_type.equipment_type_id,
+				'borrowRequestItemId', borrow_request_item.borrow_request_item_id,
+				'name', equipment_type.name,
+				'brand', equipment_type.brand,
+				'model', equipment_type.model,
+				'imageUrl', equipment_type.image_url,
+				'quantity', borrow_request_item.quantity
+			)
+		) AS equipments,
 		borrow_request.borrow_request_id,
 		borrow_request.created_at AS borrowed_at,
 		borrow_request.location,
@@ -1045,17 +1059,38 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		borrow_request.status,
 		borrow_request.remarks
 	FROM borrow_request
+	LEFT JOIN return_request ON return_request.borrow_request_id = borrow_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
-	JOIN person reviewed_person ON reviewed_person.person_id = borrow_request.reviewed_by
-	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request.equipment_type_id
+	JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
+	LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = return_request.reviewed_by
+	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
 	LEFT JOIN LATERAL (
 		SELECT created_at
 		FROM return_request
 		WHERE return_request.borrow_request_id = borrow_request.borrow_request_id
 		ORDER BY created_at DESC
 		LIMIT 1
-	) latest_return ON true
+	) latest_return ON TRUE
 	WHERE borrow_request.status IN ('approved', 'fulfilled')
+	GROUP BY 
+		person.person_id,
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		person_borrow_reviewer.person_id,
+		person_borrow_reviewer.first_name,
+		person_borrow_reviewer.middle_name,
+		person_borrow_reviewer.last_name,
+		person_borrow_reviewer.avatar_url,
+		person_return_reviewer.person_id,
+		person_return_reviewer.first_name,
+		person_return_reviewer.middle_name,
+		person_return_reviewer.last_name,
+		person_return_reviewer.avatar_url,
+		borrow_request.borrow_request_id,
+		latest_return.created_at
 	`
 
 	var args []any
