@@ -49,21 +49,22 @@ type createRequest struct {
 	Name            string    `json:"name"`
 	Brand           *string   `json:"brand"`
 	Model           *string   `json:"model"`
+	ImageURL        *string   `json:"imageUrl"`
 	AcquisitionDate time.Time `json:"acquisitionDate"`
 	Quantity        uint      `json:"quantity"`
 }
 
 func (r *repository) createEquipment(ctx context.Context, arg createRequest) error {
 	query := `
-	INSERT INTO equipment_type (name, brand, model)
-	VALUES ($1, $2, $3)
+	INSERT INTO equipment_type (name, brand, model, image_url)
+	VALUES ($1, $2, $3, $4)
 	ON CONFLICT (name, brand, COALESCE(model, ''))
 	DO UPDATE SET equipment_type_id = equipment_type.equipment_type_id
 	RETURNING equipment_type_id
 	`
 
 	var equipmentTypeID string
-	row := r.querier.QueryRow(ctx, query, arg.Name, arg.Brand, arg.Model)
+	row := r.querier.QueryRow(ctx, query, arg.Name, arg.Brand, arg.Model, arg.ImageURL)
 	if err := row.Scan(&equipmentTypeID); err != nil {
 		return err
 	}
@@ -91,6 +92,7 @@ type equipment struct {
 	Name            string          `json:"name"`
 	Brand           *string         `json:"brand"`
 	Model           *string         `json:"model"`
+	ImageURL        *string         `json:"imageUrl"`
 	Quantity        uint            `json:"quantity"`
 	Status          equipmentStatus `json:"status,omitzero"`
 }
@@ -109,6 +111,7 @@ func (r *repository) getAll(ctx context.Context) ([]equipmentWithBorrower, error
 			equipment_type.name,
 			equipment_type.brand,
 			equipment_type.model,
+			equipment_type.image_url,
 			equipment.equipment_id,
 			CASE
 				WHEN EXISTS (
@@ -160,11 +163,12 @@ func (r *repository) getAll(ctx context.Context) ([]equipmentWithBorrower, error
 		name,
 		brand,
 		model,
+		image_url,
 		status,
 		COUNT(equipment_id) AS quantity,
 		borrower
 	FROM equipment_with_status
-	GROUP BY equipment_type_id, name, brand, model, status, borrower
+	GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower
 	`
 	rows, err := r.querier.Query(ctx, query)
 	if err != nil {
@@ -182,6 +186,7 @@ type updateRequest struct {
 	Name            string  `json:"name"`
 	Brand           *string `json:"brand"`
 	Model           *string `json:"model"`
+	ImageURL        *string `json:"imageUrl"`
 }
 
 func (r *repository) update(ctx context.Context, arg updateRequest) error {
@@ -190,7 +195,8 @@ func (r *repository) update(ctx context.Context, arg updateRequest) error {
 	SET name = $1,
 		brand = $2,
 		model = $3
-	WHERE equipment_type_id = $4
+		image_url = $4
+	WHERE equipment_type_id = $5
 	`
 
 	if _, err := r.querier.Exec(
@@ -199,6 +205,7 @@ func (r *repository) update(ctx context.Context, arg updateRequest) error {
 		arg.Name,
 		arg.Brand,
 		arg.Model,
+		arg.ImageURL,
 		arg.EquipmentTypeID,
 	); err != nil {
 		return err
@@ -222,10 +229,11 @@ type createBorrowRequest struct {
 
 type borrowedEquipment struct {
 	BorrowRequestID string  `json:"borrowRequestId"`
-	EquipmentTypeID string  `json:"id"`
+	EquipmentTypeID string  `json:"equipmentTypeId"`
 	Name            string  `json:"name"`
 	Brand           *string `json:"brand"`
 	Model           *string `json:"model"`
+	ImageURL        *string `json:"imageUrl"`
 	Quantity        uint    `json:"quantity"`
 }
 
@@ -310,6 +318,7 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 				'name', equipment_type.name,
 				'brand', equipment_type.brand,
 				'model', equipment_type.model,
+				'imageUrl', equipment_type.image_url,
 				'quantity', inserted_requests.quantity
 			)
 		) AS equipments,
@@ -429,9 +438,9 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 	)
 
 	var (
-		res             reviewBorrowResponse
-		requestIDs      []string
-		quantities      []int16
+		res              reviewBorrowResponse
+		requestIDs       []string
+		quantities       []int16
 		equipmentTypeIDs []string
 	)
 
@@ -617,6 +626,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 				'name', equipment_type.name,
 				'brand', equipment_type.brand,
 				'model', equipment_type.model,
+				'imageUrl', equipment_type.image_url,
 				'quantity', borrow_request.quantity
 			)
 		) AS equipments,
@@ -787,6 +797,7 @@ func (r *repository) getReturnRequests(ctx context.Context) ([]returnRequest, er
 			'name', equipment_type.name,
 			'brand', equipment_type.brand,
 			'model', equipment_type.model,
+			'imageUrl', equipment_type.image_url,
 			'quantity', return_request.quantity
 		) AS equipment,
 		return_request.return_request_id,
@@ -853,6 +864,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			'name', equipment_type.name,
 			'brand', equipment_type.brand,
 			'model', equipment_type.model,
+			'imageUrl', equipment_type.image_url,
 			'quantity', borrow_request.quantity
 		) AS equipment,
 		borrow_request.borrow_request_id,
