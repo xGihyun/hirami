@@ -234,16 +234,17 @@ type createBorrowRequest struct {
 }
 
 type borrowedEquipment struct {
-	BorrowRequestID string  `json:"borrowRequestId"`
-	EquipmentTypeID string  `json:"equipmentTypeId"`
-	Name            string  `json:"name"`
-	Brand           *string `json:"brand"`
-	Model           *string `json:"model"`
-	ImageURL        *string `json:"imageUrl"`
-	Quantity        uint    `json:"quantity"`
+	BorrowRequestItemID string  `json:"borrowRequestItemId"`
+	EquipmentTypeID     string  `json:"equipmentTypeId"`
+	Name                string  `json:"name"`
+	Brand               *string `json:"brand"`
+	Model               *string `json:"model"`
+	ImageURL            *string `json:"imageUrl"`
+	Quantity            uint    `json:"quantity"`
 }
 
 type createBorrowResponse struct {
+	BorrowRequestID  string              `json:"borrowRequestId"`
 	Borrower         user.BasicInfo      `json:"borrower"`
 	Equipments       []borrowedEquipment `json:"equipments"`
 	Location         string              `json:"location"`
@@ -297,17 +298,20 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 
 	// Insert multiple borrow requests (one per equipment type)
 	query := `
-	WITH inserted_requests AS (
-		INSERT INTO borrow_request 
-			(equipment_type_id, quantity, location, purpose, expected_return_at, requested_by)
+	WITH inserted_request AS (
+		INSERT INTO borrow_request (location, purpose, expected_return_at, requested_by)
+		VALUES ($1, $2, $3, $4)
+		RETURNING borrow_request_id, location, purpose, expected_return_at, requested_by
+	),
+	inserted_items AS (
+		INSERT INTO borrow_request_item 
+			(borrow_request_id, equipment_type_id, quantity)
 		SELECT 
-			unnest($1::uuid[]),
-			unnest($2::smallint[]),
-			$3,
-			$4,
-			$5,
-			$6
-		RETURNING borrow_request_id, equipment_type_id, quantity, location, purpose, expected_return_at, requested_by
+			inserted_request.borrow_request_id,
+			unnest($5::uuid[]),
+			unnest($6::smallint[])
+		FROM inserted_request
+		RETURNING borrow_request_item_id, borrow_request_id, equipment_type_id, quantity
 	)
 	SELECT 
 		jsonb_build_object(
@@ -319,22 +323,33 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		) AS borrower,
 		jsonb_agg(
 			jsonb_build_object(
-				'borrowRequestId', inserted_requests.borrow_request_id,
-				'id', equipment_type.equipment_type_id,
+				'borrowRequestItemId', inserted_items.borrow_request_item_id,
+				'equipmentTypeId', equipment_type.equipment_type_id,
 				'name', equipment_type.name,
 				'brand', equipment_type.brand,
 				'model', equipment_type.model,
 				'imageUrl', equipment_type.image_url,
-				'quantity', inserted_requests.quantity
+				'quantity', inserted_items.quantity
 			)
 		) AS equipments,
-		MAX(inserted_requests.location) AS location,
-		MAX(inserted_requests.purpose) AS purpose,
-		MAX(inserted_requests.expected_return_at) AS expected_return_at
-	FROM inserted_requests
-	JOIN person ON person.person_id = inserted_requests.requested_by
-	JOIN equipment_type ON equipment_type.equipment_type_id = inserted_requests.equipment_type_id
-	GROUP BY person.person_id, person.first_name, person.middle_name, person.last_name, person.avatar_url
+		inserted_request.borrow_request_id,
+		inserted_request.location,
+		inserted_request.purpose,
+		inserted_request.expected_return_at
+	FROM inserted_request
+	JOIN person ON person.person_id = inserted_request.requested_by
+	JOIN inserted_items ON inserted_items.borrow_request_id = inserted_request.borrow_request_id
+	JOIN equipment_type ON equipment_type.equipment_type_id = inserted_items.equipment_type_id
+	GROUP BY 
+		inserted_request.borrow_request_id,
+		person.person_id,
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		inserted_request.location,
+		inserted_request.purpose,
+		inserted_request.expected_return_at
 	`
 
 	// Prepare arrays for PostgreSQL
@@ -344,29 +359,27 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		equipmentTypeIDs[i] = item.EquipmentTypeID
 		quantities[i] = int16(item.Quantity)
 	}
-
 	row := r.querier.QueryRow(
 		ctx,
 		query,
-		equipmentTypeIDs,
-		quantities,
 		arg.Location,
 		arg.Purpose,
 		arg.ExpectedReturnAt,
 		arg.RequestedBy,
+		equipmentTypeIDs,
+		quantities,
 	)
-
 	var res createBorrowResponse
 	if err := row.Scan(
 		&res.Borrower,
 		&res.Equipments,
+		&res.BorrowRequestID,
 		&res.Location,
 		&res.Purpose,
 		&res.ExpectedReturnAt,
 	); err != nil {
 		return createBorrowResponse{}, err
 	}
-
 	return res, nil
 }
 
