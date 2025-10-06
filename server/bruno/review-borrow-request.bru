@@ -12,10 +12,7 @@ patch {
 
 body:json {
   {
-    "ids": [
-      "{{createdBorrowRequest.equipments[0].borrowRequestId}}",
-      "{{createdBorrowRequest.equipments[1].borrowRequestId}}"
-    ],
+    "id": "{{createdBorrowRequest.borrowRequestId}}",
     "reviewedBy": "{{reviewedBy}}",
     "remarks": null,
     "status": "approved"

@@ -393,10 +393,10 @@ const (
 )
 
 type reviewBorrowRequest struct {
-	BorrowRequestIDs []string            `json:"ids"`
-	ReviewedBy       string              `json:"reviewedBy"`
-	Remarks          *string             `json:"remarks"`
-	Status           borrowRequestStatus `json:"status"`
+	BorrowRequestID string              `json:"id"`
+	ReviewedBy      string              `json:"reviewedBy"`
+	Remarks         *string             `json:"remarks"`
+	Status          borrowRequestStatus `json:"status"`
 }
 
 type reviewedBorrowRequest struct {
@@ -405,9 +405,10 @@ type reviewedBorrowRequest struct {
 }
 
 type reviewBorrowResponse struct {
-	ReviewedRequests []reviewedBorrowRequest `json:"reviewedRequests"`
-	ReviewedBy       user.BasicInfo          `json:"reviewedBy"`
-	Remarks          *string                 `json:"remarks"`
+	BorrowRequestID string              `json:"id"`
+	Status          borrowRequestStatus `json:"status"`
+	ReviewedBy      user.BasicInfo      `json:"reviewedBy"`
+	Remarks         *string             `json:"remarks"`
 }
 
 func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error) {
@@ -421,30 +422,22 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 	WITH reviewed_request AS (
 		UPDATE borrow_request
 		SET status = $1, reviewed_by = $2, remarks = $3, reviewed_at = now()
-		WHERE borrow_request_id = ANY($4::uuid[])
-		RETURNING borrow_request_id, status, quantity, equipment_type_id
+		WHERE borrow_request_id = $4
+		RETURNING borrow_request_id, status 
 	)
 	SELECT 
+		reviewed_request.borrow_request_id,
+		reviewed_request.status,
 		jsonb_build_object(
 			'id', person.person_id,
 			'firstName', person.first_name,
 			'middleName', person.middle_name,
 			'lastName', person.last_name,
 			'avatarUrl', person.avatar_url
-		) AS reviewed_by,
-		jsonb_agg(
-			jsonb_build_object(
-				'id', reviewed_request.borrow_request_id,
-				'status', reviewed_request.status
-			)
-		) AS reviewed_requests,
-		array_agg(reviewed_request.borrow_request_id) AS request_ids,
-		array_agg(reviewed_request.quantity) AS quantities,
-		array_agg(reviewed_request.equipment_type_id) AS equipment_type_ids
+		) AS reviewed_by
 	FROM reviewed_request
 	CROSS JOIN person
 	WHERE person.person_id = $2
-	GROUP BY person.person_id, person.first_name, person.middle_name, person.last_name, person.avatar_url
 	`
 
 	row := tx.QueryRow(
@@ -453,22 +446,15 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 		arg.Status,
 		arg.ReviewedBy,
 		arg.Remarks,
-		arg.BorrowRequestIDs,
+		arg.BorrowRequestID,
 	)
 
-	var (
-		res              reviewBorrowResponse
-		requestIDs       []string
-		quantities       []int16
-		equipmentTypeIDs []string
-	)
+	var res reviewBorrowResponse
 
 	if err := row.Scan(
+		&res.BorrowRequestID,
+		&res.Status,
 		&res.ReviewedBy,
-		&res.ReviewedRequests,
-		&requestIDs,
-		&quantities,
-		&equipmentTypeIDs,
 	); err != nil {
 		return reviewBorrowResponse{}, err
 	}
@@ -476,6 +462,33 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 	res.Remarks = arg.Remarks
 
 	if arg.Status == approved {
+		// Get all items in this borrow request
+		itemsQuery := `
+		SELECT borrow_request_item_id, equipment_type_id, quantity
+		FROM borrow_request_item
+		WHERE borrow_request_id = $1
+		`
+
+		itemRows, err := tx.Query(ctx, itemsQuery, arg.BorrowRequestID)
+		if err != nil {
+			return reviewBorrowResponse{}, err
+		}
+
+		type requestItem struct {
+			itemID          string
+			equipmentTypeID string
+			quantity        int16
+		}
+
+		var items []requestItem
+		for itemRows.Next() {
+			var item requestItem
+			if err := itemRows.Scan(&item.itemID, &item.equipmentTypeID, &item.quantity); err != nil {
+				return reviewBorrowResponse{}, err
+			}
+			items = append(items, item)
+		}
+
 		equipmentQuery := `
 		WITH equipment_with_status AS (
 			SELECT DISTINCT
@@ -503,15 +516,14 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 		`
 
 		transactionQuery := `
-		INSERT INTO borrow_transaction (borrow_request_id, equipment_id)
+		INSERT INTO borrow_transaction (borrow_request_item_id, equipment_id)
 		VALUES ($1, $2)
 		`
 
-		for i, requestID := range requestIDs {
-			equipmentTypeID := equipmentTypeIDs[i]
-			quantity := int(quantities[i])
+		for _, item := range items {
+			quantity := int(item.quantity)
 
-			equipmentRows, err := tx.Query(ctx, equipmentQuery, equipmentTypeID, available, quantity)
+			equipmentRows, err := tx.Query(ctx, equipmentQuery, item.equipmentTypeID, available, quantity)
 			if err != nil {
 				return reviewBorrowResponse{}, err
 			}
@@ -526,11 +538,11 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 			}
 
 			if len(equipmentIDs) < quantity {
-				return reviewBorrowResponse{}, fmt.Errorf("insufficient available equipment for request %s: requested %d, available %d", requestID, quantity, len(equipmentIDs))
+				return reviewBorrowResponse{}, fmt.Errorf("insufficient available equipment for request %s: requested %d, available %d", item.itemID, quantity, len(equipmentIDs))
 			}
 
 			for _, equipmentID := range equipmentIDs {
-				if _, err := tx.Exec(ctx, transactionQuery, requestID, equipmentID); err != nil {
+				if _, err := tx.Exec(ctx, transactionQuery, item.itemID, equipmentID); err != nil {
 					return reviewBorrowResponse{}, err
 				}
 			}
