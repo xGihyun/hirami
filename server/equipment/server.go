@@ -7,16 +7,20 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/api"
+	"github.com/xGihyun/hirami/sse"
 )
 
 type Server struct {
-	repository Repository
+	repository   Repository
+	valkeyClient valkey.Client
 }
 
-func NewServer(repo Repository) *Server {
+func NewServer(repo Repository, valkeyClient valkey.Client) *Server {
 	return &Server{
-		repository: repo,
+		repository:   repo,
+		valkeyClient: valkeyClient,
 	}
 }
 
@@ -62,9 +66,32 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 		data.Model = &trimmedModel
 	}
 
-	if err := s.repository.createEquipment(ctx, data); err != nil {
+	equipment, err := s.repository.createEquipment(ctx, data)
+	if err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("create equipment: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create equipment.",
+		}
+	}
+
+	eventRes := sse.EventResponse{
+		Event: "create",
+		Data:  equipment,
+	}
+	jsonData, err := json.Marshal(eventRes)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create equipment: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create equipment.",
+		}
+	}
+
+	pubCmd := s.valkeyClient.B().Publish().Channel("equipment").Message(string(jsonData)).Build()
+	if res := s.valkeyClient.Do(ctx, pubCmd); res.Error() != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create equipment: %w", res.Error()),
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to create equipment.",
 		}
@@ -73,6 +100,7 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 	return api.Response{
 		Code:    http.StatusCreated,
 		Message: "Successfully created equipment.",
+		Data:    equipment,
 	}
 }
 

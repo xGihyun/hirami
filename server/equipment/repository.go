@@ -11,7 +11,7 @@ import (
 )
 
 type Repository interface {
-	createEquipment(ctx context.Context, arg createRequest) error
+	createEquipment(ctx context.Context, arg createRequest) (createResponse, error)
 	getAll(ctx context.Context) ([]equipmentWithBorrower, error)
 	update(ctx context.Context, arg updateRequest) error
 
@@ -54,20 +54,38 @@ type createRequest struct {
 	Quantity        uint      `json:"quantity"`
 }
 
-func (r *repository) createEquipment(ctx context.Context, arg createRequest) error {
+type createResponse struct {
+	EquipmentTypeID string    `json:"id"`
+	Name            string    `json:"name"`
+	Brand           *string   `json:"brand"`
+	Model           *string   `json:"model"`
+	ImageURL        *string   `json:"imageUrl"`
+	AcquisitionDate time.Time `json:"acquisitionDate"`
+	Quantity        uint      `json:"quantity"`
+}
+
+func (r *repository) createEquipment(ctx context.Context, arg createRequest) (createResponse, error) {
 	query := `
 	INSERT INTO equipment_type (name, brand, model, image_url)
 	VALUES ($1, $2, $3, $4)
 	ON CONFLICT (name, brand, COALESCE(model, ''))
 	DO UPDATE SET equipment_type_id = equipment_type.equipment_type_id
-	RETURNING equipment_type_id
+	RETURNING equipment_type_id, name, brand, model, image_url
 	`
 
-	var equipmentTypeID string
+	var equipment createResponse
 	row := r.querier.QueryRow(ctx, query, arg.Name, arg.Brand, arg.Model, arg.ImageURL)
-	if err := row.Scan(&equipmentTypeID); err != nil {
-		return err
+	if err := row.Scan(
+		&equipment.EquipmentTypeID,
+		&equipment.Name,
+		&equipment.Brand,
+		&equipment.Model,
+		&equipment.ImageURL,
+	); err != nil {
+		return createResponse{}, err
 	}
+	equipment.Quantity = arg.Quantity
+	equipment.AcquisitionDate = arg.AcquisitionDate
 
 	query = `
 	INSERT INTO equipment (equipment_type_id, acquired_at)
@@ -77,14 +95,14 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) err
 	if _, err := r.querier.Exec(
 		ctx,
 		query,
-		equipmentTypeID,
+		equipment.EquipmentTypeID,
 		arg.AcquisitionDate,
 		arg.Quantity,
 	); err != nil {
-		return err
+		return createResponse{}, err
 	}
 
-	return nil
+	return equipment, nil
 }
 
 type equipment struct {
