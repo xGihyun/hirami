@@ -556,47 +556,63 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 	return res, nil
 }
 
+type returnEquipmentItem struct {
+	BorrowRequestItemID string `json:"borrowRequestItemId"`
+	Quantity            uint   `json:"quantity"`
+}
+
 type createReturnRequest struct {
-	BorrowRequestID string `json:"borrowRequestId"`
-	Quantity        uint   `json:"quantity"`
+	BorrowRequestID string                `json:"borrowRequestId"`
+	Items           []returnEquipmentItem `json:"items"`
+}
+
+type returnedEquipmentItem struct {
+	ReturnRequestItemID string `json:"returnRequestItemId"`
+	BorrowRequestItemID string `json:"borrowRequestItemId"`
+	Quantity            uint   `json:"quantity"`
 }
 
 type createReturnResponse struct {
-	ReturnRequestID string `json:"id"`
-	BorrowRequestID string `json:"borrowRequestId"`
-	Quantity        uint   `json:"quantity"`
+	ReturnRequestID string                  `json:"id"`
+	BorrowRequestID string                  `json:"borrowRequestId"`
+	Items           []returnedEquipmentItem `json:"items"`
 }
 
 var (
 	errBorrowRequestNotApproved         = fmt.Errorf("borrow request is not approved")
 	errExceedsRemainingBorrowedQuantity = fmt.Errorf("return quantity exceeds remaining borrowed quantity")
 	errInvalidReturnQuantity            = fmt.Errorf("return quantity must be greater than zero")
+	errEmptyReturnItemList              = fmt.Errorf("return items list cannot be empty")
+	errBorrowRequestItemNotFound        = fmt.Errorf("borrow request item not found")
 )
 
 func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error) {
-	if arg.Quantity <= 0 {
-		return createReturnResponse{}, errInvalidReturnQuantity
+	if len(arg.Items) == 0 {
+		return createReturnResponse{}, errEmptyReturnItemList
 	}
 
-	// Get the borrow request status and remaining borrowed quantity
-	// We use `SUM()` since multiple return requests in the case of
-	// partial returns is possible
-	validationQuery := `
-	SELECT 
-		borrow_request.status,
-		borrow_request.quantity - COALESCE(SUM(return_request.quantity), 0) as remaining_quantity
+	// Validate quantities
+	for _, item := range arg.Items {
+		if item.Quantity <= 0 {
+			return createReturnResponse{}, errInvalidReturnQuantity
+		}
+	}
+
+	tx, err := r.querier.Begin(ctx)
+	if err != nil {
+		return createReturnResponse{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	// Check if borrow request is approved
+	statusQuery := `
+	SELECT status
 	FROM borrow_request
-	LEFT JOIN return_request ON borrow_request.borrow_request_id = return_request.borrow_request_id
-		AND EXISTS (SELECT 1 FROM return_transaction WHERE return_transaction.return_request_id = return_request.return_request_id)
-	WHERE borrow_request.borrow_request_id = $1
-	GROUP BY borrow_request.borrow_request_id, borrow_request.status, borrow_request.quantity
+	WHERE borrow_request_id = $1
 	`
 
-	var (
-		status            borrowRequestStatus
-		remainingQuantity uint
-	)
-	if err := r.querier.QueryRow(ctx, validationQuery, arg.BorrowRequestID).Scan(&status, &remainingQuantity); err != nil {
+	var status borrowRequestStatus
+	if err := tx.QueryRow(ctx, statusQuery, arg.BorrowRequestID).Scan(&status); err != nil {
 		return createReturnResponse{}, err
 	}
 
@@ -604,27 +620,95 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 		return createReturnResponse{}, errBorrowRequestNotApproved
 	}
 
-	if arg.Quantity > remainingQuantity {
-		return createReturnResponse{}, errExceedsRemainingBorrowedQuantity
+	// Validate each item's remaining quantity based on actual borrow_transaction records
+	validationQuery := `
+	SELECT 
+		COUNT(borrow_transaction.borrow_transaction_id) - COALESCE(
+			(
+				SELECT COUNT(return_transaction.return_transaction_id)
+				FROM return_transaction
+				JOIN return_request_item ON return_request_item.return_request_item_id = return_transaction.return_request_item_id
+				WHERE return_request_item.borrow_request_item_id = $1
+			), 0
+		) as remaining_quantity
+	FROM borrow_transaction
+	WHERE borrow_transaction.borrow_request_item_id = $1
+	`
+
+	for _, item := range arg.Items {
+		var remainingQuantity uint
+		if err := tx.QueryRow(ctx, validationQuery, item.BorrowRequestItemID).Scan(&remainingQuantity); err != nil {
+			return createReturnResponse{}, err
+		}
+
+		if remainingQuantity == 0 {
+			return createReturnResponse{}, errBorrowRequestItemNotFound
+		}
+
+		if item.Quantity > remainingQuantity {
+			return createReturnResponse{}, errExceedsRemainingBorrowedQuantity
+		}
 	}
 
-	query := `
-	INSERT INTO return_request (borrow_request_id, quantity)
-	VALUES ($1, $2)
+	// Insert return_request
+	insertRequestQuery := `
+	INSERT INTO return_request (borrow_request_id)
+	VALUES ($1)
 	RETURNING return_request_id
 	`
 
 	var returnRequestID string
+	if err := tx.QueryRow(ctx, insertRequestQuery, arg.BorrowRequestID).Scan(&returnRequestID); err != nil {
+		return createReturnResponse{}, err
+	}
 
-	row := r.querier.QueryRow(ctx, query, arg.BorrowRequestID, arg.Quantity)
-	if err := row.Scan(&returnRequestID); err != nil {
+	// Insert return_request_item records (one per item, but we track quantity separately)
+	insertItemQuery := `
+	WITH inserted_items AS (
+		INSERT INTO return_request_item (return_request_id, borrow_request_item_id)
+		SELECT 
+			$1,
+			unnest($2::uuid[])
+		RETURNING return_request_item_id, borrow_request_item_id
+	)
+	SELECT 
+		array_agg(inserted_items.return_request_item_id) AS item_ids,
+		array_agg(inserted_items.borrow_request_item_id) AS borrow_item_ids
+	FROM inserted_items
+	`
+
+	// Prepare arrays for PostgreSQL
+	borrowRequestItemIDs := make([]string, len(arg.Items))
+	for i, item := range arg.Items {
+		borrowRequestItemIDs[i] = item.BorrowRequestItemID
+	}
+
+	var (
+		returnRequestItemIDs []string
+		borrowItemIDs        []string
+	)
+	if err := tx.QueryRow(ctx, insertItemQuery, returnRequestID, borrowRequestItemIDs).Scan(&returnRequestItemIDs, &borrowItemIDs); err != nil {
+		return createReturnResponse{}, err
+	}
+
+	// Build response with quantities from input
+	var items []returnedEquipmentItem
+	for i, item := range arg.Items {
+		items = append(items, returnedEquipmentItem{
+			ReturnRequestItemID: returnRequestItemIDs[i],
+			BorrowRequestItemID: item.BorrowRequestItemID,
+			Quantity:            item.Quantity,
+		})
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return createReturnResponse{}, err
 	}
 
 	res := createReturnResponse{
 		ReturnRequestID: returnRequestID,
 		BorrowRequestID: arg.BorrowRequestID,
-		Quantity:        arg.Quantity,
+		Items:           items,
 	}
 
 	return res, nil

@@ -12,8 +12,17 @@ post {
 
 body:json {
   {
-    "borrowRequestId": "{{borrowRequestId}}",
-    "quantity": -1
+    "borrowRequestId": "{{createdBorrowRequest.borrowRequestId}}",
+    "items": [
+      {
+        "borrowRequestItemId": "92d45999-c0b4-4d0b-a822-ae3ab0abbc88",
+        "quantity": 2
+      },
+      {
+        "borrowRequestItemId": "4e313522-94d0-4305-8be2-9ddd1279dd3f",
+        "quantity": 2
+      }
+    ]
   }
 }
 
