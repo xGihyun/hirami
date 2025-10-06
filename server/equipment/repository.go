@@ -132,7 +132,8 @@ func (r *repository) getAll(ctx context.Context) ([]equipmentWithBorrower, error
 					AND NOT EXISTS (
 						SELECT 1 
 						FROM return_transaction 
-						WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
+						WHERE return_transaction.borrow_transaction_id 
+							= borrow_transaction.borrow_transaction_id
 					)
 				) THEN (
 					SELECT jsonb_build_object(
@@ -143,12 +144,17 @@ func (r *repository) getAll(ctx context.Context) ([]equipmentWithBorrower, error
 						'avatarUrl', person.avatar_url
 					)
 					FROM borrow_transaction
-					JOIN borrow_request ON borrow_request.borrow_request_id = borrow_transaction.borrow_request_id
+					JOIN borrow_request_item 
+						ON borrow_request_item.borrow_request_item_id 
+							= borrow_transaction.borrow_request_item_id
+					JOIN borrow_request ON borrow_request.borrow_request_id 
+						= borrow_request_item.borrow_request_id
 					JOIN person ON person.person_id = borrow_request.requested_by
 					WHERE borrow_transaction.equipment_id = equipment.equipment_id
 					AND NOT EXISTS (
 						SELECT 1 FROM return_transaction 
-						WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
+						WHERE return_transaction.borrow_transaction_id 
+							= borrow_transaction.borrow_transaction_id
 					)
 					ORDER BY borrow_transaction.created_at DESC
 					LIMIT 1
@@ -194,7 +200,7 @@ func (r *repository) update(ctx context.Context, arg updateRequest) error {
 	UPDATE equipment_type
 	SET name = $1,
 		brand = $2,
-		model = $3
+		model = $3,
 		image_url = $4
 	WHERE equipment_type_id = $5
 	`
