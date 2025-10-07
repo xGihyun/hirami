@@ -14,11 +14,7 @@ func UploadFile(file multipart.File, header *multipart.FileHeader, subDir string
 	}
 
 	pathName := filepath.Join(dir, header.Filename)
-	absPath, err := filepath.Abs(pathName)
-	if err != nil {
-		return "", err
-	}
-
+	
 	dst, err := os.Create(pathName)
 	if err != nil {
 		return "", err
@@ -29,5 +25,8 @@ func UploadFile(file multipart.File, header *multipart.FileHeader, subDir string
 		return "", err
 	}
 
-	return absPath, nil
+	urlPath := filepath.Join("/uploads", subDir, header.Filename)
+	urlPath = filepath.ToSlash(urlPath)
+	
+	return urlPath, nil
 }
