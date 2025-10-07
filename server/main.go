@@ -63,6 +63,9 @@ func main() {
 		sse:       *sse.NewServer(valkeyClient),
 	}
 
+	fs := http.FileServer(http.Dir("_uploads"))
+	router.Handle("GET /uploads/", http.StripPrefix("/uploads", fs))
+
 	router.HandleFunc("GET /events", app.sse.EventsHandler)
 	app.user.SetupRoutes(router)
 	app.equipment.SetupRoutes(router)
