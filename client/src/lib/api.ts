@@ -6,9 +6,8 @@ export type ApiResponse<T = unknown> = {
 	message: string;
 };
 
-// const currentPlatform = platform();
+export const BACKEND_URL: string =
+	import.meta.env.VITE_BACKEND_URL || "http://localhost:3002";
 
-// export const BACKEND_URL: string =
-// 	currentPlatform === "android" ? "http://192.168.254.106:3002" : import.meta.env.VITE_BACKEND_URL;
-
-export const BACKEND_URL: string = import.meta.env.VITE_BACKEND_URL;
+export const IMAGE_SIZE_LIMIT = 5 * 1024 * 1024; // 5 MB
+export const IMAGE_FORMATS = ["image/jpeg", "image/jpg", "image/png"]

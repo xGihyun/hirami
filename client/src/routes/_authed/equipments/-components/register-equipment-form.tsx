@@ -13,7 +13,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
+import {
+	BACKEND_URL,
+	IMAGE_FORMATS,
+	IMAGE_SIZE_LIMIT,
+	type ApiResponse,
+} from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CalendarIcon } from "lucide-react";
 import {
@@ -25,7 +30,6 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { equipmentsQuery } from "@/lib/equipment";
-// import { fetch } from '@tauri-apps/plugin-http';
 
 const formSchema = z.object({
 	name: z.string().nonempty(),
@@ -33,20 +37,34 @@ const formSchema = z.object({
 	model: z.string().optional(),
 	acquisitionDate: z.date(),
 	quantity: z.number().positive(),
+	image: z
+		.instanceof(File)
+		.refine(
+			(file) => file.size <= IMAGE_SIZE_LIMIT,
+			"Image must be less than 5MB",
+		)
+		.refine(
+			(file) => IMAGE_FORMATS.includes(file.type),
+			"Only .jpg, .jpeg, and .png formats are supported",
+		)
+		.optional(),
 });
 
 async function register(
 	value: z.infer<typeof formSchema>,
 ): Promise<ApiResponse> {
-	console.log(value);
-	const response = await fetch(
-		`${BACKEND_URL}/equipments`,
-		{
-			method: "POST",
-			body: JSON.stringify(value),
-			headers: { "Content-Type": "application/json" },
-		},
-	);
+	const formData = new FormData();
+	formData.append("name", value.name);
+	if (value.brand) formData.append("brand", value.brand);
+	if (value.model) formData.append("model", value.model);
+	formData.append("acquisitionDate", value.acquisitionDate.toISOString());
+	formData.append("quantity", value.quantity.toString());
+	if (value.image) formData.append("image", value.image);
+
+	const response = await fetch(`${BACKEND_URL}/equipments`, {
+		method: "POST",
+		body: formData,
+	});
 
 	const result: ApiResponse = await response.json();
 	if (!response.ok) {
@@ -186,6 +204,28 @@ export function RegisterEquipmentForm(): JSX.Element {
 									placeholder="Enter quantity"
 									{...field}
 									onChange={(e) => field.onChange(e.target.valueAsNumber)}
+								/>
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<FormField
+					control={form.control}
+					name="image"
+					render={({ field: { value, onChange, ...fieldProps } }) => (
+						<FormItem>
+							<FormLabel>Image</FormLabel>
+							<FormControl>
+								<Input
+									{...fieldProps}
+									type="file"
+									accept="image/jpeg,image/jpg,image/png"
+									onChange={(e) => {
+										const file = e.target.files?.[0];
+										onChange(file);
+									}}
 								/>
 							</FormControl>
 							<FormMessage />
