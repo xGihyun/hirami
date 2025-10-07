@@ -35,6 +35,7 @@ type registerRequest struct {
 	FirstName  string  `json:"firstName"`
 	MiddleName *string `json:"middleName"`
 	LastName   string  `json:"lastName"`
+	AvatarURL  *string `json:"avatarUrl"`
 }
 
 func (r *repository) register(ctx context.Context, arg registerRequest) error {
@@ -44,8 +45,8 @@ func (r *repository) register(ctx context.Context, arg registerRequest) error {
 	}
 
 	query := `
-	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, role)
-	VALUES ($1, $2, $3, $4, $5, $6)
+	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, role, avatar_url)
+	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	RETURNING person_id
 	`
 
@@ -60,6 +61,7 @@ func (r *repository) register(ctx context.Context, arg registerRequest) error {
 		arg.MiddleName,
 		arg.LastName,
 		borrower,
+		arg.AvatarURL,
 	)
 	if err := row.Scan(&userID); err != nil {
 		return err

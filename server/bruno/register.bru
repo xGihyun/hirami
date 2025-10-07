@@ -6,7 +6,7 @@ meta {
 
 post {
   url: {{baseUrl}}/register
-  body: json
+  body: multipartForm
   auth: inherit
 }
 
@@ -18,6 +18,15 @@ body:json {
     "middleName": null,
     "lastName": "User"
   }
+}
+
+body:multipart-form {
+  email: delete@test.com
+  password: password
+  firstName: Equipment
+  middleName: 
+  lastName: Manager
+  avatar: @file()
 }
 
 settings {

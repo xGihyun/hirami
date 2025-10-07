@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -30,18 +31,73 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /sessions", api.Handler(s.GetSession))
 }
 
+const (
+	maxMemory    = 30 << 20 // 30 MB
+	maxImageSize = 5 << 20  // 5 MB
+)
+
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	var data registerRequest
-
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&data); err != nil {
+	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("sign up: %w", err),
 			Code:    http.StatusBadRequest,
 			Message: "Invalid sign up request.",
 		}
+	}
+
+	var avatarURL *string
+	file, header, err := r.FormFile("avatar")
+	if err == nil {
+		defer file.Close()
+
+		if header.Size > maxImageSize {
+			return api.Response{
+				Error:   fmt.Errorf("sign up: image size exceeds 5MB limit"),
+				Code:    http.StatusBadRequest,
+				Message: "Image size must not exceed 5MB.",
+			}
+		}
+
+		contentType := header.Header.Get("Content-Type")
+		if contentType != "image/jpeg" && contentType != "image/jpg" && contentType != "image/png" {
+			return api.Response{
+				Error:   fmt.Errorf("sign up: invalid image type %s", contentType),
+				Code:    http.StatusBadRequest,
+				Message: "Image must be in JPG or PNG format.",
+			}
+		}
+
+		uploadedURL, err := api.UploadFile(file, header, "users")
+		if err != nil {
+			return api.Response{
+				Error:   fmt.Errorf("sign up: %w", err),
+				Code:    http.StatusInternalServerError,
+				Message: "Failed to upload equipment image.",
+			}
+		}
+		avatarURL = &uploadedURL
+	} else if err != http.ErrMissingFile {
+		return api.Response{
+			Error:   fmt.Errorf("sign up: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid image upload.",
+		}
+	}
+
+	var middleName *string
+	if middleNameValue := strings.TrimSpace(r.FormValue("middleName")); middleNameValue != "" {
+		middleName = &middleNameValue
+	}
+
+	data := registerRequest{
+		Email:      r.FormValue("email"),
+		Password:   r.FormValue("password"),
+		FirstName:  r.FormValue("firstName"),
+		MiddleName: middleName,
+		LastName:   r.FormValue("lastName"),
+		AvatarURL:  avatarURL,
 	}
 
 	if err := s.repository.register(ctx, data); err != nil {
