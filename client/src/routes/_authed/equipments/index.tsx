@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { RegisterEquipmentForm } from "./-components/register-equipment-form";
 import { Button } from "@/components/ui/button";
+import { BACKEND_URL } from "@/lib/api";
 
 export const Route = createFileRoute("/_authed/equipments/")({
 	component: RouteComponent,
@@ -54,6 +55,7 @@ function RouteComponent() {
 					return (
 						<Card key={key}>
 							<CardHeader>
+                                <img src={`${BACKEND_URL}${equipment.imageUrl}`} alt="equipment image" />
 								<CardTitle>{equipment.name}</CardTitle>
 								{equipment.brand ? (
 									<CardDescription>{equipment.brand}</CardDescription>

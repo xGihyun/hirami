@@ -12,6 +12,7 @@ export type Equipment = {
 	name: string;
 	brand?: string;
 	model?: string;
+    imageUrl?: string;
 	quantity: number;
 	status: EquipmentStatus;
 	borrower?: Borrower;
