@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/api"
@@ -40,13 +42,15 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
 }
 
+const (
+	maxMemory    = 30 << 20 // 30 MB
+	maxImageSize = 5 << 20  // 5 MB
+)
+
 func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	var data createRequest
-
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&data); err != nil {
+	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("create equipment: %w", err),
 			Code:    http.StatusBadRequest,
@@ -54,16 +58,82 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 		}
 	}
 
-	data.Name = strings.TrimSpace(data.Name)
+	var imageURL *string
+	file, header, err := r.FormFile("image")
+	if err == nil {
+		defer file.Close()
 
-	if data.Brand != nil {
-		trimmedBrand := strings.TrimSpace(*data.Brand)
-		data.Brand = &trimmedBrand
+		if header.Size > maxImageSize {
+			return api.Response{
+				Error:   fmt.Errorf("create equipment: image size exceeds 5MB limit"),
+				Code:    http.StatusBadRequest,
+				Message: "Image size must not exceed 5MB.",
+			}
+		}
+
+		contentType := header.Header.Get("Content-Type")
+		if contentType != "image/jpeg" && contentType != "image/jpg" && contentType != "image/png" {
+			return api.Response{
+				Error:   fmt.Errorf("create equipment: invalid image type %s", contentType),
+				Code:    http.StatusBadRequest,
+				Message: "Image must be in JPG or PNG format.",
+			}
+		}
+
+		uploadedURL, err := api.UploadFile(file, header, "equipments")
+		if err != nil {
+			return api.Response{
+				Error:   fmt.Errorf("create equipment: %w", err),
+				Code:    http.StatusInternalServerError,
+				Message: "Failed to upload equipment image.",
+			}
+		}
+		imageURL = &uploadedURL
+	} else if err != http.ErrMissingFile {
+		return api.Response{
+			Error:   fmt.Errorf("create equipment: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid image upload.",
+		}
 	}
 
-	if data.Model != nil {
-		trimmedModel := strings.TrimSpace(*data.Model)
-		data.Model = &trimmedModel
+	quantityStr := r.FormValue("quantity")
+	quantity, err := strconv.ParseUint(quantityStr, 10, 32)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create equipment: invalid quantity %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid quantity value.",
+		}
+	}
+	acquisitionDateStr := r.FormValue("acquisitionDate")
+	acquisitionDate, err := time.Parse(time.RFC3339, acquisitionDateStr)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create equipment: invalid acquisition date %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid acquisition date format.",
+		}
+	}
+
+	var (
+		brand *string
+		model *string
+	)
+	if brandValue := strings.TrimSpace(r.FormValue("brand")); brandValue != "" {
+		brand = &brandValue
+	}
+	if modelValue := strings.TrimSpace(r.FormValue("model")); modelValue != "" {
+		model = &modelValue
+	}
+
+	data := createRequest{
+		Name:            strings.TrimSpace(r.FormValue("name")),
+		Brand:           brand,
+		Model:           model,
+		ImageURL:        imageURL,
+		AcquisitionDate: acquisitionDate,
+		Quantity:        uint(quantity),
 	}
 
 	equipment, err := s.repository.createEquipment(ctx, data)
