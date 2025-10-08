@@ -13,6 +13,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equipments/index'
+import { Route as AuthedBorrowRequestsIndexRouteImport } from './routes/_authed/borrow-requests/index'
 import { Route as AuthRegisterIndexRouteImport } from './routes/_auth/register/index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 
@@ -34,6 +35,12 @@ const AuthedEquipmentsIndexRoute = AuthedEquipmentsIndexRouteImport.update({
   path: '/equipments/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedBorrowRequestsIndexRoute =
+  AuthedBorrowRequestsIndexRouteImport.update({
+    id: '/borrow-requests/',
+    path: '/borrow-requests/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthRegisterIndexRoute = AuthRegisterIndexRouteImport.update({
   id: '/register/',
   path: '/register/',
@@ -49,12 +56,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof AuthLoginIndexRoute
   '/register': typeof AuthRegisterIndexRoute
+  '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof AuthLoginIndexRoute
   '/register': typeof AuthRegisterIndexRoute
+  '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
 }
 export interface FileRoutesById {
@@ -64,13 +73,14 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/_auth/login/': typeof AuthLoginIndexRoute
   '/_auth/register/': typeof AuthRegisterIndexRoute
+  '/_authed/borrow-requests/': typeof AuthedBorrowRequestsIndexRoute
   '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/equipments'
+  fullPaths: '/' | '/login' | '/register' | '/borrow-requests' | '/equipments'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/equipments'
+  to: '/' | '/login' | '/register' | '/borrow-requests' | '/equipments'
   id:
     | '__root__'
     | '/'
@@ -78,6 +88,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/_auth/login/'
     | '/_auth/register/'
+    | '/_authed/borrow-requests/'
     | '/_authed/equipments/'
   fileRoutesById: FileRoutesById
 }
@@ -117,6 +128,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedEquipmentsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/borrow-requests/': {
+      id: '/_authed/borrow-requests/'
+      path: '/borrow-requests'
+      fullPath: '/borrow-requests'
+      preLoaderRoute: typeof AuthedBorrowRequestsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_auth/register/': {
       id: '/_auth/register/'
       path: '/register'
@@ -147,10 +165,12 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface AuthedRouteChildren {
+  AuthedBorrowRequestsIndexRoute: typeof AuthedBorrowRequestsIndexRoute
   AuthedEquipmentsIndexRoute: typeof AuthedEquipmentsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedBorrowRequestsIndexRoute: AuthedBorrowRequestsIndexRoute,
   AuthedEquipmentsIndexRoute: AuthedEquipmentsIndexRoute,
 }
 

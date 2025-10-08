@@ -17,6 +17,7 @@ export function Navbar(): JSX.Element {
 			<nav className="flex flex-row">
 				<div className="px-2 font-bold">
 					<Link to="/equipments">Equipments</Link>
+					<Link to="/borrow-requests">Borrow Requests</Link>
 
 					<Button onClick={handleSignOut}>Logout</Button>
 				</div>
