@@ -753,7 +753,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 		jsonb_agg(
 			jsonb_build_object(
 				'borrowRequestItemId', borrow_request_item.borrow_request_item_id,
-				'id', equipment_type.equipment_type_id,
+				'equipmentTypeId', equipment_type.equipment_type_id,
 				'name', equipment_type.name,
 				'brand', equipment_type.brand,
 				'model', equipment_type.model,
