@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/drawer";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
 import { NumberInput } from "@/components/number-input";
+import { H1 } from "@/components/typography";
 
 export const Route = createFileRoute("/_authed/equipments/")({
 	component: RouteComponent,
@@ -90,7 +91,7 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="px-4 lg:px-10 py-5 relative pb-20">
-			<h1 className="text-4xl font-bold mb-10">Equipments</h1>
+			<H1>Equipments</H1>
 
 			<Dialog>
 				<DialogTrigger asChild>
