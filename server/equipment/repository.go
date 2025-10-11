@@ -205,13 +205,13 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 	`
 
 	var args []any
-	if *params.name != "" {
+	if params.name != nil && *params.name != "" {
 		names := strings.Split(*params.name, ",")
 		query += " AND name IN (SELECT unnest($1::text[]))"
 		args = append(args, names)
 	}
 
-	if *params.status != "" {
+	if params.status != nil && *params.status != "" {
 		query += " AND status = $2"
 		args = append(args, *params.status)
 	}
