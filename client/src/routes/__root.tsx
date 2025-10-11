@@ -1,11 +1,11 @@
 import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { TanstackDevtools } from "@tanstack/react-devtools";
+// import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+// import { TanstackDevtools } from "@tanstack/react-devtools";
 import { QueryClient } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/sonner";
-import type { AuthContextValue } from "@/auth";
-import { Navbar } from "@/components/navbar";
+import { useAuth, type AuthContextValue } from "@/auth";
+import type { JSX } from "react";
 
 type RouterContext = {
 	auth: AuthContextValue;
@@ -13,10 +13,13 @@ type RouterContext = {
 };
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-	component: () => (
-		<>
+	component: RouteComponent,
+});
+
+function RouteComponent(): JSX.Element {
+	return (
+		<div className="h-svh">
 			<Toaster closeButton />
-			<Navbar />
 			<Outlet />
 			{/* <TanstackDevtools */}
 			{/* 	config={{ */}
@@ -29,6 +32,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 			{/* 		}, */}
 			{/* 	]} */}
 			{/* /> */}
-		</>
-	),
-});
+		</div>
+	);
+}

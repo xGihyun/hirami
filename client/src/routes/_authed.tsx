@@ -1,3 +1,4 @@
+import { Navbar } from "@/components/navbar";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import type { JSX } from "react";
 
@@ -19,6 +20,7 @@ function RouteComponent(): JSX.Element {
 	return (
 		<div>
 			<Outlet />
+			<Navbar /> 
 		</div>
 	);
 }

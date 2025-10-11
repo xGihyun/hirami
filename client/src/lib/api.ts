@@ -1,5 +1,3 @@
-import { platform } from "@tauri-apps/plugin-os";
-
 export type ApiResponse<T = unknown> = {
 	data: T;
 	code: number;

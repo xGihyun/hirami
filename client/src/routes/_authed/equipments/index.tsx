@@ -30,7 +30,6 @@ import {
 	DrawerFooter,
 	DrawerHeader,
 	DrawerTitle,
-	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
 import { NumberInput } from "@/components/number-input";
@@ -158,20 +157,20 @@ function RouteComponent(): JSX.Element {
 				})}
 			</div>
 
-			<div className="fixed bottom-0 left-0 w-full bg-background p-4 shadow pb-[calc(1rem+env(safe-area-inset-bottom))]">
-				<Button
-					className="w-full"
-					onClick={() => {
-						if (selectedEquipments.length === 0) {
-							alert("Please select at least one equipment item to borrow.");
-							return;
-						}
-						setIsDrawerOpen(true);
-					}}
-				>
-					Borrow ({selectedEquipments.length} items)
-				</Button>
-			</div>
+			{/* <div className="fixed bottom-0 left-0 w-full bg-background p-4 shadow pb-[calc(1rem+env(safe-area-inset-bottom))]"> */}
+			{/* 	<Button */}
+			{/* 		className="w-full" */}
+			{/* 		onClick={() => { */}
+			{/* 			if (selectedEquipments.length === 0) { */}
+			{/* 				alert("Please select at least one equipment item to borrow."); */}
+			{/* 				return; */}
+			{/* 			} */}
+			{/* 			setIsDrawerOpen(true); */}
+			{/* 		}} */}
+			{/* 	> */}
+			{/* 		Borrow ({selectedEquipments.length} items) */}
+			{/* 	</Button> */}
+			{/* </div> */}
 
 			<Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
 				<DrawerContent>

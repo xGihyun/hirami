@@ -1,10 +1,17 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, linkOptions, useNavigate } from "@tanstack/react-router";
 import { Button } from "./ui/button";
 import type { JSX } from "react";
 import { useAuth } from "@/auth";
+import {
+	IconHistory,
+	IconHome,
+	IconProfile,
+	IconRoundArrowUp,
+} from "@/lib/icons";
+import { LabelSmall } from "./typography";
 
 export function Navbar(): JSX.Element {
-    const auth = useAuth()
+	const auth = useAuth();
 	const navigate = useNavigate();
 
 	async function handleSignOut(): Promise<void> {
@@ -12,15 +19,50 @@ export function Navbar(): JSX.Element {
 		await navigate({ to: "/login" });
 	}
 
-	return (
-		<header className="p-2 flex gap-2 bg-white text-black justify-between">
-			<nav className="flex flex-row">
-				<div className="px-2 font-bold">
-					<Link to="/equipments">Equipments</Link>
-					<Link to="/borrow-requests">Borrow Requests</Link>
+	const options = linkOptions([
+		{
+			to: "/equipments",
+			label: "Home",
+			icon: IconHome,
+		},
+		{
+			to: "/equipments",
+			label: "Return",
+			icon: IconRoundArrowUp,
+		},
+		{
+			to: "/equipments",
+			label: "History",
+			icon: IconHistory,
+		},
 
-					<Button onClick={handleSignOut}>Logout</Button>
-				</div>
+		{
+			to: "/equipments",
+			label: "Profile",
+			icon: IconProfile,
+		},
+	]);
+
+	return (
+		<header className="py-1 flex gap-2 bg-card text-primary fixed bottom-0 left-0 w-full shadow">
+			<nav className="px-2 font-bold flex justify-around w-full">
+				{options.map((opt) => {
+					const Icon = opt.icon;
+					return (
+						<Link
+							to={opt.to}
+							className="p-2 aspect-square"
+							activeProps={{
+								className: "bg-primary text-card rounded-full",
+							}}
+						>
+							<div className="flex flex-col items-center justify-center h-full">
+								<Icon className="size-5 mx-auto" />
+								<LabelSmall>{opt.label}</LabelSmall>
+							</div>
+						</Link>
+					);
+				})}
 			</nav>
 		</header>
 	);

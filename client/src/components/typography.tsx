@@ -29,3 +29,11 @@ export function P(props: Props): JSX.Element {
 export function Caption(props: Props): JSX.Element {
 	return <h2 className="font-open-sans text-xs leading-4">{props.children}</h2>;
 }
+
+export function LabelSmall(props: Props): JSX.Element {
+	return (
+		<span className="font-montserrat-semibold text-[0.7rem] leading-4">
+			{props.children}
+		</span>
+	);
+}
