@@ -1,7 +1,7 @@
-import type { JSX } from "react";
+import type { JSX, ReactNode } from "react";
 
 type Props = {
-	children: string;
+	children: ReactNode;
 };
 
 export function H1(props: Props): JSX.Element {
@@ -30,7 +30,7 @@ export function Caption(props: Props): JSX.Element {
 
 export function LabelSmall(props: Props): JSX.Element {
 	return (
-		<span className="font-montserrat-semibold text-[0.7rem] leading-4">
+		<span className="font-montserrat-medium text-[0.7rem] leading-4">
 			{props.children}
 		</span>
 	);
