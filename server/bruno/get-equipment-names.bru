@@ -1,0 +1,20 @@
+meta {
+  name: get-equipment-names
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/equipment-names
+  body: none
+  auth: inherit
+}
+
+vars:post-response {
+  equipmentTypeId: {{res.body.data[0].id}}
+  equipmentTypes: {{res.body.data}}
+}
+
+settings {
+  encodeUrl: true
+}
