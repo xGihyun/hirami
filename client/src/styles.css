@@ -39,8 +39,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right)
-    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* padding: env(safe-area-inset-top) env(safe-area-inset-right) */
+  /*   env(safe-area-inset-bottom) env(safe-area-inset-left); */
 }
 
 code {
@@ -62,11 +62,13 @@ code {
   --tertiary: oklch(0.8521 0.1204 82.68);
   --tertiary-foreground: oklch(0.3185 0.0176 18.11);
   --muted: oklch(0.5393 0.0324 65.33);
-  --muted-foreground: oklch(0.3185 0.0176 18.11);
+  --muted-foreground: oklch(0.5393 0.0324 65.33);
   --accent: oklch(0.8879 0.0321 78.14);
   --accent-foreground: oklch(0.2375 0.0391 60.76);
   --destructive: oklch(0.5676 0.2084 27.06);
   --destructive-foreground: oklch(0.9746 0.009 78.28);
+  --success: oklch(0.6731 0.1624 144.21);
+  --success-foreground: oklch(0.2375 0.0391 60.76);
   --border: oklch(0.8879 0.0321 78.14);
   --input: oklch(0.8879 0.0321 78.14);
   --ring: oklch(0.871 0.006 286.286);
@@ -140,6 +142,8 @@ code {
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
