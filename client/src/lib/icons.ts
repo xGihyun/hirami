@@ -3,6 +3,7 @@ import IconRoundArrowUp from "~icons/solar/round-arrow-up-linear";
 import IconHome from "~icons/lucide/home";
 import IconHistory from "~icons/lucide/history";
 import IconProfile from "~icons/gg/profile";
+import IconPlus from "~icons/lucide/plus";
 
 export {
 	IconRoundArrowDown,
@@ -10,4 +11,5 @@ export {
 	IconHome,
 	IconHistory,
 	IconProfile,
+	IconPlus,
 };

@@ -1,13 +1,11 @@
-import { equipmentsQuery, type Equipment } from "@/lib/equipment";
+import {
+	equipmentsQuery,
+	EquipmentStatus,
+	type Equipment,
+} from "@/lib/equipment";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
 	Dialog,
@@ -33,7 +31,8 @@ import {
 } from "@/components/ui/drawer";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
 import { NumberInput } from "@/components/number-input";
-import { H1 } from "@/components/typography";
+import { Caption, H1 } from "@/components/typography";
+import { IconPlus } from "@/lib/icons";
 
 export const Route = createFileRoute("/_authed/equipments/")({
 	component: RouteComponent,
@@ -94,7 +93,9 @@ function RouteComponent(): JSX.Element {
 
 			<Dialog>
 				<DialogTrigger asChild>
-					<Button>Register Equipment</Button>
+					<Button className="size-12 fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-50 shadow">
+						<IconPlus className="size-full" />
+					</Button>
 				</DialogTrigger>
 				<DialogContent>
 					<DialogHeader>
@@ -104,7 +105,7 @@ function RouteComponent(): JSX.Element {
 				</DialogContent>
 			</Dialog>
 
-			<div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
+			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 				{data.map((equipment) => {
 					const key = `${equipment.id}-${equipment.status}`;
 					const equipmentImage = equipment.imageUrl
@@ -113,9 +114,10 @@ function RouteComponent(): JSX.Element {
 					const isSelected = selectedEquipments.some(
 						(item) => item.equipment.id === equipment.id,
 					);
+
 					return (
 						<label htmlFor={key} key={key}>
-							<Card className="border-input has-data-[state=checked]:border-primary/50 relative flex cursor-pointer flex-col gap-4 rounded-md border p-4 shadow-xs outline-none">
+							<Card className="border-input has-data-[state=checked]:border-primary/50 relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none">
 								<Checkbox
 									id={key}
 									className="sr-only"
@@ -125,18 +127,38 @@ function RouteComponent(): JSX.Element {
 										handleSelect(equipment, 1, checked)
 									}
 								/>
-								<CardHeader>
-									<img src={equipmentImage} alt="equipment image" />
-									<CardTitle>{equipment.name}</CardTitle>
-									{equipment.brand ? (
-										<CardDescription>{equipment.brand}</CardDescription>
-									) : null}
-								</CardHeader>
+
+								<div className="space-y-1">
+									<div className="w-full h-28 overflow-hidden rounded-md relative">
+										<Badge
+											className="absolute top-1 left-1"
+											variant={
+												equipment.status === EquipmentStatus.Available
+													? "success"
+													: "default"
+											}
+										>
+											{equipment.status} ({equipment.quantity}{" "}
+											{equipment.quantity === 1 ? "unit" : "units"})
+										</Badge>
+										<img
+											src={equipmentImage}
+											alt="equipment image"
+											className="w-full h-full object-cover"
+										/>
+									</div>
+
+									<div className="flex flex-col">
+										<p className="font-montserrat-semibold text-base leading-6">
+											{equipment.name}
+										</p>
+										{equipment.brand ? (
+											<Caption>{equipment.brand}</Caption>
+										) : null}
+									</div>
+								</div>
+
 								<CardContent>
-									<p>Quantity: {equipment.quantity}</p>
-									<Badge variant={equipment.borrower ? "secondary" : "default"}>
-										{equipment.status}
-									</Badge>
 									{equipment.borrower ? (
 										<p>
 											Borrowed By: {equipment.borrower.firstName}{" "}
