@@ -9,7 +9,6 @@ import {
 import { type User } from "./lib/user";
 import { type AuthSession, getAuthSession } from "./lib/user/auth";
 import { deleteCookie, getCookie } from "./lib/cookie";
-import { fetch } from '@tauri-apps/plugin-http';
 import { BACKEND_URL } from "./lib/api";
 
 export type AuthContextValue = {
