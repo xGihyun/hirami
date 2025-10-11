@@ -79,7 +79,7 @@ export function LoginForm(): JSX.Element {
 
 	return (
 		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 				<FormField
 					control={form.control}
 					name="email"
@@ -112,14 +112,7 @@ export function LoginForm(): JSX.Element {
 					)}
 				/>
 
-				<Button type="submit">Login</Button>
-
-				<p className="text-center">
-					Don't have an account?{" "}
-					<Link to="/register" className="text-primary underline">
-						Register
-					</Link>
-				</p>
+				<Button type="submit" className="w-full">Login</Button>
 			</form>
 		</Form>
 	);
