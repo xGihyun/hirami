@@ -6,15 +6,8 @@ import {
 	redirect,
 } from "@tanstack/react-router";
 import type { JSX } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_auth")({
 	component: RouteComponent,
@@ -28,7 +21,7 @@ export const Route = createFileRoute("/_auth")({
 
 function RouteComponent(): JSX.Element {
 	return (
-		<div className="bg-gradient-to-b from-primary to-secondary h-full flex flex-col px-2">
+		<div className="bg-gradient-to-b from-primary to-secondary flex flex-col px-2 h-svh pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
 			<div className="object-cover object-center h-1/3">
 				<img src={hiramiLogoDark} alt="Hirami Logo" className="h-full w-full" />
 			</div>
