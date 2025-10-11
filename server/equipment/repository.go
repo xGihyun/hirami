@@ -632,17 +632,21 @@ type returnEquipmentItem struct {
 }
 
 type createReturnRequest struct {
-	BorrowRequestID string                `json:"borrowRequestId"`
-	Items           []returnEquipmentItem `json:"items"`
+	Items []returnEquipmentItem `json:"items"`
 }
 
 type returnedEquipmentItem struct {
 	ReturnRequestItemID string `json:"returnRequestItemId"`
 	BorrowRequestItemID string `json:"borrowRequestItemId"`
+	BorrowRequestID     string `json:"borrowRequestId"`
 	Quantity            uint   `json:"quantity"`
 }
 
 type createReturnResponse struct {
+	ReturnRequests []returnRequestGroup `json:"returnRequests"`
+}
+
+type returnRequestGroup struct {
 	ReturnRequestID string                  `json:"id"`
 	BorrowRequestID string                  `json:"borrowRequestId"`
 	Items           []returnedEquipmentItem `json:"items"`
@@ -661,7 +665,6 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 		return createReturnResponse{}, errEmptyReturnItemList
 	}
 
-	// Validate quantities
 	for _, item := range arg.Items {
 		if item.Quantity <= 0 {
 			return createReturnResponse{}, errInvalidReturnQuantity
@@ -674,23 +677,63 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	}
 	defer tx.Rollback(ctx)
 
-	// Check if borrow request is approved
-	statusQuery := `
-	SELECT status
-	FROM borrow_request
-	WHERE borrow_request_id = $1
+	borrowRequestQuery := `
+	SELECT DISTINCT bri.borrow_request_id
+	FROM borrow_request_item bri
+	WHERE bri.borrow_request_item_id = ANY($1)
 	`
 
-	var status borrowRequestStatus
-	if err := tx.QueryRow(ctx, statusQuery, arg.BorrowRequestID).Scan(&status); err != nil {
+	borrowRequestItemIDs := make([]string, len(arg.Items))
+	for i, item := range arg.Items {
+		borrowRequestItemIDs[i] = item.BorrowRequestItemID
+	}
+
+	rows, err := tx.Query(ctx, borrowRequestQuery, borrowRequestItemIDs)
+	if err != nil {
+		return createReturnResponse{}, err
+	}
+	defer rows.Close()
+
+	borrowRequestIDs := make([]string, 0)
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return createReturnResponse{}, err
+		}
+		borrowRequestIDs = append(borrowRequestIDs, id)
+	}
+	if err = rows.Err(); err != nil {
 		return createReturnResponse{}, err
 	}
 
-	if status != approved {
-		return createReturnResponse{}, errBorrowRequestNotApproved
+	statusQuery := `
+	SELECT borrow_request_id, status
+	FROM borrow_request
+	WHERE borrow_request_id = ANY($1)
+	`
+
+	statusRows, err := tx.Query(ctx, statusQuery, borrowRequestIDs)
+	if err != nil {
+		return createReturnResponse{}, err
+	}
+	defer statusRows.Close()
+
+	approvedRequests := make(map[string]bool)
+	for statusRows.Next() {
+		var id string
+		var status borrowRequestStatus
+		if err := statusRows.Scan(&id, &status); err != nil {
+			return createReturnResponse{}, err
+		}
+		if status != approved {
+			return createReturnResponse{}, errBorrowRequestNotApproved
+		}
+		approvedRequests[id] = true
+	}
+	if err = statusRows.Err(); err != nil {
+		return createReturnResponse{}, err
 	}
 
-	// Validate each item's remaining quantity based on actual borrow_transaction records
 	validationQuery := `
 	SELECT 
 		COUNT(borrow_transaction.borrow_transaction_id) - COALESCE(
@@ -720,17 +763,23 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 		}
 	}
 
-	// Insert return_request
+	itemsByBorrowRequest := make(map[string][]returnEquipmentItem)
+	for _, item := range arg.Items {
+		// Get the borrow_request_id for this item
+		var borrowRequestID string
+		if err := tx.QueryRow(ctx, "SELECT borrow_request_id FROM borrow_request_item WHERE borrow_request_item_id = $1", item.BorrowRequestItemID).Scan(&borrowRequestID); err != nil {
+			return createReturnResponse{}, err
+		}
+		itemsByBorrowRequest[borrowRequestID] = append(itemsByBorrowRequest[borrowRequestID], item)
+	}
+
+	returnRequestGroups := make([]returnRequestGroup, 0, len(itemsByBorrowRequest))
+
 	insertRequestQuery := `
 	INSERT INTO return_request (borrow_request_id)
 	VALUES ($1)
 	RETURNING return_request_id
 	`
-
-	var returnRequestID string
-	if err := tx.QueryRow(ctx, insertRequestQuery, arg.BorrowRequestID).Scan(&returnRequestID); err != nil {
-		return createReturnResponse{}, err
-	}
 
 	insertItemQuery := `
 	WITH inserted_items AS (
@@ -752,17 +801,33 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	FROM inserted_items
 	`
 
-	// Prepare arrays for PostgreSQL
-	borrowRequestItemIDs := make([]string, len(arg.Items))
-	quantities := make([]int, len(arg.Items))
-	for i, item := range arg.Items {
-		borrowRequestItemIDs[i] = item.BorrowRequestItemID
-		quantities[i] = int(item.Quantity)
-	}
+	for borrowRequestID, items := range itemsByBorrowRequest {
+		var returnRequestID string
+		if err := tx.QueryRow(ctx, insertRequestQuery, borrowRequestID).Scan(&returnRequestID); err != nil {
+			return createReturnResponse{}, err
+		}
 
-	var items []returnedEquipmentItem
-	if err := tx.QueryRow(ctx, insertItemQuery, returnRequestID, borrowRequestItemIDs, quantities).Scan(&items); err != nil {
-		return createReturnResponse{}, err
+		borrowRequestItemIDs := make([]string, len(items))
+		quantities := make([]int, len(items))
+		for i, item := range items {
+			borrowRequestItemIDs[i] = item.BorrowRequestItemID
+			quantities[i] = int(item.Quantity)
+		}
+
+		var itemsJSON []returnedEquipmentItem
+		if err := tx.QueryRow(ctx, insertItemQuery, returnRequestID, borrowRequestItemIDs, quantities).Scan(&itemsJSON); err != nil {
+			return createReturnResponse{}, err
+		}
+
+		for i := range itemsJSON {
+			itemsJSON[i].BorrowRequestID = borrowRequestID
+		}
+
+		returnRequestGroups = append(returnRequestGroups, returnRequestGroup{
+			ReturnRequestID: returnRequestID,
+			BorrowRequestID: borrowRequestID,
+			Items:           itemsJSON,
+		})
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -770,9 +835,7 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	}
 
 	res := createReturnResponse{
-		ReturnRequestID: returnRequestID,
-		BorrowRequestID: arg.BorrowRequestID,
-		Items:           items,
+		ReturnRequests: returnRequestGroups,
 	}
 
 	return res, nil
