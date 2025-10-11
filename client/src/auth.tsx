@@ -15,7 +15,7 @@ export type AuthContextValue = {
 	user: User | null;
 	sessionToken: string;
 	validateSession: () => Promise<AuthSession | null>;
-	signOut: () => Promise<void>;
+	logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -71,7 +71,9 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
 	}, []);
 
 	return (
-		<AuthContext value={{ user, validateSession, signOut, sessionToken }}>
+		<AuthContext
+			value={{ user, validateSession, logout: signOut, sessionToken }}
+		>
 			{props.children}
 		</AuthContext>
 	);
