@@ -26,18 +26,18 @@ export function Navbar(): JSX.Element {
 			icon: IconHome,
 		},
 		{
-			to: "/equipments",
+			to: "/return",
 			label: "Return",
 			icon: IconRoundArrowUp,
 		},
 		{
-			to: "/equipments",
+			to: "/history",
 			label: "History",
 			icon: IconHistory,
 		},
 
 		{
-			to: "/equipments",
+			to: "/profile",
 			label: "Profile",
 			icon: IconProfile,
 		},
