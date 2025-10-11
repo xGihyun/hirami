@@ -45,8 +45,6 @@ const (
 	borrowed  equipmentStatus = "borrowed"
 )
 
-// TODO: Remove serial number on database schema
-
 type createRequest struct {
 	Name            string    `json:"name"`
 	Brand           *string   `json:"brand"`
