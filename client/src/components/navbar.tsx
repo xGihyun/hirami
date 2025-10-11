@@ -1,7 +1,5 @@
-import { Link, linkOptions, useNavigate } from "@tanstack/react-router";
-import { Button } from "./ui/button";
+import { Link, linkOptions } from "@tanstack/react-router";
 import type { JSX } from "react";
-import { useAuth } from "@/auth";
 import {
 	IconHistory,
 	IconHome,
@@ -11,14 +9,6 @@ import {
 import { LabelSmall } from "./typography";
 
 export function Navbar(): JSX.Element {
-	const auth = useAuth();
-	const navigate = useNavigate();
-
-	async function handleSignOut(): Promise<void> {
-		await auth.signOut();
-		await navigate({ to: "/login" });
-	}
-
 	const options = linkOptions([
 		{
 			to: "/equipments",
@@ -44,8 +34,8 @@ export function Navbar(): JSX.Element {
 	]);
 
 	return (
-		<header className="py-1 flex gap-2 bg-card text-primary fixed bottom-0 left-0 w-full shadow">
-			<nav className="px-2 font-bold flex justify-around w-full">
+		<header className="flex gap-2 bg-card text-primary fixed bottom-0 left-0 w-full shadow z-50 pb-[env(safe-area-inset-bottom)]">
+			<nav className="py-1 px-2 font-bold flex justify-around w-full h-16">
 				{options.map((opt) => {
 					const Icon = opt.icon;
 					return (
