@@ -29,6 +29,7 @@ func NewServer(repo Repository, valkeyClient valkey.Client) *Server {
 func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /equipments", api.Handler(s.createEquipment))
 	mux.Handle("GET /equipments", api.Handler(s.getAll))
+	mux.Handle("GET /equipment-names", api.Handler(s.getEquipmentNames))
 	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
 
 	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
@@ -177,7 +178,11 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	equipments, err := s.repository.getAll(ctx)
+	name := r.URL.Query().Get("name")
+	params := getEquipmentParams{
+		name: &name,
+	}
+	equipments, err := s.repository.getAll(ctx, params)
 	if err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("get equipments: %w", err),
@@ -189,6 +194,25 @@ func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully fetched equipments.",
+		Data:    equipments,
+	}
+}
+
+func (s *Server) getEquipmentNames(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	equipments, err := s.repository.getEquipmentNames(ctx)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get equipment names: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get equipment names.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched equipment names.",
 		Data:    equipments,
 	}
 }

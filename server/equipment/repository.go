@@ -3,6 +3,7 @@ package equipment
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -12,7 +13,8 @@ import (
 
 type Repository interface {
 	createEquipment(ctx context.Context, arg createRequest) (createResponse, error)
-	getAll(ctx context.Context) ([]equipmentWithBorrower, error)
+	getAll(ctx context.Context, params getEquipmentParams) ([]equipmentWithBorrower, error)
+	getEquipmentNames(ctx context.Context) ([]string, error)
 	update(ctx context.Context, arg updateRequest) error
 
 	createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error)
@@ -123,7 +125,12 @@ type equipmentWithBorrower struct {
 	Borrower *user.BasicInfo `json:"borrower"`
 }
 
-func (r *repository) getAll(ctx context.Context) ([]equipmentWithBorrower, error) {
+type getEquipmentParams struct {
+	name   *string
+	status *equipmentStatus
+}
+
+func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]equipmentWithBorrower, error) {
 	query := `
 	WITH equipment_with_status AS (
 		SELECT
@@ -194,9 +201,24 @@ func (r *repository) getAll(ctx context.Context) ([]equipmentWithBorrower, error
 		COUNT(equipment_id) AS quantity,
 		borrower
 	FROM equipment_with_status
-	GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower
+	WHERE TRUE
 	`
-	rows, err := r.querier.Query(ctx, query)
+
+	var args []any
+	if *params.name != "" {
+		names := strings.Split(*params.name, ",")
+		query += " AND name IN (SELECT unnest($1::text[]))"
+		args = append(args, names)
+	}
+
+	if *params.status != "" {
+		query += " AND status = $2"
+		args = append(args, *params.status)
+	}
+
+	query += " GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower ORDER BY status"
+
+	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -204,6 +226,34 @@ func (r *repository) getAll(ctx context.Context) ([]equipmentWithBorrower, error
 	if err != nil {
 		return nil, err
 	}
+	return equipments, nil
+}
+
+func (r *repository) getEquipmentNames(ctx context.Context) ([]string, error) {
+	query := `
+	SELECT DISTINCT ON(equipment_type.name) equipment_type.name
+	FROM equipment_type
+	JOIN equipment ON equipment.equipment_type_id = equipment_type.equipment_type_id
+	`
+	rows, err := r.querier.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var equipments []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		equipments = append(equipments, name)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return equipments, nil
 }
 
