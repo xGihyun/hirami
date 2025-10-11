@@ -93,7 +93,7 @@ export function RegisterEquipmentForm(): JSX.Element {
 			return toast.loading("Registering equipment");
 		},
 		onSuccess: (data, _variables, toastId) => {
-			queryClient.invalidateQueries(equipmentsQuery);
+			queryClient.invalidateQueries(equipmentsQuery());
 			toast.success(data.message, { id: toastId });
 		},
 		onError: (error, _variables, toastId) => {
