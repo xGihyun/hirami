@@ -14,3 +14,11 @@ export type User = {
 	avatarUrl: string;
 	role: UserRole;
 };
+
+export type UserBasicInfo = {
+	id: string;
+	firstName: string;
+	middleName?: string;
+	lastName: string;
+	avatarUrl?: string;
+};

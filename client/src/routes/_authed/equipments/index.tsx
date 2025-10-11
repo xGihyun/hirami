@@ -6,7 +6,7 @@ import {
 } from "@/lib/equipment";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/lib/api";
@@ -155,7 +155,7 @@ function RouteComponent(): JSX.Element {
 									/>
 
 									<div className="space-y-1">
-										<div className="w-full h-28 overflow-hidden rounded-md relative">
+										<div className="w-full h-28 overflow-hidden rounded-md relative bg-background">
 											<Badge
 												className="absolute top-1 left-1"
 												variant={
