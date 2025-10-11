@@ -17,6 +17,12 @@
 }
 
 @font-face {
+  font-family: montserrat-medium;
+  src: url("/fonts/Montserrat/Montserrat-Medium.ttf");
+  font-display: swap;
+}
+
+@font-face {
   font-family: open-sans;
   src: url("/fonts/Open_Sans/OpenSans-Regular.ttf");
   font-display: swap;
@@ -167,6 +173,7 @@ code {
 
   --font-montserrat-bold: montserrat-bold, sans-serif;
   --font-montserrat-semibold: montserrat-semibold, sans-serif;
+  --font-montserrat-medium: montserrat-medium, sans-serif;
   --font-open-sans: open-sans, sans-serif;
 }
 

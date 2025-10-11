@@ -18,6 +18,10 @@ import { toast } from "sonner";
 import type { SelectedEquipment } from "..";
 import { useAuth } from "@/auth";
 import { cn } from "@/lib/utils";
+import { Caption } from "@/components/typography";
+import { NumberInput } from "@/components/number-input";
+import { Separator } from "@/components/ui/separator";
+import type { Equipment } from "@/lib/equipment";
 
 const borrowEquipmentItemSchema = z.object({
 	equipmentTypeId: z.string().nonempty(),
@@ -53,6 +57,7 @@ async function borrow(value: z.infer<typeof formSchema>): Promise<ApiResponse> {
 type BorrowEquipmentFormProps = {
 	selectedEquipments: SelectedEquipment[];
 	className: string;
+	handleUpdateQuantity: (equipment: Equipment, newQuantity: number) => void;
 };
 
 export function BorrowEquipmentForm(
@@ -97,21 +102,50 @@ export function BorrowEquipmentForm(
 		<Form {...form}>
 			<form
 				onSubmit={form.handleSubmit(onSubmit)}
-				className={cn("space-y-8", props.className)}
+				className={cn("space-y-4", props.className)}
 			>
-				<h2>Selected Equipments:</h2>
-
-				<div>
+				<section className="space-y-2">
 					{props.selectedEquipments.map((selectedEquipment) => {
 						const equipment = selectedEquipment.equipment;
+						const equipmentImage = equipment.imageUrl
+							? `${BACKEND_URL}${equipment.imageUrl}`
+							: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
+
 						return (
-							<div key={equipment.id}>
-								{selectedEquipment.quantity} pcs. {equipment.name}{" "}
-								{equipment.brand} {equipment.model}
+							<div
+								key={equipment.id}
+								className="flex items-center gap-2 justify-between"
+							>
+								<div className="flex items-center gap-2 w-full">
+									<img
+										src={equipmentImage}
+										alt={`${equipment.name} ${equipment.brand}`}
+										className="size-20 object-cover"
+									/>
+
+									<div className="flex flex-col">
+										<p className="font-montserrat-semibold text-base leading-6">
+											{equipment.name}
+										</p>
+
+										<Caption>
+											{equipment.brand}
+											{equipment.model ? " - " : null}
+											{equipment.model}
+										</Caption>
+									</div>
+								</div>
+
+								<NumberInput
+									onChange={(v) => props.handleUpdateQuantity(equipment, v)}
+									maxValue={equipment.quantity}
+								/>
 							</div>
 						);
 					})}
-				</div>
+				</section>
+
+				<Separator />
 
 				<FormField
 					control={form.control}
@@ -142,7 +176,7 @@ export function BorrowEquipmentForm(
 				/>
 
 				<Button type="submit" className="w-full">
-					Borrow Equipment
+					Borrow Equipments
 				</Button>
 			</form>
 		</Form>

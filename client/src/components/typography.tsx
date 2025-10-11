@@ -2,6 +2,7 @@ import type { JSX, ReactNode } from "react";
 
 type Props = {
 	children: ReactNode;
+    className?: string;
 };
 
 export function H1(props: Props): JSX.Element {

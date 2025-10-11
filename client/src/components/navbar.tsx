@@ -21,7 +21,7 @@ export function Navbar(): JSX.Element {
 			icon: IconRoundArrowUp,
 		},
 		{
-			to: "/history",
+			to: "/borrow-requests",
 			label: "History",
 			icon: IconHistory,
 		},
@@ -40,6 +40,7 @@ export function Navbar(): JSX.Element {
 					const Icon = opt.icon;
 					return (
 						<Link
+							key={opt.label}
 							to={opt.to}
 							className="p-2 aspect-square"
 							activeProps={{

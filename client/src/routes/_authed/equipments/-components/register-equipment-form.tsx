@@ -107,7 +107,7 @@ export function RegisterEquipmentForm(): JSX.Element {
 
 	return (
 		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 				<FormField
 					control={form.control}
 					name="name"
@@ -162,7 +162,7 @@ export function RegisterEquipmentForm(): JSX.Element {
 										<Button
 											variant={"outline"}
 											className={cn(
-												"w-[240px] pl-3 text-left font-normal",
+												"w-full bg-card pl-3 text-left",
 												!field.value && "text-muted-foreground",
 											)}
 										>
@@ -233,7 +233,9 @@ export function RegisterEquipmentForm(): JSX.Element {
 					)}
 				/>
 
-				<Button type="submit">Register Equipment</Button>
+				<Button type="submit" className="w-full">
+					Register Equipment
+				</Button>
 			</form>
 		</Form>
 	);
