@@ -33,4 +33,7 @@ export default defineConfig({
 		// produce sourcemaps for debug builds
 		sourcemap: !!process.env.TAURI_ENV_DEBUG,
 	},
+	server: {
+		host: "0.0.0.0",
+	},
 });
