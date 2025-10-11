@@ -21,13 +21,11 @@ export function H2(props: Props): JSX.Element {
 }
 
 export function P(props: Props): JSX.Element {
-	return (
-		<h2 className="font-open-sans text-base leading-6">{props.children}</h2>
-	);
+	return <p className="font-open-sans text-base leading-6">{props.children}</p>;
 }
 
 export function Caption(props: Props): JSX.Element {
-	return <h2 className="font-open-sans text-xs leading-4">{props.children}</h2>;
+	return <p className="font-open-sans text-xs leading-4">{props.children}</p>;
 }
 
 export function LabelSmall(props: Props): JSX.Element {
