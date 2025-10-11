@@ -1194,6 +1194,19 @@ type borrowHistoryParams struct {
 
 func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error) {
 	query := `
+	WITH latest_return_data AS (
+		SELECT 
+			borrow_request_id,
+			return_request_id,
+			created_at,
+			reviewed_by
+		FROM return_request
+		WHERE (borrow_request_id, created_at) IN (
+			SELECT borrow_request_id, MAX(created_at)
+			FROM return_request
+			GROUP BY borrow_request_id
+		)
+	)
 	SELECT 
 		jsonb_build_object(
 			'id', person.person_id,
@@ -1235,23 +1248,16 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		borrow_request.location,
 		borrow_request.purpose,
 		borrow_request.expected_return_at,
-		latest_return.created_at AS actual_return_at,
+		latest_return_data.created_at AS actual_return_at,
 		borrow_request.status,
 		borrow_request.remarks
 	FROM borrow_request
-	LEFT JOIN return_request ON return_request.borrow_request_id = borrow_request.borrow_request_id
+	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
 	JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
-	LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = return_request.reviewed_by
+	LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
-	LEFT JOIN LATERAL (
-		SELECT created_at
-		FROM return_request
-		WHERE return_request.borrow_request_id = borrow_request.borrow_request_id
-		ORDER BY created_at DESC
-		LIMIT 1
-	) latest_return ON TRUE
 	WHERE borrow_request.status IN ('approved', 'fulfilled')
 	GROUP BY 
 		person.person_id,
@@ -1270,13 +1276,17 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		person_return_reviewer.last_name,
 		person_return_reviewer.avatar_url,
 		borrow_request.borrow_request_id,
-		latest_return.created_at
+		latest_return_data.created_at,
+		latest_return_data.reviewed_by
 	`
 
 	var args []any
-	if *params.userID != "" {
-		query += " AND borrow_request.requested_by = $1"
+	argIndex := 1
+
+	if params.userID != nil && *params.userID != "" {
+		query += fmt.Sprintf(" AND borrow_request.requested_by = $%d", argIndex)
 		args = append(args, *params.userID)
+		argIndex++
 	}
 
 	query += " ORDER BY borrow_request.created_at DESC"
