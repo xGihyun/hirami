@@ -4,7 +4,7 @@ import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
 import { QueryClient } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/sonner";
-import { useAuth, type AuthContextValue } from "@/auth";
+import { type AuthContextValue } from "@/auth";
 import type { JSX } from "react";
 
 type RouterContext = {
@@ -18,7 +18,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RouteComponent(): JSX.Element {
 	return (
-		<div className="h-svh">
+		<div>
 			<Toaster closeButton />
 			<Outlet />
 			{/* <TanstackDevtools */}
