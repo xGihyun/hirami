@@ -12,11 +12,10 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
-// import { fetch } from '@tauri-apps/plugin-http';
 
 const formSchema = z.object({
 	email: z.email(),
@@ -151,7 +150,9 @@ export function RegisterForm(): JSX.Element {
 					)}
 				/>
 
-				<Button type="submit" className="w-full">Register</Button>
+				<Button type="submit" className="w-full">
+					Register
+				</Button>
 			</form>
 		</Form>
 	);

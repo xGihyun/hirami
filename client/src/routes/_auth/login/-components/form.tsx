@@ -12,13 +12,12 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import type { User } from "@/lib/user";
 import { useMutation } from "@tanstack/react-query";
 import { setCookie } from "@/lib/cookie";
-// import { fetch } from '@tauri-apps/plugin-http';
 
 const formSchema = z.object({
 	email: z.email(),
