@@ -285,6 +285,28 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
+	eventRes := sse.EventResponse{
+		Event: "equipment:create",
+		Data:  res,
+	}
+	jsonData, err := json.Marshal(eventRes)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create borrow request.",
+		}
+	}
+
+	pubCmd := s.valkeyClient.B().Publish().Channel("equipment").Message(string(jsonData)).Build()
+	if res := s.valkeyClient.Do(ctx, pubCmd); res.Error() != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create borrow request.",
+		}
+	}
+
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully created borrow request.",
