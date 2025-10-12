@@ -86,11 +86,12 @@ function RouteComponent(): JSX.Element {
 	async function handleReview(
 		request: BorrowRequest,
 		reviewedBy: User,
+        status: BorrowRequestStatus,
 		remarks?: string,
 	): Promise<void> {
 		const payload: ReviewBorrowRequest = {
 			id: request.id,
-			status: BorrowRequestStatus.Approved,
+			status: status,
 			reviewedBy: reviewedBy.id,
 			remarks: remarks,
 		};
@@ -275,11 +276,31 @@ function RouteComponent(): JSX.Element {
 									alert("Please log in to review borrow request");
 									return;
 								}
-								handleReview(selectedRequest, auth.user);
+								handleReview(selectedRequest, auth.user, BorrowRequestStatus.Approved);
 							}}
 						>
 							Approve
 						</Button>
+
+						<Button
+							onClick={() => {
+								if (!selectedRequest) {
+									alert("No borrow request selected");
+									return;
+								}
+								if (!auth.user) {
+									alert("Please log in to review borrow request");
+									return;
+								}
+								handleReview(selectedRequest, auth.user, BorrowRequestStatus.Rejected);
+							}}
+                            variant="destructive"
+						>
+							Reject
+						</Button>
+
+                        <Separator />
+
 						<DrawerClose asChild>
 							<Button variant="outline">Close</Button>
 						</DrawerClose>

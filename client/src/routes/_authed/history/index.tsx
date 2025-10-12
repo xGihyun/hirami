@@ -140,7 +140,9 @@ function RouteComponent() {
 										variant={
 											transaction.status === BorrowRequestStatus.Approved
 												? "success"
-												: "default"
+												: transaction.status === BorrowRequestStatus.Rejected
+													? "destructive"
+													: "default"
 										}
 									>
 										{transaction.status}
