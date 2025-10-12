@@ -9,7 +9,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import {
@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth";
 import type { User } from "@/lib/user";
 import { EmptyState } from "@/components/empty";
+import { EventSource } from "eventsource";
 
 export const Route = createFileRoute("/_authed/return-requests/")({
 	component: RouteComponent,
@@ -92,6 +93,21 @@ function RouteComponent(): JSX.Element {
 
 		mutation.mutate(payload);
 	}
+
+	useEffect(() => {
+		const eventSource = new EventSource(`${BACKEND_URL}/events`);
+
+		function handleEvent(_: MessageEvent): void {
+			queryClient.invalidateQueries(returnRequestsQuery({}));
+		}
+
+		eventSource.addEventListener("equipment:create", handleEvent);
+
+		return () => {
+			eventSource.removeEventListener("equipment:create", handleEvent);
+			eventSource.close();
+		};
+	}, [queryClient]);
 
 	if (data.length === 0) {
 		return (

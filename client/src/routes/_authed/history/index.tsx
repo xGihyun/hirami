@@ -26,6 +26,7 @@ import { UserRole } from "@/lib/user";
 import { useAuth } from "@/auth";
 import { Separator } from "@/components/ui/separator";
 import { EmptyState } from "@/components/empty";
+import { EventSource } from "eventsource";
 
 export const Route = createFileRoute("/_authed/history/")({
 	component: RouteComponent,

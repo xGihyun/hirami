@@ -4,13 +4,13 @@ import {
 	borrowHistoryQuery,
 	type BorrowedEquipment,
 } from "@/lib/equipment/borrow";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import type { CheckedState } from "@radix-ui/react-checkbox";
 import {
 	Drawer,
@@ -31,6 +31,7 @@ import {
 } from "@/lib/equipment/return";
 import type { Equipment } from "@/lib/equipment";
 import { EmptyState } from "@/components/empty";
+import { EventSource } from "eventsource";
 
 export const Route = createFileRoute("/_authed/return/")({
 	component: RouteComponent,
@@ -116,6 +117,28 @@ function RouteComponent(): JSX.Element {
 			),
 		);
 	}
+
+	const queryClient = useQueryClient();
+
+	useEffect(() => {
+		const eventSource = new EventSource(`${BACKEND_URL}/events`);
+
+		function handleEvent(_: MessageEvent): void {
+			queryClient.ensureQueryData(
+				borrowHistoryQuery({ userId: auth.user?.id }),
+			);
+			queryClient.ensureQueryData(
+				returnRequestsQuery({ userId: auth.user?.id }),
+			);
+		}
+
+		eventSource.addEventListener("equipment:create", handleEvent);
+
+		return () => {
+			eventSource.removeEventListener("equipment:create", handleEvent);
+			eventSource.close();
+		};
+	}, [queryClient]);
 
 	return (
 		<div className="space-y-4">
