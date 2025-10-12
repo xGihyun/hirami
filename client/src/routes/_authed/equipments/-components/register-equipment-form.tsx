@@ -74,7 +74,13 @@ async function register(
 	return result;
 }
 
-export function RegisterEquipmentForm(): JSX.Element {
+type RegisterEquipmentFormProps = {
+	onSuccess: () => void;
+};
+
+export function RegisterEquipmentForm(
+	props: RegisterEquipmentFormProps,
+): JSX.Element {
 	const queryClient = useQueryClient();
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -94,6 +100,7 @@ export function RegisterEquipmentForm(): JSX.Element {
 		},
 		onSuccess: (data, _variables, toastId) => {
 			queryClient.invalidateQueries(equipmentsQuery());
+			props.onSuccess();
 			toast.success(data.message, { id: toastId });
 		},
 		onError: (error, _variables, toastId) => {

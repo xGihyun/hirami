@@ -4,14 +4,18 @@ import {
 	EquipmentStatus,
 	type Equipment,
 } from "@/lib/equipment";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import {
+	useQuery,
+	useQueryClient,
+	useSuspenseQuery,
+} from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL, toImageUrl } from "@/lib/api";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import type { CheckedState } from "@radix-ui/react-checkbox";
 import {
 	Drawer,
@@ -30,6 +34,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
 import { RegisterEquipmentForm } from "./-components/register-equipment-form";
+import { Separator } from "@/components/ui/separator";
+import { EventSource } from "eventsource";
 
 export const Route = createFileRoute("/_authed/equipments/")({
 	component: RouteComponent,
@@ -97,6 +103,30 @@ function RouteComponent(): JSX.Element {
 		setSelectedEquipments([]);
 	}
 
+	const queryClient = useQueryClient();
+
+	useEffect(() => {
+		const eventSource = new EventSource(`${BACKEND_URL}/events`);
+
+		function handleEquipmentInvalidation(_: MessageEvent): void {
+			queryClient.invalidateQueries(equipmentsQuery());
+			queryClient.invalidateQueries(equipmentNamesQuery());
+		}
+
+		eventSource.addEventListener(
+			"equipment:create",
+			handleEquipmentInvalidation,
+		);
+
+		return () => {
+			eventSource.removeEventListener(
+				"equipment:create",
+				handleEquipmentInvalidation,
+			);
+			eventSource.close();
+		};
+	}, [queryClient]);
+
 	// TODO: Fix these stuff, make the approach cleaner
 	if (equipments.isPending || !equipments.data) {
 		return <p>Loading Equipment...</p>;
@@ -114,12 +144,14 @@ function RouteComponent(): JSX.Element {
 				</Avatar>
 
 				<div>
-					<p className="text-sm font-montserrat-medium">Welcome back,</p>
+					<p className="text-sm font-montserrat-medium">Welcome,</p>
 					<p className="text-xl font-montserrat-medium">
 						{auth.user?.firstName}
 					</p>
 				</div>
 			</section>
+
+			<Separator />
 
 			<section>
 				<p className="font-montserrat-medium text-sm mb-1">Categories</p>
@@ -205,7 +237,9 @@ function RouteComponent(): JSX.Element {
 									{equipment.borrower ? (
 										<div className="flex items-center gap-1">
 											<Avatar className="size-6 text-xs">
-												<AvatarImage src={toImageUrl(equipment.borrower.avatarUrl)} />
+												<AvatarImage
+													src={toImageUrl(equipment.borrower.avatarUrl)}
+												/>
 												<AvatarFallback>{borrowerInitials}</AvatarFallback>
 											</Avatar>
 
@@ -235,7 +269,7 @@ function RouteComponent(): JSX.Element {
 							<DrawerTitle>Register Equipment</DrawerTitle>
 						</DrawerHeader>
 
-						<RegisterEquipmentForm />
+						<RegisterEquipmentForm onSuccess={onSuccess} />
 
 						<DrawerFooter>
 							<DrawerClose asChild>

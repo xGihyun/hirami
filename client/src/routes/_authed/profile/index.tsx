@@ -123,7 +123,7 @@ function RouteComponent() {
 		: undefined;
 
 	return (
-		<div className="flex flex-col justify-between h-full">
+		<div className="flex flex-col justify-between">
 			<div className="space-y-4">
 				<section className="flex flex-col items-center justify-center">
 					<div className="relative group">
