@@ -23,7 +23,7 @@ type Repository interface {
 
 	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error)
 	confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error)
-	getReturnRequests(ctx context.Context) ([]returnRequest, error)
+	getReturnRequests(ctx context.Context, params getReturnRequestParams) ([]returnRequest, error)
 
 	getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error)
 }
@@ -1113,7 +1113,11 @@ type returnRequest struct {
 	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
 }
 
-func (r *repository) getReturnRequests(ctx context.Context) ([]returnRequest, error) {
+type getReturnRequestParams struct {
+	userID *string
+}
+
+func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequestParams) ([]returnRequest, error) {
 	query := `
 	SELECT 
 		return_request.return_request_id,
@@ -1148,6 +1152,15 @@ func (r *repository) getReturnRequests(ctx context.Context) ([]returnRequest, er
 		FROM return_transaction
 		WHERE return_transaction.return_request_item_id = return_request_item.return_request_item_id
 	)
+	`
+
+	var args []any
+	if params.userID != nil && *params.userID != "" {
+		query += " AND person.person_id = $1"
+		args = append(args, *params.userID)
+	}
+
+	query += `
 	GROUP BY 
 		return_request.return_request_id,
 		return_request.created_at,
@@ -1159,7 +1172,7 @@ func (r *repository) getReturnRequests(ctx context.Context) ([]returnRequest, er
 		borrow_request.expected_return_at
 	`
 
-	rows, err := r.querier.Query(ctx, query)
+	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

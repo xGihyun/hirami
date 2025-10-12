@@ -454,7 +454,11 @@ func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) ap
 func (s *Server) getReturnRequests(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	returnRequests, err := s.repository.getReturnRequests(ctx)
+	userID := r.PathValue("userId")
+	params := getReturnRequestParams{
+		userID: &userID,
+	}
+	returnRequests, err := s.repository.getReturnRequests(ctx, params)
 	if err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("get return requests: %w", err),
