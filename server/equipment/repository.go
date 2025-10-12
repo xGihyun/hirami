@@ -941,6 +941,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 		borrow_request.location,
 		borrow_request.purpose,
 		borrow_request.expected_return_at
+	ORDER BY borrow_request.created_at
 	`
 
 	rows, err := r.querier.Query(ctx, query)
