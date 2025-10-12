@@ -354,6 +354,28 @@ func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
+	eventRes := sse.EventResponse{
+		Event: "equipment:create",
+		Data:  res,
+	}
+	jsonData, err := json.Marshal(eventRes)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("review borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to review borrow request.",
+		}
+	}
+
+	pubCmd := s.valkeyClient.B().Publish().Channel("equipment").Message(string(jsonData)).Build()
+	if res := s.valkeyClient.Do(ctx, pubCmd); res.Error() != nil {
+		return api.Response{
+			Error:   fmt.Errorf("review borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to review borrow request.",
+		}
+	}
+
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully reviewed borrow request.",
