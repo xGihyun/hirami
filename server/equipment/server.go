@@ -430,6 +430,28 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
+	eventRes := sse.EventResponse{
+		Event: "equipment:create",
+		Data:  res,
+	}
+	jsonData, err := json.Marshal(eventRes)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create return request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create return request.",
+		}
+	}
+
+	pubCmd := s.valkeyClient.B().Publish().Channel("equipment").Message(string(jsonData)).Build()
+	if res := s.valkeyClient.Do(ctx, pubCmd); res.Error() != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create return request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create return request.",
+		}
+	}
+
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully created return request.",
@@ -489,6 +511,28 @@ func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) ap
 			}
 		}
 
+		return api.Response{
+			Error:   fmt.Errorf("confirm return request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to confirm return request.",
+		}
+	}
+
+	eventRes := sse.EventResponse{
+		Event: "equipment:create",
+		Data:  res,
+	}
+	jsonData, err := json.Marshal(eventRes)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("confirm return request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to confirm return request.",
+		}
+	}
+
+	pubCmd := s.valkeyClient.B().Publish().Channel("equipment").Message(string(jsonData)).Build()
+	if res := s.valkeyClient.Do(ctx, pubCmd); res.Error() != nil {
 		return api.Response{
 			Error:   fmt.Errorf("confirm return request: %w", err),
 			Code:    http.StatusInternalServerError,
