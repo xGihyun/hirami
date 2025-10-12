@@ -16,6 +16,7 @@ import {
 	borrowHistoryQuery,
 	type BorrowedEquipment,
 } from "@/lib/equipment/borrow";
+import { returnRequestsQuery } from "@/lib/equipment/return";
 
 const returnEquipmentItemSchema = z.object({
 	borrowRequestItemId: z.string().nonempty(),
@@ -74,6 +75,9 @@ export function ReturnEquipmentForm(
 		onSuccess: (data, _variables, toastId) => {
 			queryClient.invalidateQueries(
 				borrowHistoryQuery({ userId: auth.user?.id }),
+			);
+			queryClient.invalidateQueries(
+				returnRequestsQuery({ userId: auth.user?.id }),
 			);
 			toast.success(data.message, { id: toastId });
 		},

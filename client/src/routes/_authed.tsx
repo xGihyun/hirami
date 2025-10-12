@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_authed")({
 
 function RouteComponent(): JSX.Element {
 	return (
-		<div className="pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+		<div className="pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] px-4 lg:px-10 ">
 			<Outlet />
 			<Navbar /> 
 		</div>

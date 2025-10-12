@@ -95,7 +95,7 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<div className="px-4 lg:px-10 py-5 relative pb-20 space-y-4">
+		<div className="relative space-y-4">
 			<section className="flex gap-2 items-center">
 				<Avatar className="size-12">
 					<AvatarImage src={auth.user?.avatarUrl} />

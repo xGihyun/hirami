@@ -24,12 +24,21 @@ import {
 import { Caption } from "@/components/typography";
 import { IconRoundArrowUp } from "@/lib/icons";
 import { ReturnEquipmentForm } from "./-components/return-equipment-form";
+import { Separator } from "@/components/ui/separator";
+import {
+	returnRequestsQuery,
+	type ReturnRequest,
+} from "@/lib/equipment/return";
+import type { Equipment } from "@/lib/equipment";
 
 export const Route = createFileRoute("/_authed/return/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
 		context.queryClient.ensureQueryData(
 			borrowHistoryQuery({ userId: context.auth.user?.id }),
+		);
+		context.queryClient.ensureQueryData(
+			returnRequestsQuery({ userId: context.auth.user?.id }),
 		);
 	},
 });
@@ -46,12 +55,34 @@ function RouteComponent(): JSX.Element {
 			userId: auth.user?.id,
 		}),
 	);
+	const returnRequests = useSuspenseQuery(
+		returnRequestsQuery({
+			userId: auth.user?.id,
+		}),
+	);
 
 	const currentBorrowedEquipments = borrowHistory.data.flatMap((transaction) =>
 		transaction.status === "approved"
 			? transaction.equipments.map((equipment) => equipment)
 			: [],
 	);
+
+	const aggregateEquipments = (data: ReturnRequest[]): Equipment[] =>
+		Object.values(
+			data
+				.flatMap((d) => d.equipments)
+				.reduce(
+					(acc, eq) => ({
+						...acc,
+						[eq.id]: acc[eq.id]
+							? { ...eq, quantity: acc[eq.id].quantity + eq.quantity }
+							: eq,
+					}),
+					{} as Record<string, Equipment>,
+				),
+		);
+
+	const equipmentsToReturn = aggregateEquipments(returnRequests.data);
 
 	const [selectedEquipments, setSelectedEquipments] = useState<
 		SelectedBorrowedEquipment[]
@@ -91,9 +122,60 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<div>
+		<div className="space-y-4">
 			<section>
-				<p className="font-montserrat-medium text-sm mb-1">Equipments</p>
+				<p className="font-montserrat-medium text-sm mb-1">
+					Requested to Return
+				</p>
+
+				<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+					{equipmentsToReturn.map((equipment) => {
+						const key = `${equipment.id}`;
+						const equipmentImage = equipment.imageUrl
+							? `${BACKEND_URL}${equipment.imageUrl}`
+							: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
+
+						return (
+							<Card
+								className="space-y-2 border-input has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none"
+								key={key}
+							>
+								<div className="space-y-1">
+									<div className="w-full h-28 overflow-hidden rounded-md relative bg-background">
+										<Badge className="absolute top-1 left-1">
+											Borrowed ({equipment.quantity})
+										</Badge>
+										<img
+											src={equipmentImage}
+											alt={`${equipment.name} ${equipment.brand}`}
+											className="w-full h-full object-cover"
+										/>
+									</div>
+
+									<div className="flex flex-col">
+										<p className="font-montserrat-semibold text-base leading-6">
+											{equipment.name}
+										</p>
+
+										<Caption>
+											{equipment.brand}
+											{equipment.model ? " - " : null}
+											{equipment.model}
+										</Caption>
+									</div>
+								</div>
+							</Card>
+						);
+					})}
+				</div>
+			</section>
+
+			<Separator />
+
+			<section>
+				<p className="font-montserrat-medium text-sm mb-1">
+					Borrowed Equipments
+				</p>
 
 				<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 					{currentBorrowedEquipments.map((equipment) => {
