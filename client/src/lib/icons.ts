@@ -4,6 +4,7 @@ import IconHome from "~icons/lucide/home";
 import IconHistory from "~icons/lucide/history";
 import IconProfile from "~icons/gg/profile";
 import IconPlus from "~icons/lucide/plus";
+import IconEdit from "~icons/lucide/edit";
 
 export {
 	IconRoundArrowDown,
@@ -12,4 +13,5 @@ export {
 	IconHistory,
 	IconProfile,
 	IconPlus,
+	IconEdit,
 };
