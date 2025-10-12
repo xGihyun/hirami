@@ -8,7 +8,7 @@ type GetReturnRequestParams = {
 };
 
 export type ReturnRequest = {
-	returnRequestID: string;
+	id: string;
 	createdAt: string;
 	borrower: UserBasicInfo;
 	equipments: Equipment[];
@@ -39,3 +39,8 @@ export const returnRequestsQuery = (params: GetReturnRequestParams) =>
 		queryKey: ["return-requests", params.userId],
 		queryFn: () => getReturnRequests(params),
 	});
+
+export type ConfirmReturnRequest = {
+	returnRequestId: string;
+	reviewedBy: string;
+};
