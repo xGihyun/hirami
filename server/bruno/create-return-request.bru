@@ -12,15 +12,14 @@ post {
 
 body:json {
   {
-    "borrowRequestId": "{{createdBorrowRequest.borrowRequestId}}",
     "items": [
       {
         "borrowRequestItemId": "{{borrowHistory[0].equipments[0].borrowRequestItemId}}",
-        "quantity": 2
+        "quantity": 1
       },
       {
         "borrowRequestItemId": "{{borrowHistory[0].equipments[1].borrowRequestItemId}}",
-        "quantity": 2
+        "quantity": 1
       }
     ]
   }

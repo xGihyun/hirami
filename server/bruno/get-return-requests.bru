@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/return-requests
+  url: {{baseUrl}}/return-requests?userId={{userId}}
   body: none
   auth: inherit
+}
+
+params:query {
+  userId: {{userId}}
 }
 
 settings {

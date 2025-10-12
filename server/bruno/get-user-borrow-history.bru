@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/borrow-history
+  url: {{baseUrl}}/borrow-history?userId={{userId}}
   body: none
   auth: inherit
 }
 
 params:query {
-  ~userId: {{userId}}
+  userId: {{userId}}
 }
 
 settings {
