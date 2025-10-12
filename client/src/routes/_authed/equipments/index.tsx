@@ -58,6 +58,7 @@ function RouteComponent(): JSX.Element {
 	const [selectedEquipments, setSelectedEquipments] = useState<
 		SelectedEquipment[]
 	>([]);
+	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
 	function handleSelect(
 		equipment: Equipment,
@@ -87,6 +88,11 @@ function RouteComponent(): JSX.Element {
 					: item,
 			),
 		);
+	}
+
+	function onSuccess(): void {
+		setIsDrawerOpen(false);
+		setSelectedEquipments([]);
 	}
 
 	// TODO: Fix these stuff, make the approach cleaner
@@ -146,6 +152,11 @@ function RouteComponent(): JSX.Element {
 								<Card className="space-y-2 border-input has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none">
 									<Checkbox
 										id={key}
+										checked={selectedEquipments.some(
+											(item) =>
+												item.equipment.id === equipment.id &&
+												item.equipment.status === equipment.status,
+										)}
 										className="sr-only"
 										value={equipment.id}
 										onCheckedChange={(checked) =>
@@ -203,7 +214,10 @@ function RouteComponent(): JSX.Element {
 				</div>
 			</section>
 
-			<Drawer>
+			<Drawer
+				open={isDrawerOpen}
+				onOpenChange={(open) => setIsDrawerOpen(open)}
+			>
 				{selectedEquipments.length > 0 ? (
 					<DrawerTrigger asChild>
 						<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-50 shadow">
@@ -221,6 +235,7 @@ function RouteComponent(): JSX.Element {
 						selectedEquipments={selectedEquipments}
 						className="px-4"
 						handleUpdateQuantity={handleUpdateQuantity}
+						onSuccess={onSuccess}
 					/>
 
 					<DrawerFooter>

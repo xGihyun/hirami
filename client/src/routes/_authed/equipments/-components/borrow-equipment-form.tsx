@@ -58,6 +58,7 @@ type BorrowEquipmentFormProps = {
 	selectedEquipments: SelectedEquipment[];
 	className: string;
 	handleUpdateQuantity: (equipment: Equipment, newQuantity: number) => void;
+	onSuccess: () => void;
 };
 
 export function BorrowEquipmentForm(
@@ -81,6 +82,7 @@ export function BorrowEquipmentForm(
 			return toast.loading("Submitting borrow request");
 		},
 		onSuccess: (data, _variables, toastId) => {
+			props.onSuccess();
 			toast.success(data.message, { id: toastId });
 		},
 		onError: (error, _variables, toastId) => {
