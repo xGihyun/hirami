@@ -14,7 +14,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
+import {
+	BACKEND_URL,
+	IMAGE_FORMATS,
+	IMAGE_SIZE_LIMIT,
+	type ApiResponse,
+} from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 
 const formSchema = z.object({
@@ -23,20 +28,38 @@ const formSchema = z.object({
 	firstName: z.string().nonempty(),
 	middleName: z.string().optional(),
 	lastName: z.string().nonempty(),
+	avatar: z
+		.instanceof(File)
+		.refine(
+			(file) => file.size <= IMAGE_SIZE_LIMIT,
+			"Image must be less than 5MB",
+		)
+		.refine(
+			(file) => IMAGE_FORMATS.includes(file.type),
+			"Only .jpg, .jpeg, and .png formats are supported",
+		)
+		.optional(),
 });
 
 async function register(
 	value: z.infer<typeof formSchema>,
 ): Promise<ApiResponse> {
+	const formData = new FormData();
+	formData.append("email", value.email);
+	formData.append("password", value.password);
+	formData.append("firstName", value.firstName);
+	if (value.middleName) formData.append("middleName", value.middleName);
+	formData.append("lastName", value.lastName);
+	if (value.avatar) formData.append("avatar", value.avatar);
+
 	const response = await fetch(`${BACKEND_URL}/register`, {
 		method: "POST",
-		body: JSON.stringify(value),
-		headers: { "Content-Type": "application/json" },
+		body: formData,
 	});
 
 	const result: ApiResponse = await response.json();
 	if (!response.ok) {
-		throw new Error(result.message || "Login failed");
+		throw new Error(result.message || "Register failed");
 	}
 
 	return result;
@@ -144,6 +167,28 @@ export function RegisterForm(): JSX.Element {
 							<FormLabel>Last Name</FormLabel>
 							<FormControl>
 								<Input placeholder="Enter your last name" {...field} />
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<FormField
+					control={form.control}
+					name="avatar"
+					render={({ field: { value, onChange, ...fieldProps } }) => (
+						<FormItem>
+							<FormLabel>Avatar</FormLabel>
+							<FormControl>
+								<Input
+									{...fieldProps}
+									type="file"
+									accept="image/jpeg,image/jpg,image/png"
+									onChange={(e) => {
+										const file = e.target.files?.[0];
+										onChange(file);
+									}}
+								/>
 							</FormControl>
 							<FormMessage />
 						</FormItem>

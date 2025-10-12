@@ -23,22 +23,28 @@ import { BACKEND_URL } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserRole } from "@/lib/user";
+import { useAuth } from "@/auth";
 
 export const Route = createFileRoute("/_authed/history/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
-		if (context.auth.user?.role === UserRole.Borrower) {
+		if (context.session.user.role === UserRole.Borrower) {
 			context.queryClient.ensureQueryData(
-				borrowHistoryQuery({ userId: context.auth.user.id }),
+				borrowHistoryQuery({ userId: context.session.user.id }),
 			);
-            return
+			return;
 		}
 		context.queryClient.ensureQueryData(borrowHistoryQuery({}));
 	},
 });
 
 function RouteComponent() {
-	const history = useSuspenseQuery(borrowHistoryQuery({}));
+	const auth = useAuth();
+	const history = useSuspenseQuery(
+		borrowHistoryQuery({
+			userId: auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
+		}),
+	);
 
 	const [selectedRequest, setSelectedRequest] = useState<BorrowTransaction>();
 

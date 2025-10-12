@@ -82,6 +82,7 @@ async function getBorrowHistory(
 	if (params.userId) {
 		url.searchParams.append("userId", params.userId);
 	}
+    console.log(url.toString())
 	const response = await fetch(url.toString(), {
 		method: "GET",
 	});

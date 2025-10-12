@@ -35,10 +35,10 @@ export const Route = createFileRoute("/_authed/return/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
 		context.queryClient.ensureQueryData(
-			borrowHistoryQuery({ userId: context.auth.user?.id }),
+			borrowHistoryQuery({ userId: context.session.user.id }),
 		);
 		context.queryClient.ensureQueryData(
-			returnRequestsQuery({ userId: context.auth.user?.id }),
+			returnRequestsQuery({ userId: context.session.user.id }),
 		);
 	},
 });
