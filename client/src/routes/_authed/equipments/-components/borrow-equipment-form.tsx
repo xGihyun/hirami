@@ -22,6 +22,14 @@ import { Caption } from "@/components/typography";
 import { NumberInput } from "@/components/number-input";
 import { Separator } from "@/components/ui/separator";
 import type { Equipment } from "@/lib/equipment";
+import { Calendar } from "@/components/ui/calendar";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { ChevronDownIcon } from "lucide-react";
+import { useState } from "react";
 
 const borrowEquipmentItemSchema = z.object({
 	equipmentTypeId: z.string().nonempty(),
@@ -33,7 +41,6 @@ const formSchema = z.object({
 	location: z.string().nonempty(),
 	purpose: z.string().nonempty(),
 	expectedReturnAt: z.date(),
-	// TODO: Should probably be set on the server instead
 	requestedBy: z.string().nonempty(),
 });
 
@@ -65,11 +72,15 @@ export function BorrowEquipmentForm(
 	props: BorrowEquipmentFormProps,
 ): JSX.Element {
 	const auth = useAuth();
+	const [openCalendar, setOpenCalendar] = useState(false);
+	const tomorrow = new Date();
+	tomorrow.setDate(tomorrow.getDate() + 1);
+
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			equipments: [],
-			expectedReturnAt: new Date(),
+			expectedReturnAt: tomorrow,
 			location: "",
 			purpose: "",
 			requestedBy: auth.user?.id,
@@ -172,6 +183,77 @@ export function BorrowEquipmentForm(
 							<FormControl>
 								<Input placeholder="PE Class" {...field} />
 							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<FormField
+					control={form.control}
+					name="expectedReturnAt"
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Expected Return Date & Time</FormLabel>
+							<div className="flex gap-2">
+								<Popover open={openCalendar} onOpenChange={setOpenCalendar}>
+									<PopoverTrigger asChild>
+										<Button
+											type="button"
+											variant="outline"
+											className="flex-1 justify-between font-normal bg-card font-open-sans text-base"
+										>
+											{field.value
+												? field.value.toLocaleDateString()
+												: "Select date"}
+											<ChevronDownIcon className="h-4 w-4" />
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent
+										className="w-auto overflow-hidden p-0"
+										align="start"
+									>
+										<Calendar
+											mode="single"
+											selected={field.value}
+											captionLayout="dropdown"
+											onSelect={(date) => {
+												if (date) {
+													const current = field.value;
+													date.setHours(
+														current.getHours(),
+														current.getMinutes(),
+													);
+													field.onChange(date);
+													setOpenCalendar(false);
+												}
+											}}
+											disabled={(date) =>
+												date < new Date(new Date().setHours(0, 0, 0, 0))
+											}
+										/>
+									</PopoverContent>
+								</Popover>
+
+								<Input
+									type="time"
+									step="60"
+									value={field.value.toLocaleTimeString("en-GB", {
+										hour: "2-digit",
+										minute: "2-digit",
+										hour12: false,
+									})}
+									onChange={(e) => {
+										const [hours, minutes] = e.target.value.split(":");
+										const newDate = new Date(field.value);
+										newDate.setHours(
+											parseInt(hours, 10),
+											parseInt(minutes, 10),
+										);
+										field.onChange(newDate);
+									}}
+									className="flex-1"
+								/>
+							</div>
 							<FormMessage />
 						</FormItem>
 					)}

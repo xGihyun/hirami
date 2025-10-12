@@ -22,12 +22,13 @@ import {
 	DrawerTitle,
 	DrawerTrigger,
 } from "@/components/ui/drawer";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
+import { BACKEND_URL, toImageUrl, type ApiResponse } from "@/lib/api";
 import { Caption, P } from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/auth";
 import type { User } from "@/lib/user";
+import { EmptyState } from "@/components/empty";
 
 export const Route = createFileRoute("/_authed/return-requests/")({
 	component: RouteComponent,
@@ -92,6 +93,20 @@ function RouteComponent(): JSX.Element {
 		mutation.mutate(payload);
 	}
 
+	if (data.length === 0) {
+		return (
+			<div className="relative space-y-4">
+				<p className="font-montserrat-medium text-sm mb-1">Return Requests</p>
+
+				<EmptyState>
+					No return requests yet.
+					<br />
+					(´｡• ᵕ •｡`)
+				</EmptyState>
+			</div>
+		);
+	}
+
 	return (
 		<div className="relative space-y-4">
 			<p className="font-montserrat-medium text-sm mb-1">Return Requests</p>
@@ -106,7 +121,7 @@ function RouteComponent(): JSX.Element {
 						const borrowerName = `${request.borrower.lastName}, ${request.borrower.firstName}`;
 						const requestedAt = format(
 							request.createdAt,
-							"MMM d, yyyy - hh:mm:ss a",
+							"MMM d, yyyy - hh:mm a",
 						);
 						return (
 							<DrawerTrigger asChild key={request.id}>
@@ -115,7 +130,7 @@ function RouteComponent(): JSX.Element {
 									className="border rounded p-4 text-start bg-card cursor-pointer hover:bg-card/50 transition-colors flex gap-2 items-center"
 								>
 									<Avatar className="size-12">
-										<AvatarImage src={request.borrower.avatarUrl} />
+										<AvatarImage src={toImageUrl(request.borrower.avatarUrl)} />
 										<AvatarFallback className="font-montserrat-bold">
 											{borrowerInitials}
 										</AvatarFallback>
@@ -137,7 +152,9 @@ function RouteComponent(): JSX.Element {
 					<DrawerHeader>
 						<DrawerTitle className="items-center flex flex-col">
 							<Avatar className="size-12">
-								<AvatarImage src={selectedRequest?.borrower.avatarUrl} />
+								<AvatarImage
+									src={toImageUrl(selectedRequest?.borrower.avatarUrl)}
+								/>
 								<AvatarFallback className="font-montserrat-bold">
 									{selectedRequest?.borrower.firstName[0]}
 									{selectedRequest?.borrower.lastName[0]}
@@ -152,7 +169,7 @@ function RouteComponent(): JSX.Element {
 						<DrawerDescription>
 							Requested on{" "}
 							{selectedRequest &&
-								format(selectedRequest.createdAt, "MMM d, yyyy - hh:mm:ss a")}
+								format(selectedRequest.createdAt, "MMM d, yyyy - hh:mm a")}
 						</DrawerDescription>
 					</DrawerHeader>
 

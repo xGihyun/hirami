@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { P } from "@/components/typography";
 import { z } from "zod";
 import {
 	BACKEND_URL,
@@ -25,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useRef, useState } from "react";
 import { IconEdit } from "@/lib/icons";
+import { Separator } from "@/components/ui/separator";
 
 export const Route = createFileRoute("/_authed/profile/")({
 	component: RouteComponent,
@@ -124,16 +124,23 @@ function RouteComponent() {
 
 	return (
 		<div className="flex flex-col justify-between h-full">
-			<div>
+			<div className="space-y-4">
 				<section className="flex flex-col items-center justify-center">
 					<div className="relative group">
-						<Avatar className="size-20">
-							<AvatarImage src={previewUrl || avatarUrl} />
-							<AvatarFallback className="text-3xl font-montserrat-semibold">
-								{auth.user?.firstName[0]}
-								{auth.user?.lastName[0]}
-							</AvatarFallback>
-						</Avatar>
+						<div className="relative">
+							<Avatar className="size-20">
+								<AvatarImage src={previewUrl || avatarUrl} />
+								<AvatarFallback className="text-3xl font-montserrat-semibold">
+									{auth.user?.firstName[0]}
+									{auth.user?.lastName[0]}
+								</AvatarFallback>
+							</Avatar>
+
+							<div className="size-6 flex justify-center items-center absolute right-0 bottom-0 rounded-full bg-foreground z-10">
+								<IconEdit className="size-3 text-background" />
+							</div>
+						</div>
+
 						<button
 							type="button"
 							onClick={() => fileInputRef.current?.click()}
@@ -141,6 +148,7 @@ function RouteComponent() {
 						>
 							<IconEdit className="size-6 text-white" />
 						</button>
+
 						<input
 							ref={fileInputRef}
 							type="file"
@@ -160,10 +168,12 @@ function RouteComponent() {
 						/>
 					</div>
 
-					<P>
+					<p className="font-montserrat-semibold">
 						{auth.user?.firstName} {auth.user?.lastName}
-					</P>
+					</p>
 				</section>
+
+				<Separator />
 
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

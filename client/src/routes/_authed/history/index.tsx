@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserRole } from "@/lib/user";
 import { useAuth } from "@/auth";
+import { Separator } from "@/components/ui/separator";
+import { EmptyState } from "@/components/empty";
 
 export const Route = createFileRoute("/_authed/history/")({
 	component: RouteComponent,
@@ -47,6 +49,20 @@ function RouteComponent() {
 	);
 
 	const [selectedRequest, setSelectedRequest] = useState<BorrowTransaction>();
+
+	if (history.data.length === 0) {
+		return (
+			<div className="relative space-y-4">
+				<p className="font-montserrat-medium text-sm mb-1">History</p>
+
+				<EmptyState>
+					No borrow transactions yet.
+					<br />
+					(´｡• ᵕ •｡`)
+				</EmptyState>
+			</div>
+		);
+	}
 
 	return (
 		<div className="relative space-y-4">
@@ -131,19 +147,21 @@ function RouteComponent() {
 						<DrawerDescription>
 							Borrowed on{" "}
 							{selectedRequest &&
-								format(selectedRequest.borrowedAt, "MMM d, yyyy - hh:mm:ss a")}
+								format(selectedRequest.borrowedAt, "MMM d, yyyy - hh:mm a")}
 							{selectedRequest?.actualReturnAt && (
 								<>
 									<br />
 									Returned on{" "}
 									{format(
 										selectedRequest.actualReturnAt,
-										"MMM d, yyyy - hh:mm:ss a",
+										"MMM d, yyyy - hh:mm a",
 									)}
 								</>
 							)}
 						</DrawerDescription>
 					</DrawerHeader>
+
+					<Separator />
 
 					{selectedRequest && (
 						<div className="px-4 py-4 flex-1 overflow-y-auto">

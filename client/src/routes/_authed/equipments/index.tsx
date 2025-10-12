@@ -205,7 +205,7 @@ function RouteComponent(): JSX.Element {
 									{equipment.borrower ? (
 										<div className="flex items-center gap-1">
 											<Avatar className="size-6 text-xs">
-												<AvatarImage src={equipment.borrower.avatarUrl} />
+												<AvatarImage src={toImageUrl(equipment.borrower.avatarUrl)} />
 												<AvatarFallback>{borrowerInitials}</AvatarFallback>
 											</Avatar>
 
