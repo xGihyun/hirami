@@ -68,7 +68,7 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) (cr
 	query := `
 	INSERT INTO equipment_type (name, brand, model, image_url)
 	VALUES ($1, $2, $3, $4)
-	ON CONFLICT (name, brand, COALESCE(model, ''))
+	ON CONFLICT (name, COALESCE(brand, ''), COALESCE(model, ''))
 	DO UPDATE SET 
 		equipment_type_id = equipment_type.equipment_type_id,
 		image_url = $4
@@ -239,7 +239,7 @@ func (r *repository) getEquipmentNames(ctx context.Context) ([]string, error) {
 	}
 	defer rows.Close()
 
-	var equipments []string
+	equipments := []string{}
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
