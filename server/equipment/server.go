@@ -317,6 +317,14 @@ func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api
 
 	res, err := s.repository.reviewBorrowRequest(ctx, data)
 	if err != nil {
+		if errors.Is(err, errInsufficientEquipmentQuantity) {
+			return api.Response{
+				Error:   fmt.Errorf("create return request: %w", err),
+				Code:    http.StatusBadRequest,
+				Message: "Requested quantity exceeds available equipment.",
+			}
+		}
+
 		return api.Response{
 			Error:   fmt.Errorf("review borrow request: %w", err),
 			Code:    http.StatusInternalServerError,

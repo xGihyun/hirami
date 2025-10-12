@@ -606,7 +606,7 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 			}
 
 			if len(equipmentIDs) < quantity {
-				return reviewBorrowResponse{}, fmt.Errorf("insufficient available equipment for request %s: requested %d, available %d", item.itemID, quantity, len(equipmentIDs))
+				return reviewBorrowResponse{}, errInsufficientEquipmentQuantity
 			}
 
 			for _, equipmentID := range equipmentIDs {
