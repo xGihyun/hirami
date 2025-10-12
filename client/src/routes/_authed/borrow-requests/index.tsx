@@ -96,7 +96,7 @@ function RouteComponent(): JSX.Element {
 		mutation.mutate(payload);
 	}
 
-    // TODO: Implement rejecting requests
+	// TODO: Implement rejecting requests
 
 	return (
 		<div className="relative space-y-4">
@@ -212,13 +212,13 @@ function RouteComponent(): JSX.Element {
 
 					<div className="px-4 space-y-4">
 						<div className="space-y-2">
-							<Label>Purpose</Label>
-							<Input value={selectedRequest?.purpose} readOnly />
+							<Label>Location</Label>
+							<Input value={selectedRequest?.location} readOnly />
 						</div>
 
 						<div className="space-y-2">
-							<Label>Location</Label>
-							<Input value={selectedRequest?.location} readOnly />
+							<Label>Purpose</Label>
+							<Input value={selectedRequest?.purpose} readOnly />
 						</div>
 					</div>
 

@@ -56,7 +56,7 @@ export enum BorrowRequestStatus {
 	Fulfilled = "fulfilled",
 }
 
-type BorrowTransaction = {
+export type BorrowTransaction = {
 	borrowRequestId: string;
 	borrowedAt: string;
 	borrower: Borrower;

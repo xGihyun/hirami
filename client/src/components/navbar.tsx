@@ -4,48 +4,73 @@ import {
 	IconHistory,
 	IconHome,
 	IconProfile,
+	IconRoundArrowDown,
 	IconRoundArrowUp,
 } from "@/lib/icons";
 import { LabelSmall } from "./typography";
+import { useAuth } from "@/auth";
+import { UserRole } from "@/lib/user";
 
 export function Navbar(): JSX.Element {
-	const options = linkOptions([
-		{
-			to: "/equipments",
-			label: "Home",
-			icon: IconHome,
-		},
-		{
-			to: "/return",
-			label: "Return",
-			icon: IconRoundArrowUp,
-		},
-		{
-			to: "/borrow-requests",
-			label: "History",
-			icon: IconHistory,
-		},
-		{
+	const auth = useAuth();
+
+	const getNavOptions = () => {
+		const commonOptions = [
+			{
+				to: "/equipments",
+				label: "Home",
+				icon: IconHome,
+			},
+		];
+
+		const profileOption = {
 			to: "/profile",
 			label: "Profile",
 			icon: IconProfile,
-		},
-		{
-			to: "/borrow-requests",
-			label: "Borrow Requests",
-			icon: IconProfile,
-		},
-		{
-			to: "/return-requests",
-			label: "Return Requests",
-			icon: IconProfile,
-		},
-	]);
+		};
+
+		const historyOption = {
+			to: "/history",
+			label: "History",
+			icon: IconHistory,
+		};
+
+		if (auth.user?.role === UserRole.Borrower) {
+			return [
+				...commonOptions,
+				{
+					to: "/return",
+					label: "Return",
+					icon: IconRoundArrowUp,
+				},
+				historyOption,
+				profileOption,
+			];
+		}
+
+		return [
+			...commonOptions,
+			{
+				to: "/borrow-requests",
+				label: "Borrows",
+				icon: IconRoundArrowDown,
+			},
+			{
+				to: "/return-requests",
+				label: "Returns",
+				icon: IconRoundArrowUp,
+			},
+			historyOption,
+			profileOption,
+		];
+	};
+
+	const navOptions = linkOptions(getNavOptions());
 
 	return (
 		<header className="flex gap-2 bg-card text-primary fixed bottom-0 left-0 w-full shadow z-50 pb-[env(safe-area-inset-bottom)]">
 			<nav className="py-1 px-2 font-bold flex justify-around w-full h-16">
-				{options.map((opt) => {
+				{navOptions.map((opt) => {
 					const Icon = opt.icon;
 					return (
 						<Link
