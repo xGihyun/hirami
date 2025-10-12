@@ -68,7 +68,7 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) (cr
 	query := `
 	INSERT INTO equipment_type (name, brand, model, image_url)
 	VALUES ($1, $2, $3, $4)
-	ON CONFLICT (name, COALESCE(brand, ''), COALESCE(model, ''))
+	ON CONFLICT ON CONSTRAINT equipment_type_name_brand_model_unique
 	DO UPDATE SET 
 		equipment_type_id = equipment_type.equipment_type_id,
 		image_url = $4
