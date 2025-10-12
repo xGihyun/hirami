@@ -23,13 +23,14 @@ import {
 	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { BACKEND_URL, toImageUrl, type ApiResponse } from "@/lib/api";
-import { Caption, P } from "@/components/typography";
+import { Caption, H2, P } from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/auth";
 import type { User } from "@/lib/user";
 import { EmptyState } from "@/components/empty";
 import { EventSource } from "eventsource";
+import { Separator } from "react-aria-components";
 
 export const Route = createFileRoute("/_authed/return-requests/")({
 	component: RouteComponent,
@@ -112,7 +113,7 @@ function RouteComponent(): JSX.Element {
 	if (data.length === 0) {
 		return (
 			<div className="relative space-y-4">
-				<p className="font-montserrat-medium text-sm mb-1">Return Requests</p>
+				<H2>Return Requests</H2>
 
 				<EmptyState>
 					No return requests yet.
@@ -125,7 +126,9 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="relative space-y-4">
-			<p className="font-montserrat-medium text-sm mb-1">Return Requests</p>
+			<H2>Return Requests</H2>
+
+			<Separator />
 
 			<Drawer
 				open={isDrawerOpen}

@@ -18,7 +18,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
-import { Caption, P } from "@/components/typography";
+import { Caption, H2, P } from "@/components/typography";
 import { BACKEND_URL, toImageUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -76,7 +76,7 @@ function RouteComponent() {
 	if (history.data.length === 0) {
 		return (
 			<div className="relative space-y-4">
-				<p className="font-montserrat-medium text-sm mb-1">History</p>
+				<H2>History</H2>
 
 				<EmptyState>
 					No borrow transactions yet.
@@ -89,7 +89,9 @@ function RouteComponent() {
 
 	return (
 		<div className="relative space-y-4">
-			<p className="font-montserrat-medium text-sm mb-1">History</p>
+			<H2>History</H2>
+
+			<Separator />
 
 			<Drawer>
 				<div className="grid grid-cols-1 lg:grid-cols-4 gap-2">

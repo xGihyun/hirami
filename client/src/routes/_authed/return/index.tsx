@@ -21,7 +21,7 @@ import {
 	DrawerTitle,
 	DrawerTrigger,
 } from "@/components/ui/drawer";
-import { Caption } from "@/components/typography";
+import { Caption, H2 } from "@/components/typography";
 import { IconRoundArrowUp } from "@/lib/icons";
 import { ReturnEquipmentForm } from "./-components/return-equipment-form";
 import { Separator } from "@/components/ui/separator";
@@ -277,9 +277,8 @@ function BorrowedEquipmentsSection({
 	if (equipments.length === 0) {
 		return (
 			<section>
-				<p className="font-montserrat-medium text-sm mb-1">
-					Borrowed Equipments
-				</p>
+				<H2>Borrow Equipments</H2>
+
 				<EmptyState>
 					No borrowed equipments yet.
 					<br />
@@ -293,7 +292,7 @@ function BorrowedEquipmentsSection({
 
 	return (
 		<section>
-			<p className="font-montserrat-medium text-sm mb-1">Borrowed Equipments</p>
+			<H2>Borrow Equipments</H2>
 
 			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 				{equipments.map((equipment) => {

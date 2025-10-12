@@ -24,7 +24,7 @@ import {
 	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { BACKEND_URL, toImageUrl, type ApiResponse } from "@/lib/api";
-import { Caption, H1, P } from "@/components/typography";
+import { Caption, H1, H2, P } from "@/components/typography";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -118,7 +118,7 @@ function RouteComponent(): JSX.Element {
 	if (data.length === 0) {
 		return (
 			<div className="relative space-y-4">
-				<p className="font-montserrat-medium text-sm mb-1">Borrow Requests</p>
+				<H2>Borrow Requests</H2>
 
 				<EmptyState>
 					No borrow requests yet.
@@ -131,7 +131,9 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="relative space-y-4">
-			<p className="font-montserrat-medium text-sm mb-1">Borrow Requests</p>
+			<H2>Borrow Requests</H2>
+
+			<Separator />
 
 			<Drawer
 				open={isDrawerOpen}
@@ -174,7 +176,9 @@ function RouteComponent(): JSX.Element {
 					<DrawerHeader>
 						<DrawerTitle className="items-center flex flex-col">
 							<Avatar className="size-12">
-								<AvatarImage src={toImageUrl(selectedRequest?.borrower.avatarUrl)} />
+								<AvatarImage
+									src={toImageUrl(selectedRequest?.borrower.avatarUrl)}
+								/>
 								<AvatarFallback className="font-montserrat-bold">
 									{selectedRequest?.borrower.firstName[0]}
 									{selectedRequest?.borrower.lastName[0]}
