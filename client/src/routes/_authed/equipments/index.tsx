@@ -24,10 +24,12 @@ import {
 } from "@/components/ui/drawer";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
 import { Caption } from "@/components/typography";
-import { IconRoundArrowDown } from "@/lib/icons";
+import { IconPlus, IconRoundArrowDown } from "@/lib/icons";
 import { Toggle } from "@/components/ui/toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/auth";
+import { UserRole } from "@/lib/user";
+import { RegisterEquipmentForm } from "./-components/register-equipment-form";
 
 export const Route = createFileRoute("/_authed/equipments/")({
 	component: RouteComponent,
@@ -162,7 +164,10 @@ function RouteComponent(): JSX.Element {
 										onCheckedChange={(checked) =>
 											handleSelect(equipment, 1, checked)
 										}
-										disabled={equipment.status == EquipmentStatus.Borrowed}
+										disabled={
+											equipment.status == EquipmentStatus.Borrowed ||
+											auth.user?.role !== UserRole.Borrower
+										}
 									/>
 
 									<div className="space-y-1">
@@ -214,37 +219,64 @@ function RouteComponent(): JSX.Element {
 				</div>
 			</section>
 
-			<Drawer
-				open={isDrawerOpen}
-				onOpenChange={(open) => setIsDrawerOpen(open)}
-			>
-				{selectedEquipments.length > 0 ? (
+			{auth.user?.role === UserRole.EquipmentManager ? (
+				<Drawer
+					open={isDrawerOpen}
+					onOpenChange={(open) => setIsDrawerOpen(open)}
+				>
 					<DrawerTrigger asChild>
 						<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-50 shadow">
-							<IconRoundArrowDown className="h-full" />
-							Borrow ({selectedEquipments.length} items)
+							<IconPlus className="h-full" />
+							Register Equipment
 						</Button>
 					</DrawerTrigger>
-				) : null}
-				<DrawerContent>
-					<DrawerHeader>
-						<DrawerTitle>Selected Equipments</DrawerTitle>
-					</DrawerHeader>
+					<DrawerContent>
+						<DrawerHeader>
+							<DrawerTitle>Register Equipment</DrawerTitle>
+						</DrawerHeader>
 
-					<BorrowEquipmentForm
-						selectedEquipments={selectedEquipments}
-						className="px-4"
-						handleUpdateQuantity={handleUpdateQuantity}
-						onSuccess={onSuccess}
-					/>
+						<RegisterEquipmentForm />
 
-					<DrawerFooter>
-						<DrawerClose asChild>
-							<Button variant="outline">Cancel</Button>
-						</DrawerClose>
-					</DrawerFooter>
-				</DrawerContent>
-			</Drawer>
+						<DrawerFooter>
+							<DrawerClose asChild>
+								<Button variant="outline">Cancel</Button>
+							</DrawerClose>
+						</DrawerFooter>
+					</DrawerContent>
+				</Drawer>
+			) : (
+				<Drawer
+					open={isDrawerOpen}
+					onOpenChange={(open) => setIsDrawerOpen(open)}
+				>
+					{selectedEquipments.length > 0 ? (
+						<DrawerTrigger asChild>
+							<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-50 shadow">
+								<IconRoundArrowDown className="h-full" />
+								Borrow ({selectedEquipments.length} items)
+							</Button>
+						</DrawerTrigger>
+					) : null}
+					<DrawerContent>
+						<DrawerHeader>
+							<DrawerTitle>Selected Equipments</DrawerTitle>
+						</DrawerHeader>
+
+						<BorrowEquipmentForm
+							selectedEquipments={selectedEquipments}
+							className="px-4"
+							handleUpdateQuantity={handleUpdateQuantity}
+							onSuccess={onSuccess}
+						/>
+
+						<DrawerFooter>
+							<DrawerClose asChild>
+								<Button variant="outline">Cancel</Button>
+							</DrawerClose>
+						</DrawerFooter>
+					</DrawerContent>
+				</Drawer>
+			)}
 		</div>
 	);
 }

@@ -1,4 +1,4 @@
-enum UserRole {
+export enum UserRole {
 	Borrower = "borrower",
 	EquipmentManager = "equipment_manager",
 }
