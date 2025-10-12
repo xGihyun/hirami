@@ -9,7 +9,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BACKEND_URL } from "@/lib/api";
+import { BACKEND_URL, toImageUrl } from "@/lib/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, type JSX } from "react";
 import type { CheckedState } from "@radix-ui/react-checkbox";
@@ -106,7 +106,7 @@ function RouteComponent(): JSX.Element {
 		<div className="relative space-y-4">
 			<section className="flex gap-2 items-center">
 				<Avatar className="size-12">
-					<AvatarImage src={auth.user?.avatarUrl} />
+					<AvatarImage src={toImageUrl(auth.user?.avatarUrl)} />
 					<AvatarFallback>
 						{auth.user?.firstName[0]}
 						{auth.user?.lastName[0]}

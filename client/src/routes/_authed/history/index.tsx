@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { useState } from "react";
 import { Caption, P } from "@/components/typography";
-import { BACKEND_URL } from "@/lib/api";
+import { BACKEND_URL, toImageUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserRole } from "@/lib/user";
@@ -81,7 +81,9 @@ function RouteComponent() {
 								>
 									<div className="flex gap-2 items-center">
 										<Avatar className="size-12">
-											<AvatarImage src={transaction.borrower.avatarUrl} />
+											<AvatarImage
+												src={toImageUrl(transaction.borrower.avatarUrl)}
+											/>
 											<AvatarFallback className="font-montserrat-bold">
 												{borrowerInitials}
 											</AvatarFallback>
@@ -112,7 +114,9 @@ function RouteComponent() {
 					<DrawerHeader>
 						<DrawerTitle className="items-center flex flex-col">
 							<Avatar className="size-12">
-								<AvatarImage src={selectedRequest?.borrower.avatarUrl} />
+								<AvatarImage
+									src={toImageUrl(selectedRequest?.borrower.avatarUrl)}
+								/>
 								<AvatarFallback className="font-montserrat-bold">
 									{selectedRequest?.borrower.firstName[0]}
 									{selectedRequest?.borrower.lastName[0]}
