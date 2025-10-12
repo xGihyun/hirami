@@ -319,7 +319,7 @@ func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	if err != nil {
 		if errors.Is(err, errInsufficientEquipmentQuantity) {
 			return api.Response{
-				Error:   fmt.Errorf("create return request: %w", err),
+				Error:   fmt.Errorf("review borrow request: %w", err),
 				Code:    http.StatusBadRequest,
 				Message: "Requested quantity exceeds available equipment.",
 			}
@@ -485,7 +485,7 @@ func (s *Server) getReturnRequests(w http.ResponseWriter, r *http.Request) api.R
 func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	userID := r.PathValue("userId")
+	userID := r.URL.Query().Get("userId")
 	params := borrowHistoryParams{
 		userID: &userID,
 	}

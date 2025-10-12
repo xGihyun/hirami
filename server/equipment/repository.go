@@ -1271,6 +1271,15 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
 	WHERE borrow_request.status IN ('approved', 'fulfilled')
+	`
+
+	var args []any
+	if params.userID != nil && *params.userID != "" {
+		query += " AND borrow_request.requested_by = $1"
+		args = append(args, *params.userID)
+	}
+
+	query += ` 
 	GROUP BY 
 		person.person_id,
 		person.first_name,
@@ -1290,18 +1299,8 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		borrow_request.borrow_request_id,
 		latest_return_data.created_at,
 		latest_return_data.reviewed_by
+	ORDER BY borrow_request.created_at DESC
 	`
-
-	var args []any
-	argIndex := 1
-
-	if params.userID != nil && *params.userID != "" {
-		query += fmt.Sprintf(" AND borrow_request.requested_by = $%d", argIndex)
-		args = append(args, *params.userID)
-		argIndex++
-	}
-
-	query += " ORDER BY borrow_request.created_at DESC"
 
 	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
