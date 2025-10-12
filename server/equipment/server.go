@@ -147,7 +147,7 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "create",
+		Event: "equipment:create",
 		Data:  equipment,
 	}
 	jsonData, err := json.Marshal(eventRes)
