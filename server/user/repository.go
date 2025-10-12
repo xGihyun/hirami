@@ -12,6 +12,7 @@ type Repository interface {
 	register(ctx context.Context, arg registerRequest) error
 	login(ctx context.Context, arg loginRequest) (signInResponse, error)
 	get(ctx context.Context, userID string) (user, error)
+	update(ctx context.Context, arg updateRequest) error
 
 	getByEmail(ctx context.Context, email string) (user, error)
 	invalidateSession(ctx context.Context, token string) error
@@ -262,22 +263,24 @@ func (r *repository) create(ctx context.Context, arg createRequest) error {
 
 type updateRequest struct {
 	PersonID   string  `json:"id"`
-	Email      string  `json:"email"`
-	FirstName  string  `json:"firstName"`
+	Email      *string `json:"email"`
+	FirstName  *string `json:"firstName"`
 	MiddleName *string `json:"middleName"`
-	LastName   string  `json:"lastName"`
-	Role       role    `json:"role"`
+	LastName   *string `json:"lastName"`
+	Role       *role   `json:"role"`
+	AvatarURL  *string `json:"avatarUrl"`
 }
 
 func (r *repository) update(ctx context.Context, arg updateRequest) error {
 	query := `
 	UPDATE person
-	SET email = $1,
-		first_name = $2,
-		middle_name = $3,
-		last_name = $4,
-		role = $5
-	WHERE person.person_id = $6
+	SET email = COALESCE($1, email),
+		first_name = COALESCE($2, first_name),
+		middle_name = COALESCE($3, middle_name),
+		last_name = COALESCE($4, last_name),
+		role = COALESCE($5, role),
+		avatar_url = COALESCE($6, avatar_url)
+	WHERE person_id = $7
 	`
 
 	if _, err := r.querier.Exec(
@@ -288,6 +291,7 @@ func (r *repository) update(ctx context.Context, arg updateRequest) error {
 		arg.MiddleName,
 		arg.LastName,
 		arg.Role,
+		arg.AvatarURL,
 		arg.PersonID,
 	); err != nil {
 		return err

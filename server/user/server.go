@@ -27,6 +27,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /login", api.Handler(s.Login))
 	mux.Handle("POST /logout", api.Handler(s.Logout))
 	mux.Handle("GET /users/{id}", api.Handler(s.Get))
+	mux.Handle("PATCH /users/{id}", api.Handler(s.Update))
 
 	mux.Handle("GET /sessions", api.Handler(s.GetSession))
 }
@@ -225,5 +226,82 @@ func (s *Server) GetSession(w http.ResponseWriter, r *http.Request) api.Response
 		Code:    http.StatusOK,
 		Message: "Successfully fetched user session.",
 		Data:    result,
+	}
+}
+
+func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+	if err := r.ParseMultipartForm(maxMemory); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update user: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid update user request.",
+		}
+	}
+
+	var avatarURL *string
+	file, header, err := r.FormFile("avatar")
+	if err == nil {
+		defer file.Close()
+		if header.Size > maxImageSize {
+			return api.Response{
+				Error:   fmt.Errorf("update user: image size exceeds 5MB limit"),
+				Code:    http.StatusBadRequest,
+				Message: "Image size must not exceed 5MB.",
+			}
+		}
+		contentType := header.Header.Get("Content-Type")
+		if contentType != "image/jpeg" && contentType != "image/jpg" && contentType != "image/png" {
+			return api.Response{
+				Error:   fmt.Errorf("update user: invalid image type %s", contentType),
+				Code:    http.StatusBadRequest,
+				Message: "Image must be in JPG or PNG format.",
+			}
+		}
+		uploadedURL, err := api.UploadFile(file, header, "users")
+		if err != nil {
+			return api.Response{
+				Error:   fmt.Errorf("update user: %w", err),
+				Code:    http.StatusInternalServerError,
+				Message: "Failed to upload user image.",
+			}
+		}
+		avatarURL = &uploadedURL
+	} else if err != http.ErrMissingFile {
+		return api.Response{
+			Error:   fmt.Errorf("update user: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid image upload.",
+		}
+	}
+
+	toOptionalString := func(s string) *string {
+		trimmed := strings.TrimSpace(s)
+		if trimmed == "" {
+			return nil
+		}
+		return &trimmed
+	}
+
+	data := updateRequest{
+		PersonID:   r.FormValue("id"),
+		Email:      toOptionalString(r.FormValue("email")),
+		FirstName:  toOptionalString(r.FormValue("firstName")),
+		MiddleName: toOptionalString(r.FormValue("middleName")),
+		LastName:   toOptionalString(r.FormValue("lastName")),
+		AvatarURL:  avatarURL,
+	}
+
+	if err := s.repository.update(ctx, data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update user: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update user.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully updated user.",
 	}
 }
