@@ -21,7 +21,7 @@ export type BorrowedEquipment = {
 	quantity: number;
 };
 
-type BorrowRequest = {
+export type BorrowRequest = {
 	id: string;
 	createdAt: string;
 	borrower: Borrower;
@@ -49,7 +49,7 @@ export const borrowRequestsQuery = queryOptions({
 	queryFn: getBorrowRequests,
 });
 
-enum BorrowRequestStatus {
+export enum BorrowRequestStatus {
 	Pending = "pending",
 	Approved = "approved",
 	Rejected = "rejected",
@@ -99,3 +99,10 @@ export const borrowHistoryQuery = (params: GetBorrowHistoryParams) =>
 		queryKey: ["borrow-history", params.userId],
 		queryFn: () => getBorrowHistory(params),
 	});
+
+export type ReviewBorrowRequest = {
+	id: string;
+	reviewedBy: string;
+	remarks?: string;
+	status: BorrowRequestStatus;
+};

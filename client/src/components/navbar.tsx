@@ -25,10 +25,19 @@ export function Navbar(): JSX.Element {
 			label: "History",
 			icon: IconHistory,
 		},
-
 		{
 			to: "/profile",
 			label: "Profile",
+			icon: IconProfile,
+		},
+		{
+			to: "/borrow-requests",
+			label: "Borrow Requests",
+			icon: IconProfile,
+		},
+		{
+			to: "/return-requests",
+			label: "Return Requests",
 			icon: IconProfile,
 		},
 	]);

@@ -13,6 +13,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedReturnIndexRouteImport } from './routes/_authed/return/index'
+import { Route as AuthedReturnRequestsIndexRouteImport } from './routes/_authed/return-requests/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedHistoryIndexRouteImport } from './routes/_authed/history/index'
 import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equipments/index'
@@ -38,6 +39,12 @@ const AuthedReturnIndexRoute = AuthedReturnIndexRouteImport.update({
   path: '/return/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedReturnRequestsIndexRoute =
+  AuthedReturnRequestsIndexRouteImport.update({
+    id: '/return-requests/',
+    path: '/return-requests/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedProfileIndexRoute = AuthedProfileIndexRouteImport.update({
   id: '/profile/',
   path: '/profile/',
@@ -78,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
+  '/return-requests': typeof AuthedReturnRequestsIndexRoute
   '/return': typeof AuthedReturnIndexRoute
 }
 export interface FileRoutesByTo {
@@ -88,6 +96,7 @@ export interface FileRoutesByTo {
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
+  '/return-requests': typeof AuthedReturnRequestsIndexRoute
   '/return': typeof AuthedReturnIndexRoute
 }
 export interface FileRoutesById {
@@ -101,6 +110,7 @@ export interface FileRoutesById {
   '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
   '/_authed/history/': typeof AuthedHistoryIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
+  '/_authed/return-requests/': typeof AuthedReturnRequestsIndexRoute
   '/_authed/return/': typeof AuthedReturnIndexRoute
 }
 export interface FileRouteTypes {
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
     | '/equipments'
     | '/history'
     | '/profile'
+    | '/return-requests'
     | '/return'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
     | '/equipments'
     | '/history'
     | '/profile'
+    | '/return-requests'
     | '/return'
   id:
     | '__root__'
@@ -135,6 +147,7 @@ export interface FileRouteTypes {
     | '/_authed/equipments/'
     | '/_authed/history/'
     | '/_authed/profile/'
+    | '/_authed/return-requests/'
     | '/_authed/return/'
   fileRoutesById: FileRoutesById
 }
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       path: '/return'
       fullPath: '/return'
       preLoaderRoute: typeof AuthedReturnIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/return-requests/': {
+      id: '/_authed/return-requests/'
+      path: '/return-requests'
+      fullPath: '/return-requests'
+      preLoaderRoute: typeof AuthedReturnRequestsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/profile/': {
@@ -236,6 +256,7 @@ interface AuthedRouteChildren {
   AuthedEquipmentsIndexRoute: typeof AuthedEquipmentsIndexRoute
   AuthedHistoryIndexRoute: typeof AuthedHistoryIndexRoute
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
+  AuthedReturnRequestsIndexRoute: typeof AuthedReturnRequestsIndexRoute
   AuthedReturnIndexRoute: typeof AuthedReturnIndexRoute
 }
 
@@ -244,6 +265,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedEquipmentsIndexRoute: AuthedEquipmentsIndexRoute,
   AuthedHistoryIndexRoute: AuthedHistoryIndexRoute,
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
+  AuthedReturnRequestsIndexRoute: AuthedReturnRequestsIndexRoute,
   AuthedReturnIndexRoute: AuthedReturnIndexRoute,
 }
 
