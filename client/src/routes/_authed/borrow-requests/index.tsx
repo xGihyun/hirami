@@ -10,7 +10,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import {
@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth";
 import type { User } from "@/lib/user";
 import { EmptyState } from "@/components/empty";
+import { EventSource } from "eventsource";
 
 export const Route = createFileRoute("/_authed/borrow-requests/")({
 	component: RouteComponent,
@@ -97,6 +98,21 @@ function RouteComponent(): JSX.Element {
 		mutation.mutate(payload);
 	}
 
+	useEffect(() => {
+		const eventSource = new EventSource(`${BACKEND_URL}/events`);
+
+		function handleEvent(_: MessageEvent): void {
+			queryClient.invalidateQueries(borrowRequestsQuery);
+		}
+
+		eventSource.addEventListener("equipment:create", handleEvent);
+
+		return () => {
+			eventSource.removeEventListener("equipment:create", handleEvent);
+			eventSource.close();
+		};
+	}, [queryClient]);
+
 	// TODO: Implement rejecting requests
 
 	if (data.length === 0) {
@@ -158,7 +174,7 @@ function RouteComponent(): JSX.Element {
 					<DrawerHeader>
 						<DrawerTitle className="items-center flex flex-col">
 							<Avatar className="size-12">
-								<AvatarImage src={selectedRequest?.borrower.avatarUrl} />
+								<AvatarImage src={toImageUrl(selectedRequest?.borrower.avatarUrl)} />
 								<AvatarFallback className="font-montserrat-bold">
 									{selectedRequest?.borrower.firstName[0]}
 									{selectedRequest?.borrower.lastName[0]}

@@ -3,7 +3,7 @@ import {
 	BorrowRequestStatus,
 	type BorrowTransaction,
 } from "@/lib/equipment/borrow";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	Drawer,
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Caption, P } from "@/components/typography";
 import { BACKEND_URL, toImageUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,28 @@ function RouteComponent() {
 	);
 
 	const [selectedRequest, setSelectedRequest] = useState<BorrowTransaction>();
+
+	const queryClient = useQueryClient();
+
+	useEffect(() => {
+		const eventSource = new EventSource(`${BACKEND_URL}/events`);
+
+		function handleEvent(_: MessageEvent): void {
+			queryClient.invalidateQueries(
+				borrowHistoryQuery({
+					userId:
+						auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
+				}),
+			);
+		}
+
+		eventSource.addEventListener("equipment:create", handleEvent);
+
+		return () => {
+			eventSource.removeEventListener("equipment:create", handleEvent);
+			eventSource.close();
+		};
+	}, [queryClient]);
 
 	if (history.data.length === 0) {
 		return (
