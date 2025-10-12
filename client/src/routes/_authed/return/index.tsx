@@ -141,12 +141,9 @@ function RouteComponent(): JSX.Element {
 	}, [queryClient]);
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-6">
 			{equipmentsToReturn.length > 0 ? (
-				<>
-					<RequestedToReturnSection equipments={equipmentsToReturn} />
-					<Separator />
-				</>
+				<RequestedToReturnSection equipments={equipmentsToReturn} />
 			) : null}
 
 			<BorrowedEquipmentsSection
@@ -214,8 +211,10 @@ function RequestedToReturnSection({
 	}
 
 	return (
-		<section>
-			<p className="font-montserrat-medium text-sm mb-1">Requested to Return</p>
+		<section className="space-y-4">
+			<H2>Returning Equipments</H2>
+
+			<Separator />
 
 			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 				{equipments.map((equipment) => {
@@ -277,7 +276,7 @@ function BorrowedEquipmentsSection({
 	if (equipments.length === 0) {
 		return (
 			<section>
-				<H2>Borrow Equipments</H2>
+				<H2>Borrowed Equipments</H2>
 
 				<EmptyState>
 					No borrowed equipments yet.
@@ -291,8 +290,10 @@ function BorrowedEquipmentsSection({
 	}
 
 	return (
-		<section>
-			<H2>Borrow Equipments</H2>
+		<section className="space-y-4">
+			<H2>Borrowed Equipments</H2>
+
+			<Separator />
 
 			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 				{equipments.map((equipment) => {

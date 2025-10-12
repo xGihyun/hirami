@@ -123,7 +123,7 @@ function RouteComponent() {
 		: undefined;
 
 	return (
-		<div className="flex flex-col justify-between">
+		<div className="flex flex-col justify-between gap-4">
 			<div className="space-y-4">
 				<section className="flex flex-col items-center justify-center">
 					<div className="relative group">
@@ -248,6 +248,8 @@ function RouteComponent() {
 					</form>
 				</Form>
 			</div>
+
+            <Separator />
 
 			<Button
 				onClick={handleLogout}

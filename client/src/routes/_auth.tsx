@@ -22,9 +22,13 @@ export const Route = createFileRoute("/_auth")({
 
 function RouteComponent(): JSX.Element {
 	const location = useLocation();
-	const currentTab = location.pathname.includes("/login")
-		? "login"
-		: "register";
+	function getCurrentTab(): "login" | "register" {
+		if (location.pathname.includes("/register")) {
+			return "register";
+		}
+
+		return "login";
+	}
 
 	return (
 		<div className="bg-gradient-to-t from-primary to-secondary flex flex-col px-2 h-svh pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
@@ -33,7 +37,7 @@ function RouteComponent(): JSX.Element {
 			</div>
 			<Card className="bg-background">
 				<CardContent>
-					<Tabs value={currentTab} className="w-full">
+					<Tabs value={getCurrentTab()} className="w-full">
 						<TabsList className="w-full">
 							<TabsTrigger value="login" asChild>
 								<Link to="/login">Login</Link>
