@@ -929,7 +929,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 	WHERE NOT EXISTS (
 		SELECT 1 FROM borrow_transaction
 		WHERE borrow_transaction.borrow_request_item_id = borrow_request_item.borrow_request_item_id
-	)
+	) AND borrow_request.status = 'pending'
 	GROUP BY 
 		borrow_request.borrow_request_id,
 		borrow_request.created_at,
