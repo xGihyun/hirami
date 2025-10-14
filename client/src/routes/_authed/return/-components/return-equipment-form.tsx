@@ -111,7 +111,7 @@ export function ReturnEquipmentForm(
 
 						return (
 							<div
-								key={equipment.equipmentTypeId}
+								key={equipment.borrowRequestItemId}
 								className="flex items-center gap-2 justify-between"
 							>
 								<div className="flex items-center gap-2 w-full">
