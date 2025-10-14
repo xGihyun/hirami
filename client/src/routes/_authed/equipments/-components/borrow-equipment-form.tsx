@@ -38,8 +38,8 @@ const borrowEquipmentItemSchema = z.object({
 
 const formSchema = z.object({
 	equipments: z.array(borrowEquipmentItemSchema),
-	location: z.string().nonempty(),
-	purpose: z.string().nonempty(),
+	location: z.string().nonempty({ message: "Please enter the location." }),
+	purpose: z.string().nonempty({ message: "Please enter your purpose." }),
 	expectedReturnAt: z.date(),
 	requestedBy: z.string().nonempty(),
 });
@@ -167,7 +167,7 @@ export function BorrowEquipmentForm(
 						<FormItem>
 							<FormLabel>Location</FormLabel>
 							<FormControl>
-								<Input placeholder="Volleyball Court" {...field} />
+								<Input placeholder="ex. Volleyball Court" {...field} />
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -181,7 +181,7 @@ export function BorrowEquipmentForm(
 						<FormItem>
 							<FormLabel>Purpose</FormLabel>
 							<FormControl>
-								<Input placeholder="PE Class" {...field} />
+								<Input placeholder="ex. PE Class" {...field} />
 							</FormControl>
 							<FormMessage />
 						</FormItem>

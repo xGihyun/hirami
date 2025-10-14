@@ -78,7 +78,7 @@ export function Navbar(): JSX.Element {
 							to={opt.to}
 							className="p-2 aspect-square"
 							activeProps={{
-								className: "bg-primary text-card rounded-full",
+								className: "bg-primary text-card rounded-lg",
 							}}
 						>
 							<div className="flex flex-col items-center justify-center h-full">

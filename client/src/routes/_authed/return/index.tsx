@@ -275,9 +275,10 @@ function BorrowedEquipmentsSection({
 }): JSX.Element {
 	if (equipments.length === 0) {
 		return (
-			<section>
+			<section className="h-[40rem]">
 				<H2>Borrowed Equipments</H2>
 
+                <div className="flex h-full items-center justify-center">
 				<EmptyState>
 					No borrowed equipments yet.
 					<br />
@@ -285,6 +286,7 @@ function BorrowedEquipmentsSection({
 					<br />
 					(´｡• ᵕ •｡`)
 				</EmptyState>
+                </div>
 			</section>
 		);
 	}
@@ -303,16 +305,16 @@ function BorrowedEquipmentsSection({
 						: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 					const isChecked = selectedEquipments.some(
 						(item) =>
-							item.equipment.equipmentTypeId === equipment.equipmentTypeId,
+							item.equipment.borrowRequestItemId === equipment.borrowRequestItemId,
 					);
 
 					return (
-						<label htmlFor={key} key={key}>
+						<label htmlFor={equipment.borrowRequestItemId} key={equipment.borrowRequestItemId}>
 							<Card className="space-y-2 border-input has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none">
 								<Checkbox
-									id={key}
+									id={equipment.borrowRequestItemId}
 									className="sr-only"
-									value={equipment.equipmentTypeId}
+									value={equipment.borrowRequestItemId}
 									checked={isChecked}
 									onCheckedChange={(checked) => onSelect(equipment, 1, checked)}
 								/>

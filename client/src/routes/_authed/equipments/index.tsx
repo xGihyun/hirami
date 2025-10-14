@@ -27,7 +27,7 @@ import {
 	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
-import { Caption } from "@/components/typography";
+import { Caption, H2 } from "@/components/typography";
 import { IconPlus, IconRoundArrowDown } from "@/lib/icons";
 import { Toggle } from "@/components/ui/toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -145,9 +145,9 @@ function RouteComponent(): JSX.Element {
 
 				<div>
 					<p className="text-sm font-montserrat-medium">Welcome,</p>
-					<p className="text-xl font-montserrat-medium">
+					<H2 className="text-xl font-montserrat-medium">
 						{auth.user?.firstName}
-					</p>
+					</H2>
 				</div>
 			</section>
 
