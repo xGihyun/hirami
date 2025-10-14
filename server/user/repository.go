@@ -61,7 +61,7 @@ func (r *repository) register(ctx context.Context, arg registerRequest) error {
 		arg.FirstName,
 		arg.MiddleName,
 		arg.LastName,
-		borrower,
+		Borrower,
 		arg.AvatarURL,
 	)
 	if err := row.Scan(&userID); err != nil {
@@ -128,7 +128,7 @@ type user struct {
 	MiddleName *string   `json:"middleName"`
 	LastName   string    `json:"lastName"`
 	AvatarURL  *string   `json:"avatarUrl"`
-	Role       role      `json:"role"`
+	Role       Role      `json:"role"`
 }
 
 type BasicInfo struct {
@@ -139,11 +139,11 @@ type BasicInfo struct {
 	AvatarURL  *string `json:"avatarUrl"`
 }
 
-type role string
+type Role string
 
 const (
-	borrower         role = "borrower"
-	equipmentManager role = "equipment_manager"
+	Borrower         Role = "borrower"
+	EquipmentManager Role = "equipment_manager"
 )
 
 func (r *repository) get(ctx context.Context, userID string) (user, error) {
@@ -227,7 +227,7 @@ type createRequest struct {
 	FirstName  string  `json:"firstName"`
 	MiddleName *string `json:"middleName"`
 	LastName   string  `json:"lastName"`
-	Role       role    `json:"role"`
+	Role       Role    `json:"role"`
 }
 
 func (r *repository) create(ctx context.Context, arg createRequest) error {
@@ -267,7 +267,7 @@ type updateRequest struct {
 	FirstName  *string `json:"firstName"`
 	MiddleName *string `json:"middleName"`
 	LastName   *string `json:"lastName"`
-	Role       *role   `json:"role"`
+	Role       *Role   `json:"role"`
 	AvatarURL  *string `json:"avatarUrl"`
 }
 
