@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/sessions?token={{sessionToken}}
+  url: {{baseUrl}}/sessions
   body: none
   auth: inherit
 }
 
 params:query {
-  token: {{sessionToken}}
+  ~token: {{sessionToken}}
 }
 
 settings {
