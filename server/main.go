@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -10,7 +12,9 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
+	"github.com/pressly/goose/v3"
 	"github.com/rs/cors"
 	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/equipment"
@@ -22,6 +26,30 @@ type app struct {
 	user      user.Server
 	equipment equipment.Server
 	sse       sse.Server
+}
+
+//go:embed migrations/*.sql
+var embedMigrations embed.FS
+
+func migrate(dbURL string) {
+	db, err := sql.Open("pgx", dbURL)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	goose.SetBaseFS(embedMigrations)
+
+	if err := goose.SetDialect("postgres"); err != nil {
+		panic(err)
+	}
+
+	// Run migrations from the embedded FS
+	if err := goose.Up(db, "migrations"); err != nil {
+		panic(err)
+	}
+
+	slog.Info("Database migrations applied successfully.")
 }
 
 func main() {
@@ -44,6 +72,10 @@ func main() {
 	if !ok {
 		panic("DATABASE_URL not found.")
 	}
+
+	migrate(dbURL)
+
+	// Run server
 
 	ctx := context.Background()
 
@@ -94,14 +126,14 @@ func main() {
 }
 
 func health(w http.ResponseWriter, r *http.Request) {
-	resetLink := "https://github.com"
-	if err := SendEmail(
-		"testuser@hirami.test",
-		"Password Reset Request",
-		"Click here to reset: "+resetLink,
-	); err != nil {
-		slog.Error(err.Error())
-	}
+	// resetLink := "https://github.com"
+	// if err := SendEmail(
+	// 	"testuser@hirami.test",
+	// 	"Password Reset Request",
+	// 	"Click here to reset: "+resetLink,
+	// ); err != nil {
+	// 	slog.Error(err.Error())
+	// }
 
 	if err := json.NewEncoder(w).Encode("Hello, World!"); err != nil {
 		slog.Error(err.Error())
@@ -110,6 +142,7 @@ func health(w http.ResponseWriter, r *http.Request) {
 }
 
 // SendEmail sends email via Mailpit
+// NOTE: Remove this later, to be used for Password Reset feature
 func SendEmail(to, subject, body string) error {
 	from := "noreply@hirami.test"
 	smtpHost := "localhost"
