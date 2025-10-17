@@ -1,0 +1,22 @@
+meta {
+  name: confirm-return-request
+  type: http
+  seq: 15
+}
+
+patch {
+  url: {{baseUrl}}/return-requests/{{returnRequestId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "returnRequestId": "{{returnRequestId}}",
+    "reviewedBy": "{{userId}}"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

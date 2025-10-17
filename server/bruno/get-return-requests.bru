@@ -1,0 +1,19 @@
+meta {
+  name: get-return-requests
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/return-requests?userId={{userId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  userId: {{userId}}
+}
+
+settings {
+  encodeUrl: true
+}

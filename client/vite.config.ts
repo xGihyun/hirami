@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import Icons from "unplugin-icons/vite";
 
 import tanstackRouter from "@tanstack/router-plugin/vite";
 import { resolve } from "path";
@@ -14,6 +15,7 @@ export default defineConfig({
 		}),
 		viteReact(),
 		tailwindcss(),
+		Icons({ compiler: "jsx", jsx: "react" }),
 	],
 	resolve: {
 		alias: {
@@ -30,5 +32,8 @@ export default defineConfig({
 		minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
 		// produce sourcemaps for debug builds
 		sourcemap: !!process.env.TAURI_ENV_DEBUG,
+	},
+	server: {
+		host: "0.0.0.0",
 	},
 });

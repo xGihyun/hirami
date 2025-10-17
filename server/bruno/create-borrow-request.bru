@@ -1,0 +1,38 @@
+meta {
+  name: create-borrow-request
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/borrow-requests
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "equipments": [
+      {
+        "equipmentTypeId": "{{equipmentTypes[0].id}}",
+        "quantity": 2
+      },
+      {
+        "equipmentTypeId": "{{equipmentTypes[1].id}}",
+        "quantity": 2
+      }    
+    ],
+    "location": "Gym",
+    "purpose": "PE Class",
+    "expectedReturnAt": "2025-09-26T03:19:44.380Z",
+    "requestedBy": "{{requestedBy}}"
+  }
+}
+
+vars:post-response {
+  createdBorrowRequest: {{res.body.data}}
+}
+
+settings {
+  encodeUrl: true
+}

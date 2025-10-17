@@ -1,0 +1,15 @@
+meta {
+  name: get-borrow-requests
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/borrow-requests
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

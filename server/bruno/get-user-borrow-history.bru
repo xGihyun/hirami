@@ -1,0 +1,19 @@
+meta {
+  name: get-user-borrow-history
+  type: http
+  seq: 18
+}
+
+get {
+  url: {{baseUrl}}/borrow-history?userId={{userId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  userId: {{userId}}
+}
+
+settings {
+  encodeUrl: true
+}

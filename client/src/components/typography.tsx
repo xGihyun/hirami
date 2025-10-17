@@ -1,0 +1,38 @@
+import type { JSX, ReactNode } from "react";
+
+type Props = {
+	children: ReactNode;
+    className?: string;
+};
+
+export function H1(props: Props): JSX.Element {
+	return (
+		<h1 className="font-montserrat-bold text-4xl tracking-tight leading-10">
+			{props.children}
+		</h1>
+	);
+}
+
+export function H2(props: Props): JSX.Element {
+	return (
+		<h2 className="font-montserrat-semibold text-2xl tracking-tight leading-8">
+			{props.children}
+		</h2>
+	);
+}
+
+export function P(props: Props): JSX.Element {
+	return <p className="font-open-sans text-base leading-6">{props.children}</p>;
+}
+
+export function Caption(props: Props): JSX.Element {
+	return <p className="font-open-sans text-xs leading-4">{props.children}</p>;
+}
+
+export function LabelSmall(props: Props): JSX.Element {
+	return (
+		<span className="font-montserrat-medium text-[0.7rem] leading-4">
+			{props.children}
+		</span>
+	);
+}

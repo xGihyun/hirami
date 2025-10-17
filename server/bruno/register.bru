@@ -1,0 +1,34 @@
+meta {
+  name: register
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/register
+  body: multipartForm
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "test@test.com",
+    "password": "password",
+    "firstName": "Test",
+    "middleName": null,
+    "lastName": "User"
+  }
+}
+
+body:multipart-form {
+  email: delete@test.com
+  password: password
+  firstName: Equipment
+  middleName: 
+  lastName: Manager
+  avatar: @file()
+}
+
+settings {
+  encodeUrl: true
+}

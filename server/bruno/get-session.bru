@@ -1,0 +1,19 @@
+meta {
+  name: get-session
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/sessions
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~token: {{sessionToken}}
+}
+
+settings {
+  encodeUrl: true
+}

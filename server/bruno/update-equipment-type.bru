@@ -1,0 +1,27 @@
+meta {
+  name: update-equipment-type
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{baseUrl}}/equipments/{{equipmentTypeId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Volleyball",
+    "brand": "Nike",
+    "model": "Tournament"
+  }
+}
+
+vars:pre-request {
+  equipmentTypeId: 44cf887c-914e-4b80-a639-f120d8683752
+}
+
+settings {
+  encodeUrl: true
+}

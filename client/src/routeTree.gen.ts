@@ -9,38 +9,170 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthedReturnIndexRouteImport } from './routes/_authed/return/index'
+import { Route as AuthedReturnRequestsIndexRouteImport } from './routes/_authed/return-requests/index'
+import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
+import { Route as AuthedHistoryIndexRouteImport } from './routes/_authed/history/index'
+import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equipments/index'
+import { Route as AuthedBorrowRequestsIndexRouteImport } from './routes/_authed/borrow-requests/index'
+import { Route as AuthRegisterIndexRouteImport } from './routes/_auth/register/index'
+import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 
+const AuthedRoute = AuthedRouteImport.update({
+  id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedReturnIndexRoute = AuthedReturnIndexRouteImport.update({
+  id: '/return/',
+  path: '/return/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedReturnRequestsIndexRoute =
+  AuthedReturnRequestsIndexRouteImport.update({
+    id: '/return-requests/',
+    path: '/return-requests/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProfileIndexRoute = AuthedProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHistoryIndexRoute = AuthedHistoryIndexRouteImport.update({
+  id: '/history/',
+  path: '/history/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedEquipmentsIndexRoute = AuthedEquipmentsIndexRouteImport.update({
+  id: '/equipments/',
+  path: '/equipments/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedBorrowRequestsIndexRoute =
+  AuthedBorrowRequestsIndexRouteImport.update({
+    id: '/borrow-requests/',
+    path: '/borrow-requests/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthRegisterIndexRoute = AuthRegisterIndexRouteImport.update({
+  id: '/register/',
+  path: '/register/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
+  id: '/login/',
+  path: '/login/',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof AuthLoginIndexRoute
+  '/register': typeof AuthRegisterIndexRoute
+  '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
+  '/equipments': typeof AuthedEquipmentsIndexRoute
+  '/history': typeof AuthedHistoryIndexRoute
+  '/profile': typeof AuthedProfileIndexRoute
+  '/return-requests': typeof AuthedReturnRequestsIndexRoute
+  '/return': typeof AuthedReturnIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof AuthLoginIndexRoute
+  '/register': typeof AuthRegisterIndexRoute
+  '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
+  '/equipments': typeof AuthedEquipmentsIndexRoute
+  '/history': typeof AuthedHistoryIndexRoute
+  '/profile': typeof AuthedProfileIndexRoute
+  '/return-requests': typeof AuthedReturnRequestsIndexRoute
+  '/return': typeof AuthedReturnIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_auth': typeof AuthRouteWithChildren
+  '/_authed': typeof AuthedRouteWithChildren
+  '/_auth/login/': typeof AuthLoginIndexRoute
+  '/_auth/register/': typeof AuthRegisterIndexRoute
+  '/_authed/borrow-requests/': typeof AuthedBorrowRequestsIndexRoute
+  '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
+  '/_authed/history/': typeof AuthedHistoryIndexRoute
+  '/_authed/profile/': typeof AuthedProfileIndexRoute
+  '/_authed/return-requests/': typeof AuthedReturnRequestsIndexRoute
+  '/_authed/return/': typeof AuthedReturnIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/borrow-requests'
+    | '/equipments'
+    | '/history'
+    | '/profile'
+    | '/return-requests'
+    | '/return'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/register'
+    | '/borrow-requests'
+    | '/equipments'
+    | '/history'
+    | '/profile'
+    | '/return-requests'
+    | '/return'
+  id:
+    | '__root__'
+    | '/'
+    | '/_auth'
+    | '/_authed'
+    | '/_auth/login/'
+    | '/_auth/register/'
+    | '/_authed/borrow-requests/'
+    | '/_authed/equipments/'
+    | '/_authed/history/'
+    | '/_authed/profile/'
+    | '/_authed/return-requests/'
+    | '/_authed/return/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRouteWithChildren
+  AuthedRoute: typeof AuthedRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_authed': {
+      id: '/_authed'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +180,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/return/': {
+      id: '/_authed/return/'
+      path: '/return'
+      fullPath: '/return'
+      preLoaderRoute: typeof AuthedReturnIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/return-requests/': {
+      id: '/_authed/return-requests/'
+      path: '/return-requests'
+      fullPath: '/return-requests'
+      preLoaderRoute: typeof AuthedReturnRequestsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/profile/': {
+      id: '/_authed/profile/'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthedProfileIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/history/': {
+      id: '/_authed/history/'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AuthedHistoryIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/equipments/': {
+      id: '/_authed/equipments/'
+      path: '/equipments'
+      fullPath: '/equipments'
+      preLoaderRoute: typeof AuthedEquipmentsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/borrow-requests/': {
+      id: '/_authed/borrow-requests/'
+      path: '/borrow-requests'
+      fullPath: '/borrow-requests'
+      preLoaderRoute: typeof AuthedBorrowRequestsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_auth/register/': {
+      id: '/_auth/register/'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof AuthRegisterIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/login/': {
+      id: '/_auth/login/'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
+interface AuthRouteChildren {
+  AuthLoginIndexRoute: typeof AuthLoginIndexRoute
+  AuthRegisterIndexRoute: typeof AuthRegisterIndexRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthLoginIndexRoute: AuthLoginIndexRoute,
+  AuthRegisterIndexRoute: AuthRegisterIndexRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
+interface AuthedRouteChildren {
+  AuthedBorrowRequestsIndexRoute: typeof AuthedBorrowRequestsIndexRoute
+  AuthedEquipmentsIndexRoute: typeof AuthedEquipmentsIndexRoute
+  AuthedHistoryIndexRoute: typeof AuthedHistoryIndexRoute
+  AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
+  AuthedReturnRequestsIndexRoute: typeof AuthedReturnRequestsIndexRoute
+  AuthedReturnIndexRoute: typeof AuthedReturnIndexRoute
+}
+
+const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedBorrowRequestsIndexRoute: AuthedBorrowRequestsIndexRoute,
+  AuthedEquipmentsIndexRoute: AuthedEquipmentsIndexRoute,
+  AuthedHistoryIndexRoute: AuthedHistoryIndexRoute,
+  AuthedProfileIndexRoute: AuthedProfileIndexRoute,
+  AuthedReturnRequestsIndexRoute: AuthedReturnRequestsIndexRoute,
+  AuthedReturnIndexRoute: AuthedReturnIndexRoute,
+}
+
+const AuthedRouteWithChildren =
+  AuthedRoute._addFileChildren(AuthedRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRouteWithChildren,
+  AuthedRoute: AuthedRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

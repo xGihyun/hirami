@@ -1,0 +1,19 @@
+meta {
+  name: get-borrow-history
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/borrow-history
+  body: none
+  auth: inherit
+}
+
+vars:post-response {
+  borrowHistory: {{res.body.data}}
+}
+
+settings {
+  encodeUrl: true
+}

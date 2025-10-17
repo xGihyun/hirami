@@ -31,6 +31,22 @@ services:
       - 8025:8025
       - 1025:1025
 
+  server:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: hirami-server
+    ports:
+      - 3002:3002
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - valkey
+    volumes:
+      - .:/app
+    command: go run .
+
 volumes:
   hirami-pg:
   hirami-valkey:

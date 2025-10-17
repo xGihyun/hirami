@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -10,9 +12,45 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
+	"github.com/pressly/goose/v3"
+	"github.com/rs/cors"
 	"github.com/valkey-io/valkey-go"
+	"github.com/xGihyun/hirami/equipment"
+	"github.com/xGihyun/hirami/sse"
+	"github.com/xGihyun/hirami/user"
 )
+
+type app struct {
+	user      user.Server
+	equipment equipment.Server
+	sse       sse.Server
+}
+
+//go:embed migrations/*.sql
+var embedMigrations embed.FS
+
+func migrate(dbURL string) {
+	db, err := sql.Open("pgx", dbURL)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	goose.SetBaseFS(embedMigrations)
+
+	if err := goose.SetDialect("postgres"); err != nil {
+		panic(err)
+	}
+
+	// Run migrations from the embedded FS
+	if err := goose.Up(db, "migrations"); err != nil {
+		panic(err)
+	}
+
+	slog.Info("Database migrations applied successfully.")
+}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -35,6 +73,10 @@ func main() {
 		panic("DATABASE_URL not found.")
 	}
 
+	migrate(dbURL)
+
+	// Run server
+
 	ctx := context.Background()
 
 	pool, err := pgxpool.New(ctx, dbURL)
@@ -47,6 +89,19 @@ func main() {
 
 	router.HandleFunc("GET /", health)
 
+	app := app{
+		user:      *user.NewServer(user.NewRepository(pool)),
+		equipment: *equipment.NewServer(equipment.NewRepository(pool), valkeyClient),
+		sse:       *sse.NewServer(valkeyClient),
+	}
+
+	fs := http.FileServer(http.Dir("_uploads"))
+	router.Handle("GET /uploads/", http.StripPrefix("/uploads", fs))
+
+	router.HandleFunc("GET /events", app.sse.EventsHandler)
+	app.user.SetupRoutes(router)
+	app.equipment.SetupRoutes(router)
+
 	host, ok := os.LookupEnv("HOST")
 	if !ok {
 		panic("HOST not found.")
@@ -57,25 +112,28 @@ func main() {
 		panic("PORT not found.")
 	}
 
+	handler := cors.AllowAll().Handler(router)
 	server := http.Server{
 		Addr:    host + ":" + port,
-		Handler: router,
+		Handler: handler,
 	}
 
 	slog.Info(fmt.Sprintf("Starting server on port: %s", port))
 
-	server.ListenAndServe()
+	if err := server.ListenAndServe(); err != nil {
+		slog.Error(err.Error())
+	}
 }
 
 func health(w http.ResponseWriter, r *http.Request) {
-	resetLink := "https://github.com"
-	if err := SendEmail(
-		"testuser@hirami.test",
-		"Password Reset Request",
-		"Click here to reset: "+resetLink,
-	); err != nil {
-		slog.Error(err.Error())
-	}
+	// resetLink := "https://github.com"
+	// if err := SendEmail(
+	// 	"testuser@hirami.test",
+	// 	"Password Reset Request",
+	// 	"Click here to reset: "+resetLink,
+	// ); err != nil {
+	// 	slog.Error(err.Error())
+	// }
 
 	if err := json.NewEncoder(w).Encode("Hello, World!"); err != nil {
 		slog.Error(err.Error())
@@ -84,6 +142,7 @@ func health(w http.ResponseWriter, r *http.Request) {
 }
 
 // SendEmail sends email via Mailpit
+// NOTE: Remove this later, to be used for Password Reset feature
 func SendEmail(to, subject, body string) error {
 	from := "noreply@hirami.test"
 	smtpHost := "localhost"

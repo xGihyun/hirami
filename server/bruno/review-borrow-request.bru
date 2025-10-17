@@ -1,0 +1,24 @@
+meta {
+  name: review-borrow-request
+  type: http
+  seq: 12
+}
+
+patch {
+  url: {{baseUrl}}/review-borrow-requests
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "id": "{{createdBorrowRequest.borrowRequestId}}",
+    "reviewedBy": "{{reviewedBy}}",
+    "remarks": null,
+    "status": "approved"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,35 @@
+meta {
+  name: create-equipment
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/equipments
+  body: multipartForm
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Volleyball",
+    "brand": "Mikasa",
+    "model": null,
+    "imageUrl": null,
+    "acquisitionDate": "2025-09-26T03:19:44.380Z",
+    "quantity": 1
+  }
+}
+
+body:multipart-form {
+  name: Volleyball
+  brand: Mikasa
+  model: 
+  acquisitionDate: 2025-09-26T03:19:44.380Z
+  quantity: 1
+  image: @file()
+}
+
+settings {
+  encodeUrl: true
+}

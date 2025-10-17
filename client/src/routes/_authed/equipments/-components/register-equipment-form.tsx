@@ -1,0 +1,249 @@
+import type { JSX } from "react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import {
+	BACKEND_URL,
+	IMAGE_FORMATS,
+	IMAGE_SIZE_LIMIT,
+	type ApiResponse,
+} from "@/lib/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CalendarIcon } from "lucide-react";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { equipmentsQuery } from "@/lib/equipment";
+
+const formSchema = z.object({
+	name: z.string().nonempty(),
+	brand: z.string().optional(),
+	model: z.string().optional(),
+	acquisitionDate: z.date(),
+	quantity: z.number().positive(),
+	image: z
+		.instanceof(File)
+		.refine(
+			(file) => file.size <= IMAGE_SIZE_LIMIT,
+			"Image must be less than 5MB",
+		)
+		.refine(
+			(file) => IMAGE_FORMATS.includes(file.type),
+			"Only .jpg, .jpeg, and .png formats are supported",
+		)
+		.optional(),
+});
+
+async function register(
+	value: z.infer<typeof formSchema>,
+): Promise<ApiResponse> {
+	const formData = new FormData();
+	formData.append("name", value.name);
+	if (value.brand) formData.append("brand", value.brand);
+	if (value.model) formData.append("model", value.model);
+	formData.append("acquisitionDate", value.acquisitionDate.toISOString());
+	formData.append("quantity", value.quantity.toString());
+	if (value.image) formData.append("image", value.image);
+
+	const response = await fetch(`${BACKEND_URL}/equipments`, {
+		method: "POST",
+		body: formData,
+	});
+
+	const result: ApiResponse = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result;
+}
+
+type RegisterEquipmentFormProps = {
+	onSuccess: () => void;
+};
+
+export function RegisterEquipmentForm(
+	props: RegisterEquipmentFormProps,
+): JSX.Element {
+	const queryClient = useQueryClient();
+	const form = useForm<z.infer<typeof formSchema>>({
+		resolver: zodResolver(formSchema),
+		defaultValues: {
+			name: "",
+			brand: "",
+			model: "",
+			acquisitionDate: new Date(),
+			quantity: 1,
+		},
+	});
+
+	const mutation = useMutation({
+		mutationFn: register,
+		onMutate: () => {
+			return toast.loading("Registering equipment");
+		},
+		onSuccess: (data, _variables, toastId) => {
+			queryClient.invalidateQueries(equipmentsQuery());
+			props.onSuccess();
+			toast.success(data.message, { id: toastId });
+		},
+		onError: (error, _variables, toastId) => {
+			toast.error(error.message, { id: toastId });
+		},
+	});
+
+	async function onSubmit(value: z.infer<typeof formSchema>): Promise<void> {
+		mutation.mutate(value);
+	}
+
+	return (
+		<Form {...form}>
+			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-4">
+				<FormField
+					control={form.control}
+					name="name"
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Name</FormLabel>
+							<FormControl>
+								<Input placeholder="Volleyball" {...field} />
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<FormField
+					control={form.control}
+					name="brand"
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Brand</FormLabel>
+							<FormControl>
+								<Input placeholder="Mikasa" {...field} />
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<FormField
+					control={form.control}
+					name="model"
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Model</FormLabel>
+							<FormControl>
+								<Input placeholder="V200W" {...field} />
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<FormField
+					control={form.control}
+					name="acquisitionDate"
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Acquisition Date</FormLabel>
+							<Popover>
+								<PopoverTrigger asChild>
+									<FormControl>
+										<Button
+											variant={"outline"}
+											className={cn(
+												"w-full bg-card pl-3 text-left",
+												!field.value && "text-muted-foreground",
+											)}
+										>
+											{field.value ? (
+												format(field.value, "PPP")
+											) : (
+												<span>Pick a date</span>
+											)}
+											<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+										</Button>
+									</FormControl>
+								</PopoverTrigger>
+								<PopoverContent className="w-auto p-0" align="start">
+									<Calendar
+										mode="single"
+										selected={field.value}
+										onSelect={field.onChange}
+										disabled={(date) =>
+											date > new Date() || date < new Date("1900-01-01")
+										}
+										captionLayout="dropdown"
+									/>
+								</PopoverContent>
+							</Popover>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<FormField
+					control={form.control}
+					name="quantity"
+					render={({ field }) => (
+						<FormItem>
+							<FormLabel>Quantity</FormLabel>
+							<FormControl>
+								<Input
+									type="number"
+									placeholder="Enter quantity"
+									{...field}
+									onChange={(e) => field.onChange(e.target.valueAsNumber)}
+								/>
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<FormField
+					control={form.control}
+					name="image"
+					render={({ field: { value, onChange, ...fieldProps } }) => (
+						<FormItem>
+							<FormLabel>Image</FormLabel>
+							<FormControl>
+								<Input
+									{...fieldProps}
+									type="file"
+									accept="image/jpeg,image/jpg,image/png"
+									onChange={(e) => {
+										const file = e.target.files?.[0];
+										onChange(file);
+									}}
+								/>
+							</FormControl>
+							<FormMessage />
+						</FormItem>
+					)}
+				/>
+
+				<Button type="submit" className="w-full">
+					Register Equipment
+				</Button>
+			</form>
+		</Form>
+	);
+}
