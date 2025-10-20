@@ -75,7 +75,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 			return api.Response{
 				Error:   fmt.Errorf("sign up: %w", err),
 				Code:    http.StatusInternalServerError,
-				Message: "Failed to upload equipment image.",
+				Message: "Failed to upload avatar.",
 			}
 		}
 		avatarURL = &uploadedURL
