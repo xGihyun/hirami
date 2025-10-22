@@ -75,7 +75,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 			return api.Response{
 				Error:   fmt.Errorf("sign up: %w", err),
 				Code:    http.StatusInternalServerError,
-				Message: "Failed to upload equipment image.",
+				Message: "Failed to upload avatar.",
 			}
 		}
 		avatarURL = &uploadedURL
@@ -101,7 +101,8 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 		AvatarURL:  avatarURL,
 	}
 
-	if err := s.repository.register(ctx, data); err != nil {
+	userID, err := s.repository.register(ctx, data)
+	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
 			return api.Response{
 				Error:   fmt.Errorf("sign up: %w", err),
@@ -120,6 +121,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 	return api.Response{
 		Code:    http.StatusCreated,
 		Message: "Successfully signed up.",
+		Data:    userID,
 	}
 }
 

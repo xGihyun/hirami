@@ -18,6 +18,7 @@ Hirami is a cross-platform sports equipment management system designed to digita
 
 - [Bun](https://bun.com/)
 - [Rust](https://rust-lang.org/)
+- [Go](https://go.dev/)
 - [Docker](https://www.docker.com/)
 - [Android Studio](https://developer.android.com/studio)
 
@@ -53,7 +54,7 @@ docker container list
 
 #### Client
 
-1. Connect your Android phone via USB.
+1. Connect your Android phone via USB (make sure Developer Options are enabled).
 2. Set up port forwarding:
 
 ```bash
