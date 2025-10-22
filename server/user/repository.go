@@ -9,7 +9,7 @@ import (
 )
 
 type Repository interface {
-	register(ctx context.Context, arg registerRequest) error
+	register(ctx context.Context, arg registerRequest) (string, error)
 	login(ctx context.Context, arg loginRequest) (signInResponse, error)
 	get(ctx context.Context, userID string) (user, error)
 	update(ctx context.Context, arg updateRequest) error
@@ -39,10 +39,10 @@ type registerRequest struct {
 	AvatarURL  *string `json:"avatarUrl"`
 }
 
-func (r *repository) register(ctx context.Context, arg registerRequest) error {
+func (r *repository) register(ctx context.Context, arg registerRequest) (string, error) {
 	passwordHash, err := hashPassword(arg.Password)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	query := `
@@ -65,10 +65,10 @@ func (r *repository) register(ctx context.Context, arg registerRequest) error {
 		arg.AvatarURL,
 	)
 	if err := row.Scan(&userID); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return userID, nil
 }
 
 type loginRequest struct {
