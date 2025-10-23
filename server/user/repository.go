@@ -3,16 +3,17 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Repository interface {
-	register(ctx context.Context, arg registerRequest) (string, error)
+	Register(ctx context.Context, arg RegisterRequest) (string, error)
 	login(ctx context.Context, arg loginRequest) (signInResponse, error)
 	get(ctx context.Context, userID string) (user, error)
-	update(ctx context.Context, arg updateRequest) error
+	Update(ctx context.Context, arg UpdateRequest) error
 
 	getByEmail(ctx context.Context, email string) (user, error)
 	invalidateSession(ctx context.Context, token string) error
@@ -30,7 +31,7 @@ func NewRepository(querier *pgxpool.Pool) Repository {
 	}
 }
 
-type registerRequest struct {
+type RegisterRequest struct {
 	Email      string  `json:"email"`
 	Password   string  `json:"password"`
 	FirstName  string  `json:"firstName"`
@@ -39,7 +40,7 @@ type registerRequest struct {
 	AvatarURL  *string `json:"avatarUrl"`
 }
 
-func (r *repository) register(ctx context.Context, arg registerRequest) (string, error) {
+func (r *repository) Register(ctx context.Context, arg RegisterRequest) (string, error) {
 	passwordHash, err := hashPassword(arg.Password)
 	if err != nil {
 		return "", err
@@ -261,7 +262,7 @@ func (r *repository) create(ctx context.Context, arg createRequest) error {
 	return nil
 }
 
-type updateRequest struct {
+type UpdateRequest struct {
 	PersonID   string  `json:"id"`
 	Email      *string `json:"email"`
 	FirstName  *string `json:"firstName"`
@@ -271,7 +272,7 @@ type updateRequest struct {
 	AvatarURL  *string `json:"avatarUrl"`
 }
 
-func (r *repository) update(ctx context.Context, arg updateRequest) error {
+func (r *repository) Update(ctx context.Context, arg UpdateRequest) error {
 	query := `
 	UPDATE person
 	SET email = COALESCE($1, email),
@@ -282,6 +283,8 @@ func (r *repository) update(ctx context.Context, arg updateRequest) error {
 		avatar_url = COALESCE($6, avatar_url)
 	WHERE person_id = $7
 	`
+
+	fmt.Println(*arg.Role)
 
 	if _, err := r.querier.Exec(
 		ctx,
