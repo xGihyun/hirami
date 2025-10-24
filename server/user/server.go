@@ -92,7 +92,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 		middleName = &middleNameValue
 	}
 
-	data := registerRequest{
+	data := RegisterRequest{
 		Email:      r.FormValue("email"),
 		Password:   r.FormValue("password"),
 		FirstName:  r.FormValue("firstName"),
@@ -101,7 +101,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 		AvatarURL:  avatarURL,
 	}
 
-	userID, err := s.repository.register(ctx, data)
+	userID, err := s.repository.Register(ctx, data)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
 			return api.Response{
@@ -285,16 +285,20 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 		return &trimmed
 	}
 
-	data := updateRequest{
+	role := Role(r.FormValue("role"))
+	data := UpdateRequest{
 		PersonID:   r.FormValue("id"),
 		Email:      toOptionalString(r.FormValue("email")),
 		FirstName:  toOptionalString(r.FormValue("firstName")),
 		MiddleName: toOptionalString(r.FormValue("middleName")),
 		LastName:   toOptionalString(r.FormValue("lastName")),
+		Role:       &role,
 		AvatarURL:  avatarURL,
 	}
 
-	if err := s.repository.update(ctx, data); err != nil {
+	fmt.Println(*data.Role)
+
+	if err := s.repository.Update(ctx, data); err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("update user: %w", err),
 			Code:    http.StatusInternalServerError,
