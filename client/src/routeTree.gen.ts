@@ -18,6 +18,7 @@ import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile
 import { Route as AuthedHistoryIndexRouteImport } from './routes/_authed/history/index'
 import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equipments/index'
 import { Route as AuthedBorrowRequestsIndexRouteImport } from './routes/_authed/borrow-requests/index'
+import { Route as AuthedBarcodeIndexRouteImport } from './routes/_authed/barcode/index'
 import { Route as AuthRegisterIndexRouteImport } from './routes/_auth/register/index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 
@@ -66,6 +67,11 @@ const AuthedBorrowRequestsIndexRoute =
     path: '/borrow-requests/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedBarcodeIndexRoute = AuthedBarcodeIndexRouteImport.update({
+  id: '/barcode/',
+  path: '/barcode/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthRegisterIndexRoute = AuthRegisterIndexRouteImport.update({
   id: '/register/',
   path: '/register/',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof AuthLoginIndexRoute
   '/register': typeof AuthRegisterIndexRoute
+  '/barcode': typeof AuthedBarcodeIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof AuthLoginIndexRoute
   '/register': typeof AuthRegisterIndexRoute
+  '/barcode': typeof AuthedBarcodeIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/_auth/login/': typeof AuthLoginIndexRoute
   '/_auth/register/': typeof AuthRegisterIndexRoute
+  '/_authed/barcode/': typeof AuthedBarcodeIndexRoute
   '/_authed/borrow-requests/': typeof AuthedBorrowRequestsIndexRoute
   '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
   '/_authed/history/': typeof AuthedHistoryIndexRoute
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/register'
+    | '/barcode'
     | '/borrow-requests'
     | '/equipments'
     | '/history'
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/register'
+    | '/barcode'
     | '/borrow-requests'
     | '/equipments'
     | '/history'
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/_auth/login/'
     | '/_auth/register/'
+    | '/_authed/barcode/'
     | '/_authed/borrow-requests/'
     | '/_authed/equipments/'
     | '/_authed/history/'
@@ -222,6 +234,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedBorrowRequestsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/barcode/': {
+      id: '/_authed/barcode/'
+      path: '/barcode'
+      fullPath: '/barcode'
+      preLoaderRoute: typeof AuthedBarcodeIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_auth/register/': {
       id: '/_auth/register/'
       path: '/register'
@@ -252,6 +271,7 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface AuthedRouteChildren {
+  AuthedBarcodeIndexRoute: typeof AuthedBarcodeIndexRoute
   AuthedBorrowRequestsIndexRoute: typeof AuthedBorrowRequestsIndexRoute
   AuthedEquipmentsIndexRoute: typeof AuthedEquipmentsIndexRoute
   AuthedHistoryIndexRoute: typeof AuthedHistoryIndexRoute
@@ -261,6 +281,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedBarcodeIndexRoute: AuthedBarcodeIndexRoute,
   AuthedBorrowRequestsIndexRoute: AuthedBorrowRequestsIndexRoute,
   AuthedEquipmentsIndexRoute: AuthedEquipmentsIndexRoute,
   AuthedHistoryIndexRoute: AuthedHistoryIndexRoute,

@@ -21,6 +21,11 @@ export function Navbar(): JSX.Element {
 				label: "Home",
 				icon: IconHome,
 			},
+			{
+				to: "/barcode",
+				label: "Barcode",
+				icon: IconHome,
+			},
 		];
 
 		const profileOption = {
