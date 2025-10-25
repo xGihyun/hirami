@@ -21,6 +21,8 @@ import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equi
 import { Route as AuthedBorrowRequestsIndexRouteImport } from './routes/_authed/borrow-requests/index'
 import { Route as AuthPasswordResetIndexRouteImport } from './routes/_auth/password-reset/index'
 import { Route as AuthOnboardingIndexRouteImport } from './routes/_auth/onboarding/index'
+import { Route as AuthedBarcodeIndexRouteImport } from './routes/_authed/barcode/index'
+import { Route as AuthRegisterIndexRouteImport } from './routes/_auth/register/index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 import { Route as AuthPasswordResetTokenRouteImport } from './routes/_auth/password-reset/$token'
 import { Route as AuthRegisterRegisterIndexRouteImport } from './routes/_auth/_register/register/index'
@@ -85,6 +87,15 @@ const AuthPasswordResetIndexRoute = AuthPasswordResetIndexRouteImport.update({
 const AuthOnboardingIndexRoute = AuthOnboardingIndexRouteImport.update({
   id: '/onboarding/',
   path: '/onboarding/',
+} as any)
+const AuthedBarcodeIndexRoute = AuthedBarcodeIndexRouteImport.update({
+  id: '/barcode/',
+  path: '/barcode/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthRegisterIndexRoute = AuthRegisterIndexRouteImport.update({
+  id: '/register/',
+  path: '/register/',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
@@ -128,6 +139,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof AuthLoginIndexRoute
   '/onboarding': typeof AuthOnboardingIndexRoute
   '/password-reset': typeof AuthPasswordResetIndexRoute
+  '/register': typeof AuthRegisterIndexRoute
+  '/barcode': typeof AuthedBarcodeIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
@@ -145,6 +158,8 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginIndexRoute
   '/onboarding': typeof AuthOnboardingIndexRoute
   '/password-reset': typeof AuthPasswordResetIndexRoute
+  '/register': typeof AuthRegisterIndexRoute
+  '/barcode': typeof AuthedBarcodeIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
@@ -166,6 +181,8 @@ export interface FileRoutesById {
   '/_auth/login/': typeof AuthLoginIndexRoute
   '/_auth/onboarding/': typeof AuthOnboardingIndexRoute
   '/_auth/password-reset/': typeof AuthPasswordResetIndexRoute
+  '/_auth/register/': typeof AuthRegisterIndexRoute
+  '/_authed/barcode/': typeof AuthedBarcodeIndexRoute
   '/_authed/borrow-requests/': typeof AuthedBorrowRequestsIndexRoute
   '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
   '/_authed/history/': typeof AuthedHistoryIndexRoute
@@ -185,6 +202,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/password-reset'
+    | '/register'
+    | '/barcode'
     | '/borrow-requests'
     | '/equipments'
     | '/history'
@@ -202,6 +221,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/password-reset'
+    | '/register'
+    | '/barcode'
     | '/borrow-requests'
     | '/equipments'
     | '/history'
@@ -222,6 +243,8 @@ export interface FileRouteTypes {
     | '/_auth/login/'
     | '/_auth/onboarding/'
     | '/_auth/password-reset/'
+    | '/_auth/register/'
+    | '/_authed/barcode/'
     | '/_authed/borrow-requests/'
     | '/_authed/equipments/'
     | '/_authed/history/'
@@ -324,6 +347,18 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthOnboardingIndexRouteImport
+    '/_authed/barcode/': {
+      id: '/_authed/barcode/'
+      path: '/barcode'
+      fullPath: '/barcode'
+      preLoaderRoute: typeof AuthedBarcodeIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_auth/register/': {
+      id: '/_auth/register/'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof AuthRegisterIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/login/': {
@@ -410,6 +445,7 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface AuthedRouteChildren {
+  AuthedBarcodeIndexRoute: typeof AuthedBarcodeIndexRoute
   AuthedBorrowRequestsIndexRoute: typeof AuthedBorrowRequestsIndexRoute
   AuthedEquipmentsIndexRoute: typeof AuthedEquipmentsIndexRoute
   AuthedHistoryIndexRoute: typeof AuthedHistoryIndexRoute
@@ -419,6 +455,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedBarcodeIndexRoute: AuthedBarcodeIndexRoute,
   AuthedBorrowRequestsIndexRoute: AuthedBorrowRequestsIndexRoute,
   AuthedEquipmentsIndexRoute: AuthedEquipmentsIndexRoute,
   AuthedHistoryIndexRoute: AuthedHistoryIndexRoute,
