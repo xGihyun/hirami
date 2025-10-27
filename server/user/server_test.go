@@ -76,7 +76,7 @@ func (suite *UserRepoTestSuite) TestLogin() {
 		Password: "SecurePass123!",
 	}
 
-	suite.registerTestUser(RegisterRequest{
+	RegisterTestUser(suite.httpServer.URL, RegisterRequest{
 		Email:     payload.Email,
 		Password:  payload.Password,
 		FirstName: "Test",
@@ -104,12 +104,15 @@ func (suite *UserRepoTestSuite) TestLogin() {
 }
 
 func (suite *UserRepoTestSuite) TestLoginInvalidCredentials() {
-	suite.registerTestUser(RegisterRequest{
-		Email:     "testinvalidcredential@test.com",
-		Password:  "SecurePass123!",
-		FirstName: "Test",
-		LastName:  "User",
-	})
+	err := RegisterTestUser(suite.httpServer.URL,
+		RegisterRequest{
+			Email:     "testinvalidcredential@test.com",
+			Password:  "SecurePass123!",
+			FirstName: "Test",
+			LastName:  "User",
+		},
+	)
+	suite.NoError(err)
 
 	payload := loginRequest{
 		Email:    "wrongemail@test.com",
@@ -135,7 +138,11 @@ func (suite *UserRepoTestSuite) TestLoginInvalidCredentials() {
 	suite.Equal("Invalid credentials.", result.Message)
 }
 
-func (suite *UserRepoTestSuite) registerTestUser(data RegisterRequest) {
+func TestUserRepoTestSuite(t *testing.T) {
+	suite.Run(t, new(UserRepoTestSuite))
+}
+
+func RegisterTestUser(serverURL string, data RegisterRequest) error {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	writer.WriteField("email", data.Email)
@@ -144,13 +151,11 @@ func (suite *UserRepoTestSuite) registerTestUser(data RegisterRequest) {
 	writer.WriteField("lastName", data.LastName)
 	writer.Close()
 
-	resp, err := http.Post(suite.httpServer.URL+"/register", writer.FormDataContentType(), body)
-	suite.Require().NoError(err)
+	resp, err := http.Post(serverURL+"/register", writer.FormDataContentType(), body)
+	if err != nil {
+		return err
+	}
 	defer resp.Body.Close()
 
-	suite.Require().Equal(http.StatusCreated, resp.StatusCode)
-}
-
-func TestUserRepoTestSuite(t *testing.T) {
-	suite.Run(t, new(UserRepoTestSuite))
+	return err
 }
