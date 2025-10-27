@@ -1,4 +1,4 @@
-# https://github.com/github/gitignore/blob/fc6ce5da28a8c3480cc8a5acad050449f72a9261/Python.gitignore
+# From https://github.com/github/gitignore/blob/main/Python.gitignore
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
