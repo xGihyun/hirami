@@ -299,7 +299,7 @@ function BorrowedEquipmentsSection({
 
 			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 				{equipments.map((equipment) => {
-					const key = `${equipment.borrowRequestItemId}_${equipment.equipmentTypeId}`;
+					{/* const key = `${equipment.borrowRequestItemId}_${equipment.equipmentTypeId}`; */}
 					const equipmentImage = equipment.imageUrl
 						? `${BACKEND_URL}${equipment.imageUrl}`
 						: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
