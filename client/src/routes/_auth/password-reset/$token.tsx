@@ -1,7 +1,10 @@
-import type { JSX } from "react";
-import { z } from "zod";
+import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import z from "zod";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -12,60 +15,59 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
-import type { User } from "@/lib/user";
-import { useMutation } from "@tanstack/react-query";
-import { setCookie } from "@/lib/cookie";
 
-const formSchema = z.object({
-	email: z.email(),
-	password: z.string().nonempty(),
+export const Route = createFileRoute("/_auth/password-reset/$token")({
+	component: RouteComponent,
 });
 
-type LoginResponse = {
-	user: User;
-	token: string;
-};
+const formSchema = z
+	.object({
+		token: z.string().nonempty(),
+		newPassword: z.string().nonempty(),
+		confirmPassword: z.string().nonempty(),
+	})
+	.refine((data) => data.newPassword === data.confirmPassword, {
+		message: "Passwords do not match",
+		path: ["confirmPassword"],
+	});
 
-async function login(
+async function resetPassword(
 	value: z.infer<typeof formSchema>,
-): Promise<ApiResponse<LoginResponse>> {
-	console.log(BACKEND_URL);
-	const response = await fetch(`${BACKEND_URL}/login`, {
+): Promise<ApiResponse> {
+	const response = await fetch(`${BACKEND_URL}/password-reset`, {
 		method: "POST",
 		body: JSON.stringify(value),
 		headers: { "Content-Type": "application/json" },
 	});
 
-	const result: ApiResponse<LoginResponse> = await response.json();
+	const result: ApiResponse = await response.json();
 	if (!response.ok) {
-		throw new Error(result.message || "Login failed");
+		throw new Error(result.message);
 	}
 
 	return result;
 }
 
-export function LoginForm(): JSX.Element {
-	const navigate = useNavigate({ from: "/login" });
+function RouteComponent() {
+	const params = Route.useParams();
+	const navigate = Route.useNavigate();
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			email: "",
-			password: "",
+			token: params.token,
+			newPassword: "",
+			confirmPassword: "",
 		},
 	});
 
 	const mutation = useMutation({
-		mutationFn: login,
+		mutationFn: resetPassword,
 		onMutate: () => {
-			return toast.loading("Logging in");
+			return toast.loading("Resetting password");
 		},
-		onSuccess: (result, _variables, toastId) => {
-			setCookie("session", result.data.token);
+		onSuccess: async (result, _variables, toastId) => {
 			toast.success(result.message, { id: toastId });
-			navigate({ to: "/equipments" });
+			await navigate({ to: "/login" });
 		},
 		onError: (error, _variables, toastId) => {
 			toast.error(error.message, { id: toastId });
@@ -81,12 +83,12 @@ export function LoginForm(): JSX.Element {
 			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 				<FormField
 					control={form.control}
-					name="email"
+					name="newPassword"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Email</FormLabel>
+							<FormLabel>New Password</FormLabel>
 							<FormControl>
-								<Input placeholder="youremail@gmail.com" {...field} />
+								<Input type="password" {...field} />
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -95,26 +97,20 @@ export function LoginForm(): JSX.Element {
 
 				<FormField
 					control={form.control}
-					name="password"
+					name="confirmPassword"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Password</FormLabel>
+							<FormLabel>Confirm Password</FormLabel>
 							<FormControl>
-								<Input
-									type="password"
-									placeholder="Enter your password"
-									{...field}
-								/>
+								<Input type="password" {...field} />
 							</FormControl>
 							<FormMessage />
 						</FormItem>
 					)}
 				/>
 
-				<Link to="/password-reset">Forgot Password</Link>
-
 				<Button type="submit" className="w-full">
-					Login
+					Reset Password
 				</Button>
 			</form>
 		</Form>

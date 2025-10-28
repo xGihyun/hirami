@@ -9,6 +9,7 @@ import "./styles.css";
 import reportWebVitals from "./reportWebVitals.ts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./auth.tsx";
+import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,38 @@ if (rootElement && !rootElement.innerHTML) {
 		</StrictMode>,
 	);
 }
+
+function handleDeepLink(url: string): void {
+	console.log("Deep link URL received:", url);
+	try {
+		const urlWithoutProtocol = url.replace(/^hirami:\/\//, "");
+		const path = `/${urlWithoutProtocol}`;
+
+		console.log("Parsed path:", path);
+
+		if (path.startsWith("/password-reset/")) {
+			console.log(`Navigating to: ${path}`);
+			router.navigate({ to: path });
+		} else {
+			console.warn(`Ignoring unhandled deep link: ${path}`);
+		}
+	} catch (e) {
+		console.error("Failed to parse deep link URL:", e);
+	}
+}
+
+const startUrls = await getCurrent();
+console.log("Initial deep link check:", startUrls);
+if (startUrls && startUrls.length > 0) {
+	// handleDeepLink(startUrls[0]);
+}
+
+await onOpenUrl((urls) => {
+	console.log("onOpenUrl triggered with:", urls);
+	if (urls && urls.length > 0) {
+		handleDeepLink(urls[0]);
+	}
+});
 
 function App() {
 	const auth = useAuth();
