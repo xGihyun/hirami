@@ -1,7 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { BACKEND_URL, type ApiResponse } from "../api";
-import type { Equipment } from ".";
-import type { User, UserBasicInfo } from "../user";
+import type { UserBasicInfo } from "../user";
 
 export type Borrower = {
 	id: string;

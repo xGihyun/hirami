@@ -19,7 +19,9 @@ import { Route as AuthedHistoryIndexRouteImport } from './routes/_authed/history
 import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equipments/index'
 import { Route as AuthedBorrowRequestsIndexRouteImport } from './routes/_authed/borrow-requests/index'
 import { Route as AuthRegisterIndexRouteImport } from './routes/_auth/register/index'
+import { Route as AuthPasswordResetIndexRouteImport } from './routes/_auth/password-reset/index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
+import { Route as AuthPasswordResetTokenRouteImport } from './routes/_auth/password-reset/$token'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -71,15 +73,27 @@ const AuthRegisterIndexRoute = AuthRegisterIndexRouteImport.update({
   path: '/register/',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthPasswordResetIndexRoute = AuthPasswordResetIndexRouteImport.update({
+  id: '/password-reset/',
+  path: '/password-reset/',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
   id: '/login/',
   path: '/login/',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthPasswordResetTokenRoute = AuthPasswordResetTokenRouteImport.update({
+  id: '/password-reset/$token',
+  path: '/password-reset/$token',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/login': typeof AuthLoginIndexRoute
+  '/password-reset': typeof AuthPasswordResetIndexRoute
   '/register': typeof AuthRegisterIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
@@ -90,7 +104,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/login': typeof AuthLoginIndexRoute
+  '/password-reset': typeof AuthPasswordResetIndexRoute
   '/register': typeof AuthRegisterIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
@@ -104,7 +120,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
   '/_authed': typeof AuthedRouteWithChildren
+  '/_auth/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/_auth/login/': typeof AuthLoginIndexRoute
+  '/_auth/password-reset/': typeof AuthPasswordResetIndexRoute
   '/_auth/register/': typeof AuthRegisterIndexRoute
   '/_authed/borrow-requests/': typeof AuthedBorrowRequestsIndexRoute
   '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
@@ -117,7 +135,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/password-reset/$token'
     | '/login'
+    | '/password-reset'
     | '/register'
     | '/borrow-requests'
     | '/equipments'
@@ -128,7 +148,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/password-reset/$token'
     | '/login'
+    | '/password-reset'
     | '/register'
     | '/borrow-requests'
     | '/equipments'
@@ -141,7 +163,9 @@ export interface FileRouteTypes {
     | '/'
     | '/_auth'
     | '/_authed'
+    | '/_auth/password-reset/$token'
     | '/_auth/login/'
+    | '/_auth/password-reset/'
     | '/_auth/register/'
     | '/_authed/borrow-requests/'
     | '/_authed/equipments/'
@@ -229,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRegisterIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/password-reset/': {
+      id: '/_auth/password-reset/'
+      path: '/password-reset'
+      fullPath: '/password-reset'
+      preLoaderRoute: typeof AuthPasswordResetIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/login/': {
       id: '/_auth/login/'
       path: '/login'
@@ -236,16 +267,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/password-reset/$token': {
+      id: '/_auth/password-reset/$token'
+      path: '/password-reset/$token'
+      fullPath: '/password-reset/$token'
+      preLoaderRoute: typeof AuthPasswordResetTokenRouteImport
+      parentRoute: typeof AuthRoute
+    }
   }
 }
 
 interface AuthRouteChildren {
+  AuthPasswordResetTokenRoute: typeof AuthPasswordResetTokenRoute
   AuthLoginIndexRoute: typeof AuthLoginIndexRoute
+  AuthPasswordResetIndexRoute: typeof AuthPasswordResetIndexRoute
   AuthRegisterIndexRoute: typeof AuthRegisterIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthPasswordResetTokenRoute: AuthPasswordResetTokenRoute,
   AuthLoginIndexRoute: AuthLoginIndexRoute,
+  AuthPasswordResetIndexRoute: AuthPasswordResetIndexRoute,
   AuthRegisterIndexRoute: AuthRegisterIndexRoute,
 }
 

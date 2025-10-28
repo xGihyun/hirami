@@ -1,7 +1,10 @@
-import type { JSX } from "react";
-import { z } from "zod";
+import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import z from "zod";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -12,60 +15,47 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
-import type { User } from "@/lib/user";
-import { useMutation } from "@tanstack/react-query";
-import { setCookie } from "@/lib/cookie";
+
+export const Route = createFileRoute("/_auth/password-reset/")({
+	component: RouteComponent,
+});
 
 const formSchema = z.object({
 	email: z.email(),
-	password: z.string().nonempty(),
 });
 
-type LoginResponse = {
-	user: User;
-	token: string;
-};
-
-async function login(
+async function requestPasswordReset(
 	value: z.infer<typeof formSchema>,
-): Promise<ApiResponse<LoginResponse>> {
-	console.log(BACKEND_URL);
-	const response = await fetch(`${BACKEND_URL}/login`, {
+): Promise<ApiResponse> {
+	const response = await fetch(`${BACKEND_URL}/password-reset-request`, {
 		method: "POST",
 		body: JSON.stringify(value),
 		headers: { "Content-Type": "application/json" },
 	});
 
-	const result: ApiResponse<LoginResponse> = await response.json();
+	const result: ApiResponse = await response.json();
 	if (!response.ok) {
-		throw new Error(result.message || "Login failed");
+		throw new Error(result.message );
 	}
 
 	return result;
 }
 
-export function LoginForm(): JSX.Element {
-	const navigate = useNavigate({ from: "/login" });
+function RouteComponent() {
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
 			email: "",
-			password: "",
 		},
 	});
 
 	const mutation = useMutation({
-		mutationFn: login,
+		mutationFn: requestPasswordReset,
 		onMutate: () => {
-			return toast.loading("Logging in");
+			return toast.loading("Requesting for password reset.");
 		},
 		onSuccess: (result, _variables, toastId) => {
-			setCookie("session", result.data.token);
 			toast.success(result.message, { id: toastId });
-			navigate({ to: "/equipments" });
 		},
 		onError: (error, _variables, toastId) => {
 			toast.error(error.message, { id: toastId });
@@ -93,29 +83,7 @@ export function LoginForm(): JSX.Element {
 					)}
 				/>
 
-				<FormField
-					control={form.control}
-					name="password"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Password</FormLabel>
-							<FormControl>
-								<Input
-									type="password"
-									placeholder="Enter your password"
-									{...field}
-								/>
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
-				<Link to="/password-reset">Forgot Password</Link>
-
-				<Button type="submit" className="w-full">
-					Login
-				</Button>
+				<Button type="submit" className="w-full">Send Reset Link</Button>
 			</form>
 		</Form>
 	);

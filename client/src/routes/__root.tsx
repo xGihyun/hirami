@@ -5,7 +5,7 @@ import { QueryClient } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/sonner";
 import { type AuthContextValue } from "@/auth";
-import type { JSX } from "react";
+import { type JSX } from "react";
 
 type RouterContext = {
 	auth: AuthContextValue;
