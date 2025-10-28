@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/smtp"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -126,46 +125,8 @@ func main() {
 }
 
 func health(w http.ResponseWriter, r *http.Request) {
-	// resetLink := "https://github.com"
-	// if err := SendEmail(
-	// 	"testuser@hirami.test",
-	// 	"Password Reset Request",
-	// 	"Click here to reset: "+resetLink,
-	// ); err != nil {
-	// 	slog.Error(err.Error())
-	// }
-
 	if err := json.NewEncoder(w).Encode("Hello, World!"); err != nil {
 		slog.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-}
-
-// SendEmail sends email via Mailpit
-// NOTE: Remove this later, to be used for Password Reset feature
-func SendEmail(to, subject, body string) error {
-	from := "noreply@hirami.test"
-	smtpHost := "localhost"
-	smtpPort := "1025"
-
-	message := fmt.Sprintf(
-		"From: %s\r\n"+
-			"To: %s\r\n"+
-			"Subject: %s\r\n"+
-			"\r\n"+
-			"%s\r\n",
-		from, to, subject, body,
-	)
-
-	if err := smtp.SendMail(
-		smtpHost+":"+smtpPort,
-		nil, // No auth for Mailpit
-		from,
-		[]string{to},
-		[]byte(message),
-	); err != nil {
-		return fmt.Errorf("failed to send email: %w", err)
-	}
-
-	return nil
 }
