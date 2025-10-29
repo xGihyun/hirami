@@ -31,25 +31,8 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<div className="bg-gradient-to-t from-primary to-secondary flex flex-col px-2 h-svh pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-			<div className="object-cover object-center h-1/4">
-				<img src={hiramiLogoDark} alt="Hirami Logo" className="h-full w-full" />
-			</div>
-			<Card className="bg-background">
-				<CardContent>
-					<Tabs value={getCurrentTab()} className="w-full">
-						<TabsList className="w-full">
-							<TabsTrigger value="login" asChild>
-								<Link to="/login">Login</Link>
-							</TabsTrigger>
-							<TabsTrigger value="register" asChild>
-								<Link to="/register">Register</Link>
-							</TabsTrigger>
-						</TabsList>
-						<Outlet />
-					</Tabs>
-				</CardContent>
-			</Card>
+		<div className="bg-background flex flex-col h-svh pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] px-4">
+			<Outlet />
 		</div>
 	);
 }
