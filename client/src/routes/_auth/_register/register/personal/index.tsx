@@ -1,7 +1,12 @@
-import { H1, LabelMedium } from "@/components/typography";
-import { createFileRoute } from "@tanstack/react-router";
+import {
+	H1,
+	LabelLarge,
+	LabelMedium,
+	TitleSmall,
+} from "@/components/typography";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState, type JSX } from "react";
-import { useForm } from "react-hook-form";
+import { set, useForm } from "react-hook-form";
 import z from "zod";
 import {
 	Form,
@@ -25,6 +30,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { IconEdit, IconUserPen } from "@/lib/icons";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { accessDeniedIllustration, doneIllustration } from "@/lib/assets";
 
 export const Route = createFileRoute("/_auth/_register/register/personal/")({
 	component: RouteComponent,
@@ -86,16 +92,23 @@ function RouteComponent(): JSX.Element {
 		},
 	});
 
+	const [status, setStatus] = useState<"success" | "failed" | "pending" | null>(
+		null,
+	);
+
 	const mutation = useMutation({
 		mutationFn: register,
 		onMutate: () => {
+			setStatus("pending");
 			return toast.loading("Creating account");
 		},
 		onSuccess: (data, _variables, toastId) => {
+			setStatus("success");
 			toast.success(data.message, { id: toastId });
 			navigate({ to: "/login" });
 		},
 		onError: (error, _variables, toastId) => {
+			setStatus("failed");
 			toast.error(error.message, { id: toastId });
 		},
 	});
@@ -116,6 +129,14 @@ function RouteComponent(): JSX.Element {
 
 		console.log(completeData);
 		mutation.mutate(completeData);
+	}
+
+	if (status === "success") {
+		return <Success />;
+	}
+
+	if (status === "failed") {
+		return <Failed />;
 	}
 
 	return (
@@ -233,6 +254,58 @@ function RouteComponent(): JSX.Element {
 						</Button>
 					</form>
 				</Form>
+			</section>
+		</div>
+	);
+}
+
+function Success(): JSX.Element {
+	return (
+		<div className="h-full w-full flex flex-col gap-30">
+			<section className="space-y-3.5 content-center flex flex-col justify-center items-center">
+				<img
+					src={doneIllustration}
+					alt="Done illustration"
+					className="w-full max-w-xs mx-auto"
+				/>
+
+				<H1 className="text-center">
+					You have successfully created an account.
+				</H1>
+			</section>
+
+			<Button asChild>
+				<Link to="/login">Log In</Link>
+			</Button>
+		</div>
+	);
+}
+
+function Failed(): JSX.Element {
+	return (
+		<div className="h-full w-full flex flex-col gap-30">
+			<section className="space-y-7.5 content-center flex flex-col justify-center items-center">
+				<img
+					src={accessDeniedIllustration}
+					alt="Failed illustration"
+					className="w-full max-w-xs mx-auto"
+				/>
+
+				<div className="space-y-1.5">
+					<H1 className="text-center">Failed to create account.</H1>
+					<TitleSmall className="text-center">
+						A temporary issue occured. Please check your network and Try Again
+						in a moment.
+					</TitleSmall>
+				</div>
+			</section>
+
+			<section className="w-full flex flex-col text-center gap-4">
+				<Button>Try Again</Button>
+
+				<Link to="/">
+					<LabelLarge>or return to Welcome Page</LabelLarge>
+				</Link>
 			</section>
 		</div>
 	);
