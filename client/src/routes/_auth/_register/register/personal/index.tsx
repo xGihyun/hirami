@@ -5,8 +5,8 @@ import {
 	TitleSmall,
 } from "@/components/typography";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState, type JSX } from "react";
-import { set, useForm } from "react-hook-form";
+import { useEffect, useRef, useState, type JSX } from "react";
+import { useForm } from "react-hook-form";
 import z from "zod";
 import {
 	Form,
@@ -28,7 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRegister, type RegisterData } from "../../-context";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { IconEdit, IconUserPen } from "@/lib/icons";
+import { IconUserPen } from "@/lib/icons";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { accessDeniedIllustration, doneIllustration } from "@/lib/assets";
 
@@ -93,7 +93,7 @@ function RouteComponent(): JSX.Element {
 			lastName: registerContext.value.lastName || "",
 			avatar: registerContext.value.avatar,
 		},
-		mode: "onChange",
+		mode: "all",
 	});
 
 	const [status, setStatus] = useState<"success" | "failed" | "pending" | null>(
@@ -125,14 +125,40 @@ function RouteComponent(): JSX.Element {
 			...registerContext.value,
 			...value,
 		};
-		registerContext.setValue((prev) => ({
-			...prev,
-			...value,
-		}));
+		registerContext.setValue(completeData);
 
 		console.log(completeData);
 		mutation.mutate(completeData);
 	}
+
+	useEffect(() => {
+		const avatarFile = registerContext.value.avatar;
+		if (avatarFile) {
+			const reader = new FileReader();
+			reader.onloadend = () => {
+				setPreviewUrl(reader.result as string);
+			};
+			reader.readAsDataURL(avatarFile);
+		}
+
+		const hasExistingValues =
+			registerContext.value.firstName ||
+			registerContext.value.middleName ||
+			registerContext.value.lastName ||
+			registerContext.value.avatar;
+
+		if (hasExistingValues) {
+			form.trigger();
+		}
+
+		return () => {
+			const currentValues = form.getValues();
+			registerContext.setValue((prev) => ({
+				...prev,
+				...currentValues,
+			}));
+		};
+	}, []);
 
 	if (status === "success") {
 		return <Success />;
