@@ -78,7 +78,7 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="h-full w-full flex flex-col gap-15">
-			<section className="space-y-1 content-center flex flex-col justify-center items-center pt-18">
+			<section className="space-y-1 content-center flex flex-col justify-center items-center">
 				<H1 className="text-center">Enter your Password</H1>
 				<TitleSmall className="text-center">
 					Enter your password to secure your account.
