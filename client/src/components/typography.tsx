@@ -48,6 +48,16 @@ export function Caption(props: Props): JSX.Element {
 	);
 }
 
+export function LabelLarge(props: Props): JSX.Element {
+	return (
+		<p
+			className={cn("font-montserrat-bold text-xs leading-5", props.className)}
+		>
+			{props.children}
+		</p>
+	);
+}
+
 export function LabelMedium(props: Props): JSX.Element {
 	return (
 		<p
