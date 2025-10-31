@@ -71,7 +71,7 @@ function RouteComponent(): JSX.Element {
 					)}
 				</Button>
 
-				<main className="mt-10">
+				<main className="mt-10 pb-10">
 					<Outlet />
 				</main>
 			</div>
