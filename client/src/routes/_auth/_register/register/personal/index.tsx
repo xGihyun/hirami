@@ -48,11 +48,11 @@ const formSchema = z.object({
 		.instanceof(File)
 		.refine(
 			(file) => file.size <= IMAGE_SIZE_LIMIT,
-			"Image must be less than 5MB",
+			"Invalid file: Must be PNG or JPG, under 5MB",
 		)
 		.refine(
 			(file) => IMAGE_FORMATS.includes(file.type),
-			"Only .jpg, .jpeg, and .png formats are supported",
+			"Invalid file: Must be PNG or JPG, under 5MB",
 		)
 		.optional(),
 });
@@ -90,6 +90,7 @@ function RouteComponent(): JSX.Element {
 			middleName: "",
 			lastName: "",
 		},
+		mode: "onChange",
 	});
 
 	const [status, setStatus] = useState<"success" | "failed" | "pending" | null>(
@@ -147,22 +148,24 @@ function RouteComponent(): JSX.Element {
 
 			<section className="h-full">
 				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 						<FormField
 							control={form.control}
 							name="avatar"
-							render={({ field: { value, onChange, ...fieldProps } }) => (
+							render={({
+								field: { value, onChange, ...fieldProps },
+								fieldState,
+							}) => (
 								<FormItem>
 									<FormControl>
 										<div>
-											<LabelMedium className="text-muted text-center mb-3.5">
-												Image must be in PNG or JPG, under 5MB
-											</LabelMedium>
-
 											<div className="relative content-center w-fit mx-auto">
 												<div className="relative">
 													<Avatar className="size-50 bg-gradient-to-b from-accent to-muted">
-														<AvatarImage src={previewUrl || ""} />
+														<AvatarImage
+															src={previewUrl || ""}
+															className="object-cover"
+														/>
 													</Avatar>
 
 													<div className="size-16 flex justify-center items-center absolute right-0 bottom-0 rounded-full bg-card z-10">
@@ -185,7 +188,9 @@ function RouteComponent(): JSX.Element {
 													onChange={(e) => {
 														const file = e.target.files?.[0];
 														if (file) {
-															form.setValue("avatar", file);
+															form.setValue("avatar", file, {
+																shouldValidate: true,
+															});
 															const reader = new FileReader();
 															reader.onloadend = () => {
 																setPreviewUrl(reader.result as string);
@@ -198,7 +203,18 @@ function RouteComponent(): JSX.Element {
 											</div>
 										</div>
 									</FormControl>
-									<FormMessage />
+
+									{fieldState.error ? (
+										<FormMessage className="text-center mt-1" />
+									) : value ? (
+										<LabelMedium className="text-muted text-center mt-1">
+											{value.name}
+										</LabelMedium>
+									) : (
+										<LabelMedium className="text-muted text-center mt-1">
+											Image must be in PNG or JPG, under 5MB
+										</LabelMedium>
+									)}
 								</FormItem>
 							)}
 						/>
@@ -248,7 +264,7 @@ function RouteComponent(): JSX.Element {
 						<Button
 							type="submit"
 							className="w-full"
-							disabled={!form.formState.isValid || mutation.isPending}
+							disabled={!form.formState.isValid}
 						>
 							Create
 						</Button>
