@@ -8,6 +8,7 @@ import IconEdit from "~icons/lucide/edit";
 import IconX from "~icons/lucide/x";
 import IconEmpty from "~icons/ph/empty-bold";
 import IconArrowLeft from "~icons/lucide/arrow-left";
+import IconUserPen from "~icons/lucide/user-pen";
 
 export {
 	IconRoundArrowDown,
@@ -20,4 +21,5 @@ export {
 	IconEmpty,
 	IconX,
 	IconArrowLeft,
+	IconUserPen,
 };
