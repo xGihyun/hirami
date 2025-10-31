@@ -83,12 +83,15 @@ async function register(value: RegisterData): Promise<ApiResponse> {
 
 function RouteComponent(): JSX.Element {
 	const navigate = Route.useNavigate();
+	const registerContext = useRegister();
+
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			firstName: "",
-			middleName: "",
-			lastName: "",
+			firstName: registerContext.value.firstName || "",
+			middleName: registerContext.value.middleName || "",
+			lastName: registerContext.value.lastName || "",
+			avatar: registerContext.value.avatar,
 		},
 		mode: "onChange",
 	});
@@ -116,7 +119,6 @@ function RouteComponent(): JSX.Element {
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-	const registerContext = useRegister();
 
 	async function onSubmit(value: z.infer<typeof formSchema>): Promise<void> {
 		const completeData: RegisterData = {

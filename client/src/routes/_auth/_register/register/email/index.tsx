@@ -32,15 +32,15 @@ export type RegisterEmailSchema = z.infer<typeof formSchema>;
 
 function RouteComponent(): JSX.Element {
 	const navigate = Route.useNavigate();
+	const registerContext = useRegister();
+
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			email: "",
+			email: registerContext.value.email,
 		},
 		mode: "onTouched",
 	});
-
-	const registerContext = useRegister();
 
 	async function onSubmit(value: z.infer<typeof formSchema>): Promise<void> {
 		registerContext.setValue((prev) => ({

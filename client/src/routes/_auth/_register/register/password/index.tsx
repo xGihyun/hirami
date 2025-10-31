@@ -56,16 +56,17 @@ export type RegisterPasswordSchema = z.infer<typeof formSchema>;
 
 function RouteComponent(): JSX.Element {
 	const navigate = Route.useNavigate();
+	const registerContext = useRegister();
+
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			password: "",
-			confirmPassword: "",
+			password: registerContext.value.password,
+			confirmPassword: registerContext.value.confirmPassword,
 		},
 		mode: "onTouched",
 	});
 
-	const registerContext = useRegister();
 	const password = form.watch("password");
 
 	async function onSubmit(value: z.infer<typeof formSchema>): Promise<void> {
