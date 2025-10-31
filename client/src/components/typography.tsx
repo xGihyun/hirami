@@ -50,14 +50,14 @@ export function Caption(props: Props): JSX.Element {
 
 export function LabelMedium(props: Props): JSX.Element {
 	return (
-		<span
+		<p
 			className={cn(
 				"font-montserrat-semibold text-xs leading-4",
 				props.className,
 			)}
 		>
 			{props.children}
-		</span>
+		</p>
 	);
 }
 
