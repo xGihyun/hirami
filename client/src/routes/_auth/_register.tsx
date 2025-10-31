@@ -57,7 +57,7 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<RegisterProvider>
-			<main className="h-full w-full">
+			<div className="h-full w-full">
 				<Button
 					variant="ghost"
 					size="icon"
@@ -71,8 +71,10 @@ function RouteComponent(): JSX.Element {
 					)}
 				</Button>
 
-				<Outlet />
-			</main>
+				<main className="mt-10">
+					<Outlet />
+				</main>
+			</div>
 		</RegisterProvider>
 	);
 }
