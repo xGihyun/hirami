@@ -62,6 +62,7 @@ function RouteComponent(): JSX.Element {
 			password: "",
 			confirmPassword: "",
 		},
+		mode: "onTouched",
 	});
 
 	const registerContext = useRegister();

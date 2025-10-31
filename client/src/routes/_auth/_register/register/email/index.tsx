@@ -37,6 +37,7 @@ function RouteComponent(): JSX.Element {
 		defaultValues: {
 			email: "",
 		},
+		mode: "onTouched",
 	});
 
 	const registerContext = useRegister();
