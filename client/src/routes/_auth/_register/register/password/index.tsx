@@ -139,7 +139,11 @@ function RouteComponent(): JSX.Element {
 							/>
 						</div>
 
-						<Button type="submit" className="w-full" variant="outline">
+						<Button
+							type="submit"
+							className="w-full"
+							disabled={!form.formState.isValid}
+						>
 							Confirm
 						</Button>
 					</form>
