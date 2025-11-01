@@ -31,6 +31,9 @@ export function RegisterProvider(props: RegisterProviderProps): JSX.Element {
 		email: "",
 		password: "",
 		confirmPassword: "",
+		middleName: "",
+		firstName: "",
+		lastName: "",
 	});
 
 	return (

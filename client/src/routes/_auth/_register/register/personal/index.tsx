@@ -88,9 +88,9 @@ function RouteComponent(): JSX.Element {
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			firstName: registerContext.value.firstName || "",
-			middleName: registerContext.value.middleName || "",
-			lastName: registerContext.value.lastName || "",
+			firstName: registerContext.value.firstName,
+			middleName: registerContext.value.middleName,
+			lastName: registerContext.value.lastName,
 			avatar: registerContext.value.avatar,
 		},
 		mode: "all",
