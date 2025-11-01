@@ -1,4 +1,4 @@
-import { useState, type JSX } from "react";
+import { useState, type Dispatch, type JSX, type SetStateAction } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -95,7 +95,9 @@ export function LoginForm(): JSX.Element {
 	}
 
 	if (isError) {
-		return <Failed onSubmit={form.handleSubmit(onSubmit)} />;
+		return (
+			<Failed onSubmit={form.handleSubmit(onSubmit)} setIsError={setIsError} />
+		);
 	}
 
 	return (
@@ -175,6 +177,7 @@ export function LoginForm(): JSX.Element {
 
 type FailedProps = {
 	onSubmit: () => Promise<void>;
+	setIsError: Dispatch<SetStateAction<boolean>>;
 };
 
 function Failed(props: FailedProps): JSX.Element {
@@ -199,9 +202,12 @@ function Failed(props: FailedProps): JSX.Element {
 			<section className="w-full flex flex-col text-center gap-4">
 				<Button onClick={props.onSubmit}>Try Again</Button>
 
-				<Link to="/login">
+				<button
+					onClick={() => props.setIsError(false)}
+					className="cursor-pointer w-fit mx-auto"
+				>
 					<LabelLarge>or return to Log In page</LabelLarge>
-				</Link>
+				</button>
 			</section>
 		</div>
 	);
