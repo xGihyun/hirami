@@ -18,10 +18,18 @@ import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import type { User } from "@/lib/user";
 import { useMutation } from "@tanstack/react-query";
 import { setCookie } from "@/lib/cookie";
+import { loginIllustration } from "@/lib/assets";
+import { H1, LabelSmall, TitleSmall } from "@/components/typography";
+import { PasswordInput } from "@/components/password-input";
 
 const formSchema = z.object({
-	email: z.email(),
-	password: z.string().nonempty(),
+	email: z
+		.string()
+		.nonempty({ error: "This field must not be left blank." })
+		.email({ error: "Invalid email format." }),
+	password: z
+		.string()
+		.nonempty({ error: "This field must not be left blank." }),
 });
 
 type LoginResponse = {
@@ -55,6 +63,7 @@ export function LoginForm(): JSX.Element {
 			email: "",
 			password: "",
 		},
+		mode: "onTouched",
 	});
 
 	const mutation = useMutation({
@@ -64,7 +73,7 @@ export function LoginForm(): JSX.Element {
 		},
 		onSuccess: (result, _variables, toastId) => {
 			setCookie("session", result.data.token);
-			toast.success(result.message, { id: toastId });
+			toast.success("Login successful.", { id: toastId });
 			navigate({ to: "/equipments" });
 		},
 		onError: (error, _variables, toastId) => {
@@ -77,46 +86,76 @@ export function LoginForm(): JSX.Element {
 	}
 
 	return (
-		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-				<FormField
-					control={form.control}
-					name="email"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Email</FormLabel>
-							<FormControl>
-								<Input placeholder="youremail@gmail.com" {...field} />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
+		<div className="h-full w-full flex flex-col gap-12">
+			<section className="space-y-3.5 content-center flex flex-col justify-center items-center h-full">
+				<img
+					src={loginIllustration}
+					alt="Login illustration"
+					className="w-full max-w-52 mx-auto"
 				/>
 
-				<FormField
-					control={form.control}
-					name="password"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Password</FormLabel>
-							<FormControl>
-								<Input
-									type="password"
-									placeholder="Enter your password"
-									{...field}
-								/>
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
+				<div className="space-y-1.5">
+					<H1 className="text-center">Log In</H1>
+					<TitleSmall className="text-center">
+						Enter your email and password to proceed.
+					</TitleSmall>
+				</div>
+			</section>
 
-				<Link to="/password-reset">Forgot Password</Link>
+			<Form {...form}>
+				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+					<div className="space-y-4">
+						<FormField
+							control={form.control}
+							name="email"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Email</FormLabel>
+									<FormControl>
+										<Input placeholder="youremail@gmail.com" {...field} />
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
-				<Button type="submit" className="w-full">
-					Login
-				</Button>
-			</form>
-		</Form>
+						<FormField
+							control={form.control}
+							name="password"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Password</FormLabel>
+									<FormControl>
+										<PasswordInput
+											placeholder="Enter your Password"
+											{...field}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</div>
+
+					<Button
+						type="submit"
+						className="w-full"
+						disabled={!form.formState.isValid}
+					>
+						Log In
+					</Button>
+
+					<LabelSmall className="text-center">
+						Forgot password?{" "}
+						<Link
+							to="/password-reset"
+							className="font-montserrat-bold underline"
+						>
+							Click here
+						</Link>
+					</LabelSmall>
+				</form>
+			</Form>
+		</div>
 	);
 }
