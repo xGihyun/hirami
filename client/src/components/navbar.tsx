@@ -1,8 +1,8 @@
 import { Link, linkOptions } from "@tanstack/react-router";
 import type { JSX } from "react";
 import {
+	IconBox,
 	IconHistory,
-	IconHome,
 	IconProfile,
 	IconRoundArrowDown,
 	IconRoundArrowUp,
@@ -18,8 +18,8 @@ export function Navbar(): JSX.Element {
 		const commonOptions = [
 			{
 				to: "/equipments",
-				label: "Home",
-				icon: IconHome,
+				label: "Catalog",
+				icon: IconBox,
 			},
 		];
 
@@ -68,7 +68,7 @@ export function Navbar(): JSX.Element {
 	const navOptions = linkOptions(getNavOptions());
 
 	return (
-		<header className="flex gap-2 bg-card text-primary fixed bottom-0 left-0 w-full shadow z-50 pb-[env(safe-area-inset-bottom)]">
+		<header className="flex gap-2 bg-card text-primary fixed bottom-0 left-0 w-full shadow z-50 pb-[env(safe-area-inset-bottom)] rounded-t-2xl pt-2">
 			<nav className="py-1 px-2 font-bold flex justify-around w-full h-16">
 				{navOptions.map((opt) => {
 					const Icon = opt.icon;
@@ -76,9 +76,9 @@ export function Navbar(): JSX.Element {
 						<Link
 							key={opt.label}
 							to={opt.to}
-							className="p-2 aspect-square"
+							className="p-2 aspect-square rounded-lg"
 							activeProps={{
-								className: "bg-primary text-card rounded-lg",
+								className: "bg-primary text-card",
 							}}
 						>
 							<div className="flex flex-col items-center justify-center h-full">
