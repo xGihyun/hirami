@@ -1,5 +1,5 @@
 import { useId, useState, type JSX } from "react";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { EyeClosedIcon, EyeIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -34,7 +34,7 @@ export function PasswordInput({
 					aria-controls="password"
 				>
 					{isVisible ? (
-						<EyeOffIcon size={24} aria-hidden="true" />
+						<EyeClosedIcon size={24} aria-hidden="true" />
 					) : (
 						<EyeIcon size={24} aria-hidden="true" />
 					)}
