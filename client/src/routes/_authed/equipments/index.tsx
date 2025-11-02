@@ -67,6 +67,7 @@ function RouteComponent(): JSX.Element {
 	const equipments = useQuery(equipmentsQuery(selectedNames));
 	const equipmentNames = useSuspenseQuery(equipmentNamesQuery());
 	const auth = useAuth();
+	const [isBorrowing, setIsBorrowing] = useState(false);
 
 	function toggleEquipment(name: string): void {
 		if (name === "All") {
@@ -154,6 +155,17 @@ function RouteComponent(): JSX.Element {
 	// TODO: Fix these stuff, make the approach cleaner
 	if (equipments.isPending || !equipments.data) {
 		return <p>Loading Equipment...</p>;
+	}
+
+	if (isBorrowing) {
+		return (
+			<BorrowEquipmentForm
+				handleUpdateQuantity={handleUpdateQuantity}
+				onSuccess={onSuccess}
+				selectedEquipments={selectedEquipments}
+                setIsBorrowing={setIsBorrowing}
+			/>
+		);
 	}
 
 	return (
@@ -278,36 +290,16 @@ function RouteComponent(): JSX.Element {
 					</DrawerContent>
 				</Drawer>
 			) : (
-				<Drawer
-					open={isDrawerOpen}
-					onOpenChange={(open) => setIsDrawerOpen(open)}
-				>
+				<>
 					{selectedEquipments.length > 0 ? (
-						<DrawerTrigger asChild>
-							<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow ">
-								Borrow Equipments ({selectedEquipments.length})
-							</Button>
-						</DrawerTrigger>
+						<Button
+							className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow"
+							onClick={() => setIsBorrowing(true)}
+						>
+							Borrow Equipments ({selectedEquipments.length})
+						</Button>
 					) : null}
-					<DrawerContent>
-						<DrawerHeader>
-							<DrawerTitle>Selected Equipments</DrawerTitle>
-						</DrawerHeader>
-
-						<BorrowEquipmentForm
-							selectedEquipments={selectedEquipments}
-							className="px-4"
-							handleUpdateQuantity={handleUpdateQuantity}
-							onSuccess={onSuccess}
-						/>
-
-						<DrawerFooter>
-							<DrawerClose asChild>
-								<Button variant="outline">Cancel</Button>
-							</DrawerClose>
-						</DrawerFooter>
-					</DrawerContent>
-				</Drawer>
+				</>
 			)}
 		</div>
 	);
