@@ -4,6 +4,7 @@ import registerIllustration from "./undraw_sign-up.svg";
 import doneIllustration from "./undraw_done.svg";
 import accessDeniedIllustration from "./undraw_access-denied.svg";
 import loginIllustration from "./undraw_login.svg";
+import passwordResetIllustration from "./undraw_password-reset.svg";
 
 export {
 	hiramiLogo,
@@ -12,4 +13,5 @@ export {
 	doneIllustration,
 	accessDeniedIllustration,
 	loginIllustration,
+	passwordResetIllustration,
 };

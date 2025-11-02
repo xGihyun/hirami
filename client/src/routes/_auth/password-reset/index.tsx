@@ -15,13 +15,19 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { IconArrowLeft } from "@/lib/icons";
+import { passwordResetIllustration } from "@/lib/assets";
+import { H1, TitleSmall } from "@/components/typography";
 
 export const Route = createFileRoute("/_auth/password-reset/")({
 	component: RouteComponent,
 });
 
 const formSchema = z.object({
-	email: z.email(),
+	email: z
+		.string()
+		.nonempty({ error: "This field must not be left blank." })
+		.email({ error: "Invalid email format." }),
 });
 
 async function requestPasswordReset(
@@ -35,7 +41,7 @@ async function requestPasswordReset(
 
 	const result: ApiResponse = await response.json();
 	if (!response.ok) {
-		throw new Error(result.message );
+		throw new Error(result.message);
 	}
 
 	return result;
@@ -47,6 +53,7 @@ function RouteComponent() {
 		defaultValues: {
 			email: "",
 		},
+		mode: "onTouched",
 	});
 
 	const mutation = useMutation({
@@ -67,24 +74,51 @@ function RouteComponent() {
 	}
 
 	return (
-		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-				<FormField
-					control={form.control}
-					name="email"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Email</FormLabel>
-							<FormControl>
-								<Input placeholder="youremail@gmail.com" {...field} />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
+		<div className="h-full w-full">
+			<Button variant="ghost" size="icon" className="size-15">
+				<IconArrowLeft className="size-8" />
+			</Button>
 
-				<Button type="submit" className="w-full">Send Reset Link</Button>
-			</form>
-		</Form>
+			<main className="mt-10 pb-10">
+				<div className="h-full w-full flex flex-col gap-12">
+					<section className="space-y-3.5 content-center flex flex-col justify-center items-center h-full">
+						<img
+							src={passwordResetIllustration}
+							alt="Password reset illustration"
+							className="w-full max-w-52 mx-auto"
+						/>
+
+						<div className="space-y-1.5">
+							<H1 className="text-center">Forgot Password?</H1>
+							<TitleSmall className="text-center">
+								Enter your email to proceed.
+							</TitleSmall>
+						</div>
+					</section>
+
+					<Form {...form}>
+						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+							<FormField
+								control={form.control}
+								name="email"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Email</FormLabel>
+										<FormControl>
+											<Input placeholder="youremail@gmail.com" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<Button type="submit" className="w-full">
+								Verify
+							</Button>
+						</form>
+					</Form>
+				</div>
+			</main>
+		</div>
 	);
 }
