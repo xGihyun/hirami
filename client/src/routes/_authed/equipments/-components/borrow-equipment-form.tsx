@@ -17,8 +17,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { SelectedEquipment } from "..";
 import { useAuth } from "@/auth";
-import { cn } from "@/lib/utils";
-import { Caption, H1, TitleSmall } from "@/components/typography";
+import { H1, LabelLarge, LabelSmall } from "@/components/typography";
 import { NumberInput } from "@/components/number-input";
 import { Separator } from "@/components/ui/separator";
 import type { Equipment } from "@/lib/equipment";
@@ -39,10 +38,14 @@ const borrowEquipmentItemSchema = z.object({
 
 const formSchema = z.object({
 	equipments: z.array(borrowEquipmentItemSchema),
-	location: z.string().nonempty({ message: "Please enter the location." }),
-	purpose: z.string().nonempty({ message: "Please enter your purpose." }),
+	location: z
+		.string()
+		.nonempty({ error: "This field must not be left blank." }),
+	purpose: z.string().nonempty({ error: "This field must not be left blank." }),
 	expectedReturnAt: z.date(),
-	requestedBy: z.string().nonempty(),
+	requestedBy: z
+		.string()
+		.nonempty({ error: "This field must not be left blank." }),
 });
 
 async function borrow(value: z.infer<typeof formSchema>): Promise<ApiResponse> {
@@ -86,6 +89,7 @@ export function BorrowEquipmentForm(
 			purpose: "",
 			requestedBy: auth.user?.id,
 		},
+		mode: "onTouched",
 	});
 
 	const mutation = useMutation({
@@ -139,7 +143,7 @@ export function BorrowEquipmentForm(
 									return (
 										<div
 											key={equipment.id}
-											className="flex items-center gap-2 justify-between"
+											className="flex items-center gap-2 justify-between bg-card rounded-md p-4 shadow-md"
 										>
 											<div className="flex items-center gap-2 w-full">
 												<img
@@ -149,15 +153,15 @@ export function BorrowEquipmentForm(
 												/>
 
 												<div className="flex flex-col">
-													<p className="font-montserrat-semibold text-base leading-6">
-														{equipment.name}
-													</p>
-
-													<Caption>
+													<LabelLarge>
 														{equipment.brand}
 														{equipment.model ? " - " : null}
 														{equipment.model}
-													</Caption>
+													</LabelLarge>
+
+													<LabelSmall className="text-muted">
+														{equipment.name}
+													</LabelSmall>
 												</div>
 											</div>
 
@@ -207,7 +211,7 @@ export function BorrowEquipmentForm(
 								name="expectedReturnAt"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Expected Return Date & Time</FormLabel>
+										<FormLabel>Date and Time to Return</FormLabel>
 										<div className="flex gap-2">
 											<Popover
 												open={openCalendar}
@@ -217,7 +221,7 @@ export function BorrowEquipmentForm(
 													<Button
 														type="button"
 														variant="outline"
-														className="flex-1 justify-between font-normal bg-card font-open-sans text-base"
+														className="flex-1 justify-between bg-card font-open-sans text-base text-foreground border-accent"
 													>
 														{field.value
 															? field.value.toLocaleDateString()
@@ -276,8 +280,20 @@ export function BorrowEquipmentForm(
 								)}
 							/>
 
-							<Button type="submit" className="w-full">
+							<Button
+								type="submit"
+								className="w-full shadow-md"
+								disabled={!form.formState.isValid}
+							>
 								Borrow Equipments
+							</Button>
+
+							<Button
+								className="w-full shadow-md"
+								onClick={() => props.setIsBorrowing(false)}
+                                variant="secondary"
+							>
+								Cancel
 							</Button>
 						</form>
 					</Form>

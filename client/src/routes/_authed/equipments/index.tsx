@@ -293,7 +293,7 @@ function RouteComponent(): JSX.Element {
 				<>
 					{selectedEquipments.length > 0 ? (
 						<Button
-							className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow"
+							className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow-md"
 							onClick={() => setIsBorrowing(true)}
 						>
 							Borrow Equipments ({selectedEquipments.length})
