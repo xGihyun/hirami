@@ -1,5 +1,6 @@
 import hiramiLogo from "./logo.svg";
-import hiramiLogoDark from "./logo-dark.svg";
+import hiramiLogoDarkWithTitle from "./logo-dark.svg";
+import hiramiLogoDark from "./logo-dark-no-text.svg";
 import registerIllustration from "./undraw_sign-up.svg";
 import doneIllustration from "./undraw_done.svg";
 import accessDeniedIllustration from "./undraw_access-denied.svg";
@@ -9,6 +10,7 @@ import passwordResetIllustration from "./undraw_password-reset.svg";
 export {
 	hiramiLogo,
 	hiramiLogoDark,
+	hiramiLogoDarkWithTitle,
 	registerIllustration,
 	doneIllustration,
 	accessDeniedIllustration,

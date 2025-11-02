@@ -1,4 +1,4 @@
-import { hiramiLogoDark } from "@/lib/assets";
+import { hiramiLogoDarkWithTitle } from "@/lib/assets";
 import {
 	createFileRoute,
 	Link,

@@ -27,15 +27,17 @@ import {
 	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
-import { Caption, H2 } from "@/components/typography";
+import { Caption, H2, LabelMedium, TitleSmall } from "@/components/typography";
 import { IconPlus, IconRoundArrowDown } from "@/lib/icons";
 import { Toggle } from "@/components/ui/toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
 import { RegisterEquipmentForm } from "./-components/register-equipment-form";
-import { Separator } from "@/components/ui/separator";
 import { EventSource } from "eventsource";
+import { CatalogHeader } from "./-components/header";
+import { CatalogSearch } from "./-components/search";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export const Route = createFileRoute("/_authed/equipments/")({
 	component: RouteComponent,
@@ -58,6 +60,11 @@ function RouteComponent(): JSX.Element {
 	const auth = useAuth();
 
 	function toggleEquipment(name: string): void {
+		if (name === "All") {
+			setSelectedNames([]);
+			return;
+		}
+
 		setSelectedNames((prev) =>
 			prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name],
 		);
@@ -134,44 +141,46 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="relative space-y-4">
-			<section className="flex gap-2 items-center">
-				<Avatar className="size-12">
-					<AvatarImage src={toImageUrl(auth.user?.avatarUrl)} />
-					<AvatarFallback>
-						{auth.user?.firstName[0]}
-						{auth.user?.lastName[0]}
-					</AvatarFallback>
-				</Avatar>
-
-				<div>
-					<p className="text-sm font-montserrat-medium">Welcome,</p>
-					<H2 className="text-xl font-montserrat-medium">
-						{auth.user?.firstName}
-					</H2>
-				</div>
-			</section>
-
-			<Separator />
+			<CatalogHeader user={auth.user!} />
+			<CatalogSearch user={auth.user!} />
 
 			<section>
-				<p className="font-montserrat-medium text-sm mb-1">Categories</p>
-				<div className="flex flex-wrap gap-2 mb-2">
-					{equipmentNames.data.map((name) => (
+				<div className="mb-2.5 flex items-center justify-between gap-2">
+					<TitleSmall>Categories</TitleSmall>
+
+					<button className="cursor-pointer">
+						<LabelMedium>See More</LabelMedium>
+					</button>
+				</div>
+
+				<ScrollArea>
+					<div className="flex gap-2 mb-4">
 						<Toggle
-							key={name}
+							key={"All"}
 							variant="outline"
-							pressed={selectedNames.includes(name)}
-							onPressedChange={() => toggleEquipment(name)}
+							onPressedChange={() => toggleEquipment("All")}
+							pressed={selectedNames.length === 0}
 						>
-							{name}
+							All
 						</Toggle>
-					))}
-				</div>
+
+						{equipmentNames.data.map((name) => (
+							<Toggle
+								key={name}
+								variant="outline"
+								pressed={selectedNames.includes(name)}
+								onPressedChange={() => toggleEquipment(name)}
+							>
+								{name}
+							</Toggle>
+						))}
+					</div>
+
+					<ScrollBar orientation="horizontal" />
+				</ScrollArea>
 			</section>
 
 			<section>
-				<p className="font-montserrat-medium text-sm mb-1">Equipments</p>
-
 				<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 					{equipments.data.map((equipment) => {
 						const key = `${equipment.id}-${equipment.status}`;
