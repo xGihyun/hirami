@@ -27,7 +27,14 @@ import {
 	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
-import { Caption, H2, LabelMedium, TitleSmall } from "@/components/typography";
+import {
+	Caption,
+	H2,
+	LabelLarge,
+	LabelMedium,
+	LabelSmall,
+	TitleSmall,
+} from "@/components/typography";
 import { IconPlus, IconRoundArrowDown } from "@/lib/icons";
 import { Toggle } from "@/components/ui/toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,6 +45,8 @@ import { EventSource } from "eventsource";
 import { CatalogHeader } from "./-components/header";
 import { CatalogSearch } from "./-components/search";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { capitalizeWords } from "@/lib/utils";
+import { StatusBadge } from "./-components/status-badge";
 
 export const Route = createFileRoute("/_authed/equipments/")({
 	component: RouteComponent,
@@ -134,6 +143,14 @@ function RouteComponent(): JSX.Element {
 		};
 	}, [queryClient]);
 
+	function isChecked(equipment: Equipment): boolean {
+		return selectedEquipments.some(
+			(item) =>
+				item.equipment.id === equipment.id &&
+				item.equipment.status === equipment.status,
+		);
+	}
+
 	// TODO: Fix these stuff, make the approach cleaner
 	if (equipments.isPending || !equipments.data) {
 		return <p>Loading Equipment...</p>;
@@ -144,7 +161,7 @@ function RouteComponent(): JSX.Element {
 			<CatalogHeader user={auth.user!} />
 			<CatalogSearch user={auth.user!} />
 
-			<section>
+			<section className="mb-2">
 				<div className="mb-2.5 flex items-center justify-between gap-2">
 					<TitleSmall>Categories</TitleSmall>
 
@@ -154,7 +171,7 @@ function RouteComponent(): JSX.Element {
 				</div>
 
 				<ScrollArea>
-					<div className="flex gap-2 mb-4">
+					<div className="flex gap-2 mb-2">
 						<Toggle
 							key={"All"}
 							variant="outline"
@@ -180,26 +197,20 @@ function RouteComponent(): JSX.Element {
 				</ScrollArea>
 			</section>
 
-			<section>
+			<section className="pb-12">
 				<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 					{equipments.data.map((equipment) => {
 						const key = `${equipment.id}-${equipment.status}`;
 						const equipmentImage = equipment.imageUrl
 							? `${BACKEND_URL}${equipment.imageUrl}`
 							: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
-						const borrowerInitials = `${equipment.borrower?.firstName[0]}${equipment.borrower?.lastName[0]}`;
-						const borrowerName = `${equipment.borrower?.lastName}, ${equipment.borrower?.firstName}`;
 
 						return (
 							<label htmlFor={key} key={key}>
-								<Card className="space-y-2 border-input has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none">
+								<Card className="group space-y-2 border-input has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none">
 									<Checkbox
 										id={key}
-										checked={selectedEquipments.some(
-											(item) =>
-												item.equipment.id === equipment.id &&
-												item.equipment.status === equipment.status,
-										)}
+										checked={isChecked(equipment)}
 										className="sr-only"
 										value={equipment.id}
 										onCheckedChange={(checked) =>
@@ -212,49 +223,28 @@ function RouteComponent(): JSX.Element {
 									/>
 
 									<div className="space-y-1">
-										<div className="w-full h-28 overflow-hidden rounded-md relative bg-background">
-											<Badge
-												className="absolute top-1 left-1"
-												variant={
-													equipment.status === EquipmentStatus.Available
-														? "success"
-														: "default"
-												}
-											>
-												{equipment.status} ({equipment.quantity})
-											</Badge>
+										<div className="w-full h-28 overflow-hidden rounded-md relative">
+											<StatusBadge equipment={equipment} />
+
 											<img
 												src={equipmentImage}
 												alt={`${equipment.name} ${equipment.brand}`}
-												className="w-full h-full object-cover"
+												className="w-full h-full object-contain"
 											/>
 										</div>
 
 										<div className="flex flex-col">
-											<p className="font-montserrat-semibold text-base leading-6">
-												{equipment.name}
-											</p>
-
-											<Caption>
+											<LabelLarge>
 												{equipment.brand}
 												{equipment.model ? " - " : null}
 												{equipment.model}
-											</Caption>
+											</LabelLarge>
+
+											<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground">
+												{equipment.name}
+											</LabelSmall>
 										</div>
 									</div>
-
-									{equipment.borrower ? (
-										<div className="flex items-center gap-1">
-											<Avatar className="size-6 text-xs">
-												<AvatarImage
-													src={toImageUrl(equipment.borrower.avatarUrl)}
-												/>
-												<AvatarFallback>{borrowerInitials}</AvatarFallback>
-											</Avatar>
-
-											<Caption>{borrowerName}</Caption>
-										</div>
-									) : null}
 								</Card>
 							</label>
 						);
@@ -294,9 +284,8 @@ function RouteComponent(): JSX.Element {
 				>
 					{selectedEquipments.length > 0 ? (
 						<DrawerTrigger asChild>
-							<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-50 shadow">
-								<IconRoundArrowDown className="h-full" />
-								Borrow ({selectedEquipments.length} items)
+							<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow ">
+								Borrow Equipments ({selectedEquipments.length})
 							</Button>
 						</DrawerTrigger>
 					) : null}
