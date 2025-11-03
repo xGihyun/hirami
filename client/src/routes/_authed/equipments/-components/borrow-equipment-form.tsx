@@ -78,17 +78,12 @@ export function BorrowEquipmentForm(
 	const mutation = useMutation({
 		mutationKey: ["submit-borrow-request"],
 		mutationFn: borrow,
-		onMutate: () => {
-			return toast.loading("Submitting borrow request");
-		},
-		onSuccess: async (_data, _variables, toastId) => {
+		onSuccess: async (_data, _variables) => {
 			await navigate({ search: { success: true } });
-			toast.dismiss(toastId);
 			props.onSuccess();
 		},
-		onError: async (_error, _variables, toastId) => {
+		onError: async (_error, _variables) => {
 			await navigate({ search: { success: false } });
-			toast.dismiss(toastId);
 		},
 	});
 
