@@ -36,6 +36,7 @@ import { BorrowFailed } from "./-components/borrow-failed";
 import { Catalog } from "./-components/catalog";
 import { LabelMedium } from "@/components/typography";
 import { Loading } from "@/components/loading";
+import { CatalogCategories } from "./-components/catalog-categories";
 
 const searchSchema = z.object({
 	success: z.boolean().optional(),
@@ -146,6 +147,7 @@ function RouteComponent(): JSX.Element {
 		<div className="relative space-y-4">
 			<CatalogHeader user={auth.user!} />
 			<CatalogSearch user={auth.user!} />
+			<CatalogCategories equipmentNames={equipmentNames.data} />
 
 			{equipments.isError || equipments.data === undefined ? (
 				<LabelMedium className="text-muted text-center mt-10">
@@ -154,7 +156,6 @@ function RouteComponent(): JSX.Element {
 			) : (
 				<Catalog
 					equipments={equipments.data}
-					equipmentNames={equipmentNames.data}
 					selectedEquipments={selectedEquipments}
 					setSelectedEquipments={setSelectedEquipments}
 				/>
