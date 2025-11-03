@@ -1,4 +1,4 @@
-import { Link, linkOptions } from "@tanstack/react-router";
+import { Link, linkOptions, useLocation } from "@tanstack/react-router";
 import type { JSX } from "react";
 import {
 	IconBox,
@@ -10,9 +10,11 @@ import {
 import { LabelSmall } from "./typography";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
+import { cn } from "@/lib/utils";
 
 export function Navbar(): JSX.Element {
 	const auth = useAuth();
+	const location = useLocation();
 
 	const getNavOptions = () => {
 		const commonOptions = [
@@ -68,7 +70,12 @@ export function Navbar(): JSX.Element {
 	const navOptions = linkOptions(getNavOptions());
 
 	return (
-		<header className="flex gap-2 bg-card text-primary fixed bottom-0 left-0 w-full shadow z-50 pb-[env(safe-area-inset-bottom)] rounded-t-2xl pt-2">
+		<header
+			className={cn(
+				"gap-2 bg-card text-primary fixed bottom-0 left-0 w-full shadow z-50 pb-[env(safe-area-inset-bottom)] rounded-t-2xl pt-2",
+				location.search.success !== undefined ? "hidden" : "flex",
+			)}
+		>
 			<nav className="py-1 px-2 font-bold flex justify-around w-full h-16">
 				{navOptions.map((opt) => {
 					const Icon = opt.icon;
