@@ -18,7 +18,6 @@ import { toast } from "sonner";
 import type { SelectedEquipment } from "..";
 import { useAuth } from "@/auth";
 import { H1, LabelLarge, LabelSmall } from "@/components/typography";
-import { NumberInput } from "@/components/number-input";
 import { Separator } from "@/components/ui/separator";
 import type { Equipment } from "@/lib/equipment";
 import { Calendar } from "@/components/ui/calendar";
@@ -30,6 +29,7 @@ import {
 import { ChevronDownIcon } from "lucide-react";
 import { useState } from "react";
 import { IconArrowLeft } from "@/lib/icons";
+import { NumberInput } from "@/components/number-input";
 
 const borrowEquipmentItemSchema = z.object({
 	equipmentTypeId: z.string().nonempty(),
@@ -143,7 +143,7 @@ export function BorrowEquipmentForm(
 									return (
 										<div
 											key={equipment.id}
-											className="flex items-center gap-2 justify-between bg-card rounded-md p-4 shadow-md"
+											className="flex items-center gap-2 justify-between bg-card rounded-2xl p-4 shadow-item"
 										>
 											<div className="flex items-center gap-2 w-full">
 												<img
@@ -155,8 +155,7 @@ export function BorrowEquipmentForm(
 												<div className="flex flex-col">
 													<LabelLarge>
 														{equipment.brand}
-														{equipment.model ? " - " : null}
-														{equipment.model}
+														{equipment.model ? ` ${equipment.model}` : null}
 													</LabelLarge>
 
 													<LabelSmall className="text-muted">
@@ -291,7 +290,7 @@ export function BorrowEquipmentForm(
 							<Button
 								className="w-full shadow-md"
 								onClick={() => props.setIsBorrowing(false)}
-                                variant="secondary"
+								variant="secondary"
 							>
 								Cancel
 							</Button>
