@@ -82,6 +82,7 @@ function RouteComponent(): JSX.Element {
 	}
 
 	function onSuccess(): void {
+		setIsBorrowing(false);
 		setIsDrawerOpen(false);
 		setSelectedEquipments([]);
 	}
