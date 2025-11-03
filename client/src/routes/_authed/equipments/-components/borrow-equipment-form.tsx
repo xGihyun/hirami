@@ -10,6 +10,15 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { BACKEND_URL } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
@@ -35,6 +44,7 @@ import {
 	borrowRequestSchema,
 	type BorrowRequestSchema,
 } from "../-function";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 type BorrowEquipmentFormProps = {
 	selectedEquipments: SelectedEquipment[];
@@ -108,7 +118,11 @@ export function BorrowEquipmentForm(
 					<H1 className="text-center">Selected Equipments</H1>
 
 					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+						<form
+							onSubmit={form.handleSubmit(onSubmit)}
+							className="space-y-4"
+							id="borrow-request-form"
+						>
 							<section className="space-y-2">
 								{props.selectedEquipments.map((selectedEquipment) => {
 									const equipment = selectedEquipment.equipment;
@@ -255,15 +269,48 @@ export function BorrowEquipmentForm(
 								)}
 							/>
 
-							<Button
-								type="submit"
-								className="w-full shadow-md"
-								disabled={!form.formState.isValid}
-							>
-								Borrow Equipments
-							</Button>
+							<Dialog>
+								<DialogTrigger asChild>
+									<Button
+										type="button"
+										className="w-full shadow-md"
+										disabled={!form.formState.isValid}
+									>
+										Borrow Equipments
+									</Button>
+								</DialogTrigger>
+
+								<DialogContent>
+									<DialogHeader>
+										<DialogTitle className="text-start">
+											Confirm Equipment Borrow
+										</DialogTitle>
+										<DialogDescription className="text-start">
+											You are about to borrow {props.selectedEquipments.length}{" "}
+											items. Do you wish to proceed?
+										</DialogDescription>
+									</DialogHeader>
+
+									<DialogFooter>
+										<DialogClose asChild>
+											<Button type="button" variant="secondary">
+												Cancel
+											</Button>
+										</DialogClose>
+
+										<Button
+											disabled={!form.formState.isValid}
+											type="submit"
+											form="borrow-request-form"
+										>
+											Confirm
+										</Button>
+									</DialogFooter>
+								</DialogContent>
+							</Dialog>
 
 							<Button
+								type="button"
 								className="w-full shadow-md"
 								onClick={() => props.setIsBorrowing(false)}
 								variant="secondary"
