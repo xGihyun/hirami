@@ -21,7 +21,7 @@ export const borrowRequestSchema = z.object({
 export type BorrowRequestSchema = z.infer<typeof borrowRequestSchema>;
 
 export async function borrow(value: BorrowRequestSchema): Promise<ApiResponse> {
-	const response = await fetch(`${BACKEND_URL}/borrow-request`, {
+	const response = await fetch(`${BACKEND_URL}/borrow-requests`, {
 		method: "POST",
 		body: JSON.stringify(value),
 		headers: {
