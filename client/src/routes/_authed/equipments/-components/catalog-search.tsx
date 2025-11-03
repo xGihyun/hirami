@@ -12,7 +12,7 @@ export function CatalogSearch(props: Props): JSX.Element {
 		<div className="space-y-4">
 			<section>
 				<TitleSmall className="text-muted">
-					Welcome, {props.user.firstName}
+					Welcome back {props.user.firstName},
 				</TitleSmall>
 				<H1>Explore our Catalog</H1>
 			</section>
