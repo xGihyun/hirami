@@ -11,9 +11,8 @@ import {
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BACKEND_URL, toImageUrl } from "@/lib/api";
+import { BACKEND_URL } from "@/lib/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useEffect, useState, type JSX } from "react";
 import type { CheckedState } from "@radix-ui/react-checkbox";
@@ -28,16 +27,13 @@ import {
 } from "@/components/ui/drawer";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
 import {
-	Caption,
-	H2,
 	LabelLarge,
 	LabelMedium,
 	LabelSmall,
 	TitleSmall,
 } from "@/components/typography";
-import { IconPlus, IconRoundArrowDown } from "@/lib/icons";
+import { IconPlus } from "@/lib/icons";
 import { Toggle } from "@/components/ui/toggle";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
 import { RegisterEquipmentForm } from "./-components/register-equipment-form";
@@ -45,7 +41,6 @@ import { EventSource } from "eventsource";
 import { CatalogHeader } from "./-components/header";
 import { CatalogSearch } from "./-components/search";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { capitalizeWords } from "@/lib/utils";
 import { StatusBadge } from "./-components/status-badge";
 
 export const Route = createFileRoute("/_authed/equipments/")({
@@ -163,7 +158,7 @@ function RouteComponent(): JSX.Element {
 				handleUpdateQuantity={handleUpdateQuantity}
 				onSuccess={onSuccess}
 				selectedEquipments={selectedEquipments}
-                setIsBorrowing={setIsBorrowing}
+				setIsBorrowing={setIsBorrowing}
 			/>
 		);
 	}
@@ -293,8 +288,11 @@ function RouteComponent(): JSX.Element {
 				<>
 					{selectedEquipments.length > 0 ? (
 						<Button
-							className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow-md"
-							onClick={() => setIsBorrowing(true)}
+							className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 !shadow-item"
+							onClick={() => {
+								setIsBorrowing(true);
+								window.scrollTo({ top: 0, behavior: "instant" });
+							}}
 						>
 							Borrow Equipments ({selectedEquipments.length})
 						</Button>
