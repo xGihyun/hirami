@@ -1,4 +1,4 @@
-import { SearchInput } from "@/components/comp-26";
+import { SearchInput } from "@/components/search-input";
 import { H1, TitleSmall } from "@/components/typography";
 import type { User } from "@/lib/user";
 import type { JSX } from "react";
