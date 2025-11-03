@@ -82,13 +82,13 @@ export function BorrowEquipmentForm(
 			return toast.loading("Submitting borrow request");
 		},
 		onSuccess: async (_data, _variables, toastId) => {
-			props.onSuccess();
-			toast.dismiss(toastId);
 			await navigate({ search: { success: true } });
+			toast.dismiss(toastId);
+			props.onSuccess();
 		},
 		onError: async (_error, _variables, toastId) => {
-			toast.dismiss(toastId);
 			await navigate({ search: { success: false } });
+			toast.dismiss(toastId);
 		},
 	});
 
