@@ -4,11 +4,15 @@ import { connectionLostIllustration, homeRunIllustration } from "@/lib/assets";
 import { IconArrowLeft } from "@/lib/icons";
 import { useMutation, useMutationState } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import type { JSX } from "react";
+import type { Dispatch, JSX, SetStateAction } from "react";
 import { borrow, type BorrowRequestSchema } from "../-function";
 import { toast } from "sonner";
 
-export function BorrowFailed(): JSX.Element {
+type Props = {
+	setIsBorrowing: Dispatch<SetStateAction<boolean>>;
+};
+
+export function BorrowFailed(props: Props): JSX.Element {
 	const mutationState = useMutationState({
 		filters: { mutationKey: ["submit-borrow-request"] },
 		select: (mutation) => mutation,
@@ -21,7 +25,7 @@ export function BorrowFailed(): JSX.Element {
 		mutationKey: ["submit-borrow-request"],
 		mutationFn: borrow,
 		onMutate: (variables) => {
-            console.log(variables)
+			console.log(variables);
 			return toast.loading("Submitting borrow request");
 		},
 		onSuccess: async (data, _variables, toastId) => {
@@ -70,7 +74,7 @@ export function BorrowFailed(): JSX.Element {
 							Try Again
 						</Button>
 
-						<Link to="/equipments">
+						<Link to="/equipments" onClick={() => props.setIsBorrowing(false)}>
 							<LabelLarge>or return to Catalog</LabelLarge>
 						</Link>
 					</section>
