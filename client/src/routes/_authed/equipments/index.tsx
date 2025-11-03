@@ -55,7 +55,6 @@ export type SelectedEquipment = {
 };
 
 function RouteComponent(): JSX.Element {
-	// const [selectedNames, setSelectedNames] = useState<string[]>([]);
 	const search = Route.useSearch();
 
 	const equipments = useQuery(equipmentsQuery(search.categories));
