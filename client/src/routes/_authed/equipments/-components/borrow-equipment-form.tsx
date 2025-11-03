@@ -1,5 +1,4 @@
 import type { Dispatch, JSX, SetStateAction } from "react";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
+import { BACKEND_URL } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { SelectedEquipment } from "..";
@@ -30,40 +29,12 @@ import { ChevronDownIcon } from "lucide-react";
 import { useState } from "react";
 import { IconArrowLeft } from "@/lib/icons";
 import { NumberInput } from "@/components/number-input";
-
-const borrowEquipmentItemSchema = z.object({
-	equipmentTypeId: z.string().nonempty(),
-	quantity: z.number().positive(),
-});
-
-const formSchema = z.object({
-	equipments: z.array(borrowEquipmentItemSchema),
-	location: z
-		.string()
-		.nonempty({ error: "This field must not be left blank." }),
-	purpose: z.string().nonempty({ error: "This field must not be left blank." }),
-	expectedReturnAt: z.date(),
-	requestedBy: z
-		.string()
-		.nonempty({ error: "This field must not be left blank." }),
-});
-
-async function borrow(value: z.infer<typeof formSchema>): Promise<ApiResponse> {
-	const response = await fetch(`${BACKEND_URL}/borrow-requests`, {
-		method: "POST",
-		body: JSON.stringify(value),
-		headers: {
-			"Content-Type": "application/json",
-		},
-	});
-
-	const result: ApiResponse = await response.json();
-	if (!response.ok) {
-		throw new Error(result.message);
-	}
-
-	return result;
-}
+import { useNavigate } from "@tanstack/react-router";
+import {
+	borrow,
+	borrowRequestSchema,
+	type BorrowRequestSchema,
+} from "../-function";
 
 type BorrowEquipmentFormProps = {
 	selectedEquipments: SelectedEquipment[];
@@ -80,8 +51,8 @@ export function BorrowEquipmentForm(
 	const tomorrow = new Date();
 	tomorrow.setDate(tomorrow.getDate() + 1);
 
-	const form = useForm<z.infer<typeof formSchema>>({
-		resolver: zodResolver(formSchema),
+	const form = useForm<BorrowRequestSchema>({
+		resolver: zodResolver(borrowRequestSchema),
 		defaultValues: {
 			equipments: [],
 			expectedReturnAt: tomorrow,
@@ -92,21 +63,26 @@ export function BorrowEquipmentForm(
 		mode: "onTouched",
 	});
 
+	const navigate = useNavigate({ from: "/equipments" });
+
 	const mutation = useMutation({
+		mutationKey: ["submit-borrow-request"],
 		mutationFn: borrow,
 		onMutate: () => {
 			return toast.loading("Submitting borrow request");
 		},
-		onSuccess: (data, _variables, toastId) => {
+		onSuccess: async (data, _variables, toastId) => {
 			props.onSuccess();
 			toast.success(data.message, { id: toastId });
+			await navigate({ search: { success: true } });
 		},
-		onError: (error, _variables, toastId) => {
-			toast.error(error.message, { id: toastId });
+		onError: async (_error, _variables, toastId) => {
+			toast.dismiss(toastId);
+			await navigate({ search: { success: false } });
 		},
 	});
 
-	async function onSubmit(value: z.infer<typeof formSchema>): Promise<void> {
+	async function onSubmit(value: BorrowRequestSchema): Promise<void> {
 		const equipmentsPayload = props.selectedEquipments.map((item) => ({
 			equipmentTypeId: item.equipment.id,
 			quantity: item.quantity,

@@ -6,6 +6,8 @@ import doneIllustration from "./undraw_done.svg";
 import accessDeniedIllustration from "./undraw_access-denied.svg";
 import loginIllustration from "./undraw_login.svg";
 import passwordResetIllustration from "./undraw_password-reset.svg";
+import homeRunIllustration from "./undraw_home-run.svg";
+import connectionLostIllustration from "./undraw_connection-lost.svg";
 
 export {
 	hiramiLogo,
@@ -16,4 +18,6 @@ export {
 	accessDeniedIllustration,
 	loginIllustration,
 	passwordResetIllustration,
+	homeRunIllustration,
+	connectionLostIllustration,
 };
