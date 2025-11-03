@@ -81,9 +81,9 @@ export function BorrowEquipmentForm(
 		onMutate: () => {
 			return toast.loading("Submitting borrow request");
 		},
-		onSuccess: async (data, _variables, toastId) => {
+		onSuccess: async (_data, _variables, toastId) => {
 			props.onSuccess();
-			toast.success(data.message, { id: toastId });
+			toast.dismiss(toastId);
 			await navigate({ search: { success: true } });
 		},
 		onError: async (_error, _variables, toastId) => {
