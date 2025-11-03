@@ -129,7 +129,9 @@ function RouteComponent(): JSX.Element {
 	}
 
 	if (search.success === false) {
-		return <BorrowFailed setIsBorrowing={setIsBorrowing} />;
+		return (
+			<BorrowFailed setIsBorrowing={setIsBorrowing} onSuccess={onSuccess} />
+		);
 	}
 
 	if (isBorrowing) {

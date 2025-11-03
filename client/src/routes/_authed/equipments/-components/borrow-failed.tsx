@@ -1,6 +1,6 @@
 import { H1, LabelLarge, TitleSmall } from "@/components/typography";
 import { Button } from "@/components/ui/button";
-import { connectionLostIllustration, homeRunIllustration } from "@/lib/assets";
+import { connectionLostIllustration } from "@/lib/assets";
 import { IconArrowLeft } from "@/lib/icons";
 import { useMutation, useMutationState } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 type Props = {
 	setIsBorrowing: Dispatch<SetStateAction<boolean>>;
+	onSuccess: () => void;
 };
 
 export function BorrowFailed(props: Props): JSX.Element {
@@ -24,13 +25,12 @@ export function BorrowFailed(props: Props): JSX.Element {
 	const retryMutation = useMutation({
 		mutationKey: ["submit-borrow-request"],
 		mutationFn: borrow,
-		onMutate: (variables) => {
-			console.log(variables);
-			return toast.loading("Submitting borrow request");
+		onSuccess: async (_data, _variables) => {
+			await navigate({ search: { success: true } });
+			props.onSuccess();
 		},
-		onSuccess: async (data, _variables, toastId) => {
-			toast.success(data.message, { id: toastId });
-			await navigate({ to: "/equipments", search: { success: true } });
+		onError: async (_error, _variables) => {
+			await navigate({ search: { success: false } });
 		},
 	});
 
