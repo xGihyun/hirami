@@ -4,6 +4,7 @@ import {
 	type Equipment,
 } from "@/lib/equipment";
 import {
+	useMutationState,
 	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
@@ -34,6 +35,7 @@ import { BorrowSuccess } from "./-components/borrow-success";
 import { BorrowFailed } from "./-components/borrow-failed";
 import { Catalog } from "./-components/catalog";
 import { LabelMedium } from "@/components/typography";
+import { Loading } from "@/components/loading";
 
 const searchSchema = z.object({
 	success: z.boolean().optional(),
@@ -66,6 +68,13 @@ function RouteComponent(): JSX.Element {
 		SelectedEquipment[]
 	>([]);
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+	const mutationState = useMutationState({
+		filters: {
+			mutationKey: ["submit-borrow-request"],
+		},
+		select: (mutation) => mutation.state.status,
+	});
+	const mutationStatus = mutationState[0];
 
 	function handleUpdateQuantity(
 		equipment: Equipment,
@@ -110,13 +119,11 @@ function RouteComponent(): JSX.Element {
 		};
 	}, [queryClient]);
 
-	// // TODO: Fix these stuff, make the approach cleaner
-	// if (equipments.isPending || !equipments.data) {
-	// 	return <p>Loading Equipment...</p>;
-	// }
+	if (mutationStatus === "pending") {
+		return <Loading />;
+	}
 
 	if (search.success === true) {
-		// SHow success UI
 		return <BorrowSuccess />;
 	}
 
