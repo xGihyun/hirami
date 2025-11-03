@@ -1,11 +1,16 @@
 import type { JSX } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-	LabelMedium,
-	TitleSmall,
-} from "@/components/typography";
+import { H2, LabelMedium, TitleSmall } from "@/components/typography";
 import { Toggle } from "@/components/ui/toggle";
 import { useNavigate, useSearch } from "@tanstack/react-router";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 
 type Props = {
 	equipmentNames: string[];
@@ -36,9 +41,38 @@ export function CatalogCategories(props: Props): JSX.Element {
 			<div className="mb-2.5 flex items-center justify-between gap-2">
 				<TitleSmall>Categories</TitleSmall>
 
-				<button className="cursor-pointer">
-					<LabelMedium>See More</LabelMedium>
-				</button>
+				<Dialog>
+					<DialogTrigger>
+						<LabelMedium>See More</LabelMedium>
+					</DialogTrigger>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle className="text-start">Categories</DialogTitle>
+						</DialogHeader>
+
+						<div className="flex flex-wrap gap-2 w-full">
+							<Toggle
+								key={"All"}
+								variant="outline"
+								onPressedChange={() => toggleEquipment("All")}
+								pressed={search.categories.length === 0}
+							>
+								All
+							</Toggle>
+
+							{props.equipmentNames.map((name) => (
+								<Toggle
+									key={name}
+									variant="outline"
+									pressed={search.categories.includes(name)}
+									onPressedChange={() => toggleEquipment(name)}
+								>
+									{name}
+								</Toggle>
+							))}
+						</div>
+					</DialogContent>
+				</Dialog>
 			</div>
 
 			<ScrollArea>
