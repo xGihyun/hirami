@@ -156,11 +156,39 @@ function RouteComponent(): JSX.Element {
 			<ReturnHeader equipmentNames={equipmentNames.data} />
 
 			{currentTransactions.map((transaction) => (
-				<>
-					{transaction.equipments.map((equipment) => (
-						<BorrowedItem equipment={equipment} transaction={transaction} />
-					))}
-				</>
+				<div className="flex flex-col gap-3.5">
+					{transaction.equipments.map((equipment) => {
+						const isChecked = selectedEquipments.some(
+							(item) =>
+								item.equipment.borrowRequestItemId ===
+								equipment.borrowRequestItemId,
+						);
+
+						return (
+							<button
+								key={equipment.borrowRequestItemId}
+								className="group text-start"
+								onClick={() => handleSelect(equipment, 1, !isChecked)}
+							>
+								<Checkbox
+									id={equipment.borrowRequestItemId}
+									className="sr-only"
+									value={equipment.borrowRequestItemId}
+									checked={isChecked}
+									onCheckedChange={(checked) =>
+										handleSelect(equipment, 1, checked)
+									}
+								/>
+
+								<BorrowedItem
+									equipment={equipment}
+									transaction={transaction}
+									className="cursor-pointer group-has-data-[state=checked]:bg-primary group-has-data-[state=checked]:text-primary-foreground"
+								/>
+							</button>
+						);
+					})}
+				</div>
 			))}
 
 			<Drawer>
