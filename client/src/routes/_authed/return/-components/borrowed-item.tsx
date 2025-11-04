@@ -1,11 +1,13 @@
 import { NumberInput } from "@/components/number-input";
 import { LabelLarge, LabelSmall } from "@/components/typography";
+import { Badge } from "@/components/ui/badge";
 import { BACKEND_URL } from "@/lib/api";
 import type {
 	BorrowedEquipment,
 	BorrowTransaction,
 } from "@/lib/equipment/borrow";
-import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { differenceInMinutes, format, isAfter } from "date-fns";
 import type { JSX } from "react";
 
 type Props = {
@@ -13,10 +15,37 @@ type Props = {
 	transaction: BorrowTransaction;
 };
 
+enum DueStatus {
+	DueSoon = "Due soon",
+	Overdue = "Overdue",
+}
+
 export function BorrowedItem(props: Props): JSX.Element {
 	const equipmentImage = props.equipment.imageUrl
 		? `${BACKEND_URL}${props.equipment.imageUrl}`
 		: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
+
+	function getDueStatus(returnDate: Date): DueStatus | null {
+		const now = new Date();
+		const diff = differenceInMinutes(returnDate, now);
+		const isOverdue = isAfter(returnDate, now);
+
+		if (diff <= 30 && diff >= 0) {
+			return DueStatus.DueSoon;
+		}
+
+		if (isOverdue) {
+			return DueStatus.Overdue;
+		}
+
+		return null;
+	}
+
+	function stopPropagation(event: React.MouseEvent): void {
+		event.stopPropagation();
+	}
+
+	const dueStatus = getDueStatus(new Date(props.transaction.expectedReturnAt));
 
 	return (
 		<div
@@ -40,6 +69,17 @@ export function BorrowedItem(props: Props): JSX.Element {
 						Due: {format(props.transaction.expectedReturnAt, "h:mm a")} on{" "}
 						{format(props.transaction.expectedReturnAt, "MM/dd/yyyy")}
 					</LabelSmall>
+
+					{dueStatus && (
+						<Badge
+							className="mt-1"
+							variant={
+								dueStatus === DueStatus.DueSoon ? "secondary" : "warning"
+							}
+						>
+							Status: {dueStatus}
+						</Badge>
+					)}
 				</div>
 			</div>
 
