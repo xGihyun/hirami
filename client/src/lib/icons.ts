@@ -10,6 +10,7 @@ import IconEmpty from "~icons/ph/empty-bold";
 import IconArrowLeft from "~icons/lucide/arrow-left";
 import IconUserPen from "~icons/lucide/user-pen";
 import IconBox from "~icons/lucide/box";
+import IconArrowDownUp from "~icons/lucide/arrow-down-up";
 
 export {
 	IconRoundArrowDown,
@@ -24,4 +25,5 @@ export {
 	IconArrowLeft,
 	IconUserPen,
 	IconBox,
+	IconArrowDownUp,
 };
