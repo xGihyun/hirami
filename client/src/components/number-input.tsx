@@ -1,12 +1,19 @@
 import { MinusIcon, PlusIcon } from "lucide-react";
 import type { JSX } from "react";
-import { Button, Group, Input, NumberField } from "react-aria-components";
+import {
+	Button,
+	Group,
+	Input,
+	NumberField,
+	type NumberFieldProps,
+} from "react-aria-components";
 
 type Props = {
 	onChange?: (value: number) => void;
 	maxValue?: number;
 	className?: string;
-};
+} & NumberFieldProps &
+	React.RefAttributes<HTMLDivElement>;
 
 export function NumberInput(props: Props): JSX.Element {
 	return (
