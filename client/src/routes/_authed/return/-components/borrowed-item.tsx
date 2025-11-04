@@ -69,7 +69,7 @@ export function BorrowedItem(props: Props): JSX.Element {
 						{props.equipment.model ? ` ${props.equipment.model}` : null}
 					</LabelLarge>
 
-					<LabelSmall className="text-muted">
+					<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground">
 						Due: {format(props.transaction.expectedReturnAt, "h:mm a")} on{" "}
 						{format(props.transaction.expectedReturnAt, "MM/dd/yyyy")}
 					</LabelSmall>
