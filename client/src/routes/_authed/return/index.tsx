@@ -35,6 +35,7 @@ import { EventSource } from "eventsource";
 import { ReturnHeader } from "./-components/return-header";
 import z from "zod";
 import { ReturnTab } from "./-model";
+import { BorrowedItem } from "./-components/borrowed-item";
 
 const searchSchema = z.object({
 	tab: z.enum(ReturnTab).default(ReturnTab.BorrowedItems),
@@ -70,10 +71,8 @@ function RouteComponent(): JSX.Element {
 	);
 	const equipmentNames = useSuspenseQuery(equipmentNamesQuery());
 
-	const currentBorrowedEquipments = borrowHistory.data.flatMap((transaction) =>
-		transaction.status === "approved"
-			? transaction.equipments.map((equipment) => equipment)
-			: [],
+	const currentTransactions = borrowHistory.data.flatMap((transaction) =>
+		transaction.status === "approved" ? transaction : [],
 	);
 
 	const aggregateEquipments = (data: ReturnRequest[]): Equipment[] =>
@@ -153,8 +152,16 @@ function RouteComponent(): JSX.Element {
 	}, [queryClient]);
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-4">
 			<ReturnHeader equipmentNames={equipmentNames.data} />
+
+			{currentTransactions.map((transaction) => (
+				<>
+					{transaction.equipments.map((equipment) => (
+						<BorrowedItem equipment={equipment} transaction={transaction} />
+					))}
+				</>
+			))}
 
 			<Drawer>
 				{selectedEquipments.length > 0 ? (
