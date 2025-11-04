@@ -13,6 +13,7 @@ import type { JSX } from "react";
 type Props = {
 	equipment: BorrowedEquipment;
 	transaction: BorrowTransaction;
+	className?: string;
 };
 
 enum DueStatus {
@@ -50,7 +51,10 @@ export function BorrowedItem(props: Props): JSX.Element {
 	return (
 		<div
 			key={props.equipment.borrowRequestItemId}
-			className="flex items-center gap-2 justify-between bg-card rounded-2xl p-4 shadow-item"
+			className={cn(
+				"flex items-center gap-2 justify-between bg-card rounded-2xl p-4 shadow-item",
+				props.className,
+			)}
 		>
 			<div className="flex items-center gap-2 w-full">
 				<img
