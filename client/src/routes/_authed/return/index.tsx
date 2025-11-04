@@ -1,11 +1,11 @@
 import { useAuth } from "@/auth";
-import { BACKEND_URL } from "@/lib/api";
+import { BACKEND_URL, Sort } from "@/lib/api";
 import {
 	borrowHistoryQuery,
 	type BorrowedEquipment,
 } from "@/lib/equipment/borrow";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,9 +29,18 @@ import {
 	returnRequestsQuery,
 	type ReturnRequest,
 } from "@/lib/equipment/return";
-import type { Equipment } from "@/lib/equipment";
+import { equipmentNamesQuery, type Equipment } from "@/lib/equipment";
 import { EmptyState } from "@/components/empty";
 import { EventSource } from "eventsource";
+import { ReturnHeader } from "./-components/return-header";
+import z from "zod";
+import { ReturnTab } from "./-model";
+
+const searchSchema = z.object({
+	tab: z.enum(ReturnTab).default(ReturnTab.BorrowedItems),
+	category: z.string().optional(),
+	dueDateSort: z.enum(Sort).default(Sort.Desc),
+});
 
 export const Route = createFileRoute("/_authed/return/")({
 	component: RouteComponent,
@@ -42,7 +51,9 @@ export const Route = createFileRoute("/_authed/return/")({
 		context.queryClient.ensureQueryData(
 			returnRequestsQuery({ userId: context.session.user.id }),
 		);
+		context.queryClient.ensureQueryData(equipmentNamesQuery());
 	},
+	validateSearch: searchSchema,
 });
 
 function RouteComponent(): JSX.Element {
@@ -57,6 +68,7 @@ function RouteComponent(): JSX.Element {
 			userId: auth.user?.id,
 		}),
 	);
+	const equipmentNames = useSuspenseQuery(equipmentNamesQuery());
 
 	const currentBorrowedEquipments = borrowHistory.data.flatMap((transaction) =>
 		transaction.status === "approved"
@@ -142,15 +154,7 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="space-y-6">
-			{equipmentsToReturn.length > 0 ? (
-				<RequestedToReturnSection equipments={equipmentsToReturn} />
-			) : null}
-
-			<BorrowedEquipmentsSection
-				equipments={currentBorrowedEquipments}
-				selectedEquipments={selectedEquipments}
-				onSelect={handleSelect}
-			/>
+			<ReturnHeader equipmentNames={equipmentNames.data} />
 
 			<Drawer>
 				{selectedEquipments.length > 0 ? (
@@ -278,15 +282,15 @@ function BorrowedEquipmentsSection({
 			<section className="h-[40rem]">
 				<H2>Borrowed Equipments</H2>
 
-                <div className="flex h-full items-center justify-center">
-				<EmptyState>
-					No borrowed equipments yet.
-					<br />
-					Let's borrow an equipment first.
-					<br />
-					(´｡• ᵕ •｡`)
-				</EmptyState>
-                </div>
+				<div className="flex h-full items-center justify-center">
+					<EmptyState>
+						No borrowed equipments yet.
+						<br />
+						Let's borrow an equipment first.
+						<br />
+						(´｡• ᵕ •｡`)
+					</EmptyState>
+				</div>
 			</section>
 		);
 	}
@@ -299,17 +303,23 @@ function BorrowedEquipmentsSection({
 
 			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 				{equipments.map((equipment) => {
-					{/* const key = `${equipment.borrowRequestItemId}_${equipment.equipmentTypeId}`; */}
+					{
+						/* const key = `${equipment.borrowRequestItemId}_${equipment.equipmentTypeId}`; */
+					}
 					const equipmentImage = equipment.imageUrl
 						? `${BACKEND_URL}${equipment.imageUrl}`
 						: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 					const isChecked = selectedEquipments.some(
 						(item) =>
-							item.equipment.borrowRequestItemId === equipment.borrowRequestItemId,
+							item.equipment.borrowRequestItemId ===
+							equipment.borrowRequestItemId,
 					);
 
 					return (
-						<label htmlFor={equipment.borrowRequestItemId} key={equipment.borrowRequestItemId}>
+						<label
+							htmlFor={equipment.borrowRequestItemId}
+							key={equipment.borrowRequestItemId}
+						>
 							<Card className="space-y-2 border-input has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none">
 								<Checkbox
 									id={equipment.borrowRequestItemId}
