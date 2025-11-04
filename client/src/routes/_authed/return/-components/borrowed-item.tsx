@@ -87,7 +87,13 @@ export function BorrowedItem(props: Props): JSX.Element {
 				</div>
 			</div>
 
-			<NumberInput className="w-40" value={props.equipment.quantity} maxValue={props.equipment.quantity} isReadOnly />
+			<NumberInput
+				className="w-40"
+				defaultValue={props.equipment.quantity}
+				maxValue={props.equipment.quantity}
+				onClick={stopPropagation}
+				onPointerDown={stopPropagation}
+			/>
 		</div>
 	);
 }
