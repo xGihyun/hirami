@@ -24,15 +24,22 @@ export function ReturnHeader(props: Props): JSX.Element {
 
 	async function handleChange(value: string): Promise<void> {
 		if (value === "All") {
-			await navigate({ to: "/return" });
+			await navigate({
+				to: "/return",
+				search: (prev) => ({
+					tab: prev.tab,
+					dueDateSort: prev.dueDateSort,
+				}),
+			});
 			return;
 		}
 
 		await navigate({
 			to: "/return",
-			search: {
+			search: (prev) => ({
+				...prev,
 				category: value,
-			},
+			}),
 		});
 	}
 
