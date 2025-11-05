@@ -550,9 +550,13 @@ func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) ap
 func (s *Server) getReturnRequests(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	userID := r.PathValue("userId")
+	userID := r.URL.Query().Get("userId")
+	sort := api.Sort(r.URL.Query().Get("sort"))
+	category := r.URL.Query().Get("category")
 	params := getReturnRequestParams{
 		userID: &userID,
+		sort:     &sort,
+		category: &category,
 	}
 	returnRequests, err := s.repository.getReturnRequests(ctx, params)
 	if err != nil {

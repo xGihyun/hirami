@@ -1121,6 +1121,8 @@ type returnRequest struct {
 
 type getReturnRequestParams struct {
 	userID *string
+	sort     *api.Sort
+	category *string
 }
 
 func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequestParams) ([]returnRequest, error) {
@@ -1166,6 +1168,11 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 		args = append(args, *params.userID)
 	}
 
+	if params.category != nil && *params.category != "" {
+		query += " AND equipment_type.name = $2"
+		args = append(args, *params.category)
+	}
+
 	query += `
 	GROUP BY 
 		return_request.return_request_id,
@@ -1177,6 +1184,12 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 		person.avatar_url,
 		borrow_request.expected_return_at
 	`
+
+	if params.sort != nil && *params.sort != "" {
+		query += fmt.Sprintf(" ORDER BY borrow_request.expected_return_at %s", *params.sort)
+	} else {
+		query += " ORDER BY borrow_request.expected_return_at DESC"
+	}
 
 	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
