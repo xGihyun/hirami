@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { BACKEND_URL, type ApiResponse } from "../api";
+import { BACKEND_URL, Sort, type ApiResponse } from "../api";
 import type { UserBasicInfo } from "../user";
 
 export type Borrower = {
@@ -73,19 +73,23 @@ export type BorrowTransaction = {
 type GetBorrowHistoryParams = {
 	userId?: string;
 	status?: BorrowRequestStatus;
+	sort: Sort;
 };
 
 async function getBorrowHistory(
 	params: GetBorrowHistoryParams,
 ): Promise<BorrowTransaction[]> {
 	const url = new URL(`${BACKEND_URL}/borrow-history`);
+
+	url.searchParams.append("sort", params.sort);
+
 	if (params.userId) {
 		url.searchParams.append("userId", params.userId);
 	}
 	if (params.status) {
 		url.searchParams.append("status", params.status);
 	}
-    console.log(url.toString())
+	console.log(url.toString());
 	const response = await fetch(url.toString(), {
 		method: "GET",
 	});
@@ -100,7 +104,7 @@ async function getBorrowHistory(
 
 export const borrowHistoryQuery = (params: GetBorrowHistoryParams) =>
 	queryOptions({
-		queryKey: ["borrow-history", params.userId, params.status],
+		queryKey: ["borrow-history", params.userId, params.status, params.sort],
 		queryFn: () => getBorrowHistory(params),
 	});
 

@@ -30,6 +30,7 @@ export const Route = createFileRoute("/_authed/return/")({
 			borrowHistoryQuery({
 				userId: context.session.user.id,
 				status: BorrowRequestStatus.Approved,
+				sort: Sort.Desc,
 			}),
 		);
 		context.queryClient.ensureQueryData(
@@ -63,7 +64,11 @@ function RouteComponent(): JSX.Element {
 
 		function handleEvent(_: MessageEvent): void {
 			queryClient.ensureQueryData(
-				borrowHistoryQuery({ userId: auth.user?.id }),
+				borrowHistoryQuery({
+					userId: auth.user?.id,
+					status: BorrowRequestStatus.Approved,
+					sort: search.dueDateSort,
+				}),
 			);
 			queryClient.ensureQueryData(
 				returnRequestsQuery({ userId: auth.user?.id }),
