@@ -1,5 +1,10 @@
 import type { JSX } from "react";
 import { Spinner } from "./ui/spinner";
+import { cn } from "@/lib/utils";
+
+type Props = {
+	className?: string;
+};
 
 export function FullScreenLoading(): JSX.Element {
 	return (
@@ -9,9 +14,9 @@ export function FullScreenLoading(): JSX.Element {
 	);
 }
 
-export function ComponentLoading(): JSX.Element {
+export function ComponentLoading(props: Props): JSX.Element {
 	return (
-		<div className="w-full content-center">
+		<div className={cn("w-full content-center", props.className)}>
 			<Spinner className="mx-auto size-12.5 text-primary" />
 		</div>
 	);
