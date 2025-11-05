@@ -8,3 +8,11 @@ export function FullScreenLoading(): JSX.Element {
 		</div>
 	);
 }
+
+export function ComponentLoading(): JSX.Element {
+	return (
+		<div className="w-full content-center">
+			<Spinner className="mx-auto size-12.5 text-primary" />
+		</div>
+	);
+}
