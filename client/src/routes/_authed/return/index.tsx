@@ -193,7 +193,6 @@ function RouteComponent(): JSX.Element {
 
 			{selectedEquipments.length > 0 ? (
 				<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 !shadow-item">
-					<IconRoundArrowUp className="h-full" />
 					Return Equipments ({selectedEquipments.length})
 				</Button>
 			) : null}
