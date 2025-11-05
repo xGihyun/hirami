@@ -4,11 +4,7 @@ import {
 	borrowHistoryQuery,
 	BorrowRequestStatus,
 } from "@/lib/equipment/borrow";
-import {
-	useQuery,
-	useQueryClient,
-	useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, type JSX } from "react";
 import { ReturnEquipmentForm } from "./-components/return-equipment-form";
@@ -48,12 +44,7 @@ export const Route = createFileRoute("/_authed/return/")({
 function RouteComponent(): JSX.Element {
 	const search = useSearch({ from: "/_authed/return/" });
 	const auth = useAuth();
-	const returnRequests = useSuspenseQuery(
-		returnRequestsQuery({
-			userId: auth.user?.id,
-		}),
-	);
-	const equipmentNames = useSuspenseQuery(equipmentNamesQuery());
+	const equipmentNames = useQuery(equipmentNamesQuery());
 
 	const queryClient = useQueryClient();
 
@@ -83,18 +74,18 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="space-y-4">
-			<ReturnHeader equipmentNames={equipmentNames.data} />
+			<ReturnHeader equipmentNames={equipmentNames.data || []} />
 
 			{search.tab === ReturnTab.BorrowedItems ? (
-				<BorrowedItems />
+				<BorrowedItemsTab />
 			) : (
-				<ReturnRequestList returnRequests={returnRequests.data} />
+				<ReturnRequestListTab />
 			)}
 		</div>
 	);
 }
 
-function BorrowedItems(): JSX.Element {
+function BorrowedItemsTab(): JSX.Element {
 	const search = useSearch({ from: "/_authed/return/" });
 	const auth = useAuth();
 	const borrowHistory = useQuery(
@@ -110,4 +101,19 @@ function BorrowedItems(): JSX.Element {
 	}
 
 	return <ReturnEquipmentForm transactions={borrowHistory.data || []} />;
+}
+
+function ReturnRequestListTab(): JSX.Element {
+	const auth = useAuth();
+	const returnRequests = useQuery(
+		returnRequestsQuery({
+			userId: auth.user?.id,
+		}),
+	);
+
+	if (returnRequests.isFetching) {
+		return <ComponentLoading />;
+	}
+
+	return <ReturnRequestList returnRequests={returnRequests.data || []} />;
 }
