@@ -1,10 +1,12 @@
 import { queryOptions } from "@tanstack/react-query";
 import type { Equipment } from ".";
-import { BACKEND_URL, type ApiResponse } from "../api";
+import { BACKEND_URL, Sort, type ApiResponse } from "../api";
 import type { UserBasicInfo } from "../user";
 
 type GetReturnRequestParams = {
 	userId?: string;
+	sort?: Sort;
+	category?: string;
 };
 
 export type ReturnRequest = {
@@ -19,9 +21,17 @@ async function getReturnRequests(
 	params: GetReturnRequestParams,
 ): Promise<ReturnRequest[]> {
 	const url = new URL(`${BACKEND_URL}/return-requests`);
+
 	if (params.userId) {
 		url.searchParams.append("userId", params.userId);
 	}
+	if (params.sort) {
+		url.searchParams.append("sort", params.sort);
+	}
+	if (params.category) {
+		url.searchParams.append("category", params.category);
+	}
+	console.log(url.toString());
 	const response = await fetch(url.toString(), {
 		method: "GET",
 	});
@@ -36,7 +46,7 @@ async function getReturnRequests(
 
 export const returnRequestsQuery = (params: GetReturnRequestParams) =>
 	queryOptions({
-		queryKey: ["return-requests", params.userId],
+		queryKey: ["return-requests", params.userId, params.sort, params.category],
 		queryFn: () => getReturnRequests(params),
 	});
 

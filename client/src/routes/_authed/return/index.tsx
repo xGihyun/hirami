@@ -118,10 +118,13 @@ function BorrowedItemsTab(): JSX.Element {
 }
 
 function ReturnRequestListTab(): JSX.Element {
+	const search = useSearch({ from: "/_authed/return/" });
 	const auth = useAuth();
 	const returnRequests = useQuery(
 		returnRequestsQuery({
 			userId: auth.user?.id,
+			category: search.category,
+			sort: search.dueDateSort,
 		}),
 	);
 
