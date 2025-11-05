@@ -2,6 +2,7 @@ import { useAuth } from "@/auth";
 import { BACKEND_URL, Sort } from "@/lib/api";
 import {
 	borrowHistoryQuery,
+	BorrowRequestStatus,
 	type BorrowedEquipment,
 } from "@/lib/equipment/borrow";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -26,7 +27,10 @@ export const Route = createFileRoute("/_authed/return/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
 		context.queryClient.ensureQueryData(
-			borrowHistoryQuery({ userId: context.session.user.id }),
+			borrowHistoryQuery({
+				userId: context.session.user.id,
+				status: BorrowRequestStatus.Approved,
+			}),
 		);
 		context.queryClient.ensureQueryData(
 			returnRequestsQuery({ userId: context.session.user.id }),
@@ -42,6 +46,7 @@ function RouteComponent(): JSX.Element {
 	const borrowHistory = useSuspenseQuery(
 		borrowHistoryQuery({
 			userId: auth.user?.id,
+			status: BorrowRequestStatus.Approved,
 		}),
 	);
 	const returnRequests = useSuspenseQuery(
@@ -50,10 +55,6 @@ function RouteComponent(): JSX.Element {
 		}),
 	);
 	const equipmentNames = useSuspenseQuery(equipmentNamesQuery());
-
-	const currentTransactions = borrowHistory.data.flatMap((transaction) =>
-		transaction.status === "approved" ? transaction : [],
-	);
 
 	const queryClient = useQueryClient();
 
@@ -82,7 +83,7 @@ function RouteComponent(): JSX.Element {
 			<ReturnHeader equipmentNames={equipmentNames.data} />
 
 			{search.tab === ReturnTab.BorrowedItems ? (
-				<ReturnEquipmentForm transactions={currentTransactions} />
+				<ReturnEquipmentForm transactions={borrowHistory.data} />
 			) : (
 				<ReturnRequestList returnRequests={returnRequests.data} />
 			)}

@@ -72,6 +72,7 @@ export type BorrowTransaction = {
 
 type GetBorrowHistoryParams = {
 	userId?: string;
+	status?: BorrowRequestStatus;
 };
 
 async function getBorrowHistory(
@@ -80,6 +81,9 @@ async function getBorrowHistory(
 	const url = new URL(`${BACKEND_URL}/borrow-history`);
 	if (params.userId) {
 		url.searchParams.append("userId", params.userId);
+	}
+	if (params.status) {
+		url.searchParams.append("status", params.status);
 	}
     console.log(url.toString())
 	const response = await fetch(url.toString(), {
@@ -96,7 +100,7 @@ async function getBorrowHistory(
 
 export const borrowHistoryQuery = (params: GetBorrowHistoryParams) =>
 	queryOptions({
-		queryKey: ["borrow-history", params.userId],
+		queryKey: ["borrow-history", params.userId, params.status],
 		queryFn: () => getBorrowHistory(params),
 	});
 
