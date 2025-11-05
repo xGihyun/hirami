@@ -98,7 +98,7 @@ function BorrowedItemsTab(): JSX.Element {
 		}),
 	);
 
-	if (borrowHistory.isFetching) {
+	if (borrowHistory.isLoading) {
 		return <ComponentLoading />;
 	}
 
@@ -113,7 +113,7 @@ function ReturnRequestListTab(): JSX.Element {
 		}),
 	);
 
-	if (returnRequests.isFetching) {
+	if (returnRequests.isLoading) {
 		return <ComponentLoading />;
 	}
 
