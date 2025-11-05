@@ -89,8 +89,3 @@ function RouteComponent(): JSX.Element {
 		</div>
 	);
 }
-
-export type SelectedBorrowedEquipment = {
-	equipment: BorrowedEquipment;
-	quantity: number;
-};
