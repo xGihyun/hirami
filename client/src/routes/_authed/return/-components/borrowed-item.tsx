@@ -13,6 +13,10 @@ import type { JSX } from "react";
 type Props = {
 	equipment: BorrowedEquipment;
 	transaction: BorrowTransaction;
+	handleUpdateQuantity: (
+		equipment: BorrowedEquipment,
+		newQuantity: number,
+	) => void;
 	className?: string;
 };
 
@@ -93,6 +97,7 @@ export function BorrowedItem(props: Props): JSX.Element {
 				maxValue={props.equipment.quantity}
 				onClick={stopPropagation}
 				onPointerDown={stopPropagation}
+				onChange={(v) => props.handleUpdateQuantity(props.equipment, v)}
 			/>
 		</div>
 	);
