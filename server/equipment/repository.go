@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/xGihyun/hirami/api"
 	"github.com/xGihyun/hirami/user"
 )
 
@@ -1207,6 +1208,7 @@ type borrowTransaction struct {
 type borrowHistoryParams struct {
 	userID *string
 	status *borrowRequestStatus
+	sort   *api.Sort
 }
 
 func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error) {
@@ -1309,8 +1311,11 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		borrow_request.borrow_request_id,
 		latest_return_data.created_at,
 		latest_return_data.reviewed_by
-	ORDER BY borrow_request.created_at DESC
 	`
+
+	if params.sort != nil && *params.sort != "" {
+		query += fmt.Sprintf(" ORDER BY borrow_request.expected_return_at %s", *params.sort)
+	}
 
 	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
