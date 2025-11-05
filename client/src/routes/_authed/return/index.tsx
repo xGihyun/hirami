@@ -191,33 +191,12 @@ function RouteComponent(): JSX.Element {
 				</div>
 			))}
 
-			<Drawer>
-				{selectedEquipments.length > 0 ? (
-					<DrawerTrigger asChild>
-						<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-50 shadow">
-							<IconRoundArrowUp className="h-full" />
-							Return ({selectedEquipments.length} items)
-						</Button>
-					</DrawerTrigger>
-				) : null}
-				<DrawerContent>
-					<DrawerHeader>
-						<DrawerTitle>Selected Equipments</DrawerTitle>
-					</DrawerHeader>
-
-					<ReturnEquipmentForm
-						selectedEquipments={selectedEquipments}
-						className="px-4"
-						handleUpdateQuantity={handleUpdateQuantity}
-					/>
-
-					<DrawerFooter>
-						<DrawerClose asChild>
-							<Button variant="outline">Cancel</Button>
-						</DrawerClose>
-					</DrawerFooter>
-				</DrawerContent>
-			</Drawer>
+			{selectedEquipments.length > 0 ? (
+				<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 !shadow-item">
+					<IconRoundArrowUp className="h-full" />
+					Return Equipments ({selectedEquipments.length})
+				</Button>
+			) : null}
 		</div>
 	);
 }
