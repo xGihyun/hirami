@@ -576,11 +576,11 @@ func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Re
 	userID := r.URL.Query().Get("userId")
 	status := borrowRequestStatus(r.URL.Query().Get("status"))
 	sort := api.Sort(r.URL.Query().Get("sort"))
-	category :=  r.URL.Query().Get("category")
+	category := r.URL.Query().Get("category")
 	params := borrowHistoryParams{
-		userID: &userID,
-		status: &status,
-		sort:   &sort,
+		userID:   &userID,
+		status:   &status,
+		sort:     &sort,
 		category: &category,
 	}
 	history, err := s.repository.getBorrowHistory(ctx, params)

@@ -1206,9 +1206,9 @@ type borrowTransaction struct {
 }
 
 type borrowHistoryParams struct {
-	userID *string
-	status *borrowRequestStatus
-	sort   *api.Sort
+	userID   *string
+	status   *borrowRequestStatus
+	sort     *api.Sort
 	category *string
 }
 
