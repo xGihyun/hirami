@@ -4,6 +4,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+input[type="time"]::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
+}
+
+input[type="time"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
 @font-face {
   font-family: montserrat-bold;
   src: url("/fonts/Montserrat/Montserrat-Bold.ttf");
