@@ -57,6 +57,7 @@ function RouteComponent(): JSX.Element {
 					userId: auth.user?.id,
 					status: BorrowRequestStatus.Approved,
 					sort: search.dueDateSort,
+					category: search.category,
 				}),
 			);
 			queryClient.ensureQueryData(
@@ -93,6 +94,7 @@ function BorrowedItemsTab(): JSX.Element {
 			userId: auth.user?.id,
 			status: BorrowRequestStatus.Approved,
 			sort: search.dueDateSort,
+			category: search.category,
 		}),
 	);
 

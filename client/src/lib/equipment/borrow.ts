@@ -74,6 +74,7 @@ type GetBorrowHistoryParams = {
 	userId?: string;
 	status?: BorrowRequestStatus;
 	sort?: Sort;
+	category?: string;
 };
 
 async function getBorrowHistory(
@@ -90,6 +91,9 @@ async function getBorrowHistory(
 	if (params.sort) {
 		url.searchParams.append("sort", params.sort);
 	}
+	if (params.category) {
+		url.searchParams.append("category", params.category);
+	}
 	console.log(url.toString());
 	const response = await fetch(url.toString(), {
 		method: "GET",
@@ -105,7 +109,13 @@ async function getBorrowHistory(
 
 export const borrowHistoryQuery = (params: GetBorrowHistoryParams) =>
 	queryOptions({
-		queryKey: ["borrow-history", params.userId, params.status, params.sort],
+		queryKey: [
+			"borrow-history",
+			params.userId,
+			params.status,
+			params.sort,
+			params.category,
+		],
 		queryFn: () => getBorrowHistory(params),
 	});
 
