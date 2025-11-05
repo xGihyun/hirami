@@ -179,8 +179,12 @@ func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
 	name := r.URL.Query().Get("name")
+	status := equipmentStatus(r.URL.Query().Get("status"))
+	search := r.URL.Query().Get("search")
 	params := getEquipmentParams{
 		name: &name,
+		status: &status,
+		search: &search,
 	}
 	equipments, err := s.repository.getAll(ctx, params)
 	if err != nil {

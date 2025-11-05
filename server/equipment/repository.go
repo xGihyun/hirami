@@ -131,6 +131,7 @@ type equipmentWithBorrower struct {
 type getEquipmentParams struct {
 	name   *string
 	status *equipmentStatus
+	search *string
 }
 
 func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]equipmentWithBorrower, error) {
@@ -208,15 +209,26 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 	`
 
 	var args []any
+	argIdx := 1
+
 	if params.name != nil && *params.name != "" {
 		names := strings.Split(*params.name, ",")
-		query += " AND name IN (SELECT unnest($1::text[]))"
+		query += fmt.Sprintf(" AND name IN (SELECT unnest($%d::text[]))", argIdx)
 		args = append(args, names)
+		argIdx++
 	}
 
 	if params.status != nil && *params.status != "" {
-		query += " AND status = $2"
+		query += fmt.Sprintf(" AND status = $%d", argIdx)
 		args = append(args, *params.status)
+		argIdx++
+	}
+
+	if params.search != nil && *params.search != "" {
+		searchTerm := "%" + strings.ToLower(*params.search) + "%"
+		query += fmt.Sprintf(" AND (LOWER(name) LIKE $%d OR LOWER(brand) LIKE $%d OR LOWER(model) LIKE $%d)", argIdx, argIdx, argIdx)
+		args = append(args, searchTerm)
+		argIdx++
 	}
 
 	query += " GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower ORDER BY status"
