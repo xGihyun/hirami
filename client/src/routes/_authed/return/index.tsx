@@ -46,7 +46,7 @@ function RouteComponent(): JSX.Element {
 	const auth = useAuth();
 
 	// NOTE: Naive way to make sure the available options in equipment names are
-	// only the equipments included in the history
+	// only the equipments included in the history or return request
 	const borrowHistoryAllCategory = useQuery(
 		borrowHistoryQuery({
 			userId: auth.user?.id,
@@ -54,9 +54,26 @@ function RouteComponent(): JSX.Element {
 			sort: search.dueDateSort,
 		}),
 	);
-	const equipmentNames = borrowHistoryAllCategory.data?.flatMap((history) =>
-		history.equipments.map((eq) => eq.name),
+	const returnRequestsAllCategory = useQuery(
+		returnRequestsQuery({
+			userId: auth.user?.id,
+			sort: search.dueDateSort,
+		}),
 	);
+	const historyEquipmentNames = borrowHistoryAllCategory.data?.flatMap(
+		(history) => history.equipments.map((eq) => eq.name),
+	);
+	const returnEquipmentNames = Array.from(
+		new Set(
+			returnRequestsAllCategory.data?.flatMap((req) =>
+				req.equipments.map((eq) => eq.name),
+			),
+		),
+	);
+	const equipmentNames =
+		search.tab === ReturnTab.BorrowedItems
+			? historyEquipmentNames
+			: returnEquipmentNames;
 
 	const queryClient = useQueryClient();
 
