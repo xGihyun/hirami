@@ -554,7 +554,7 @@ func (s *Server) getReturnRequests(w http.ResponseWriter, r *http.Request) api.R
 	sort := api.Sort(r.URL.Query().Get("sort"))
 	category := r.URL.Query().Get("category")
 	params := getReturnRequestParams{
-		userID: &userID,
+		userID:   &userID,
 		sort:     &sort,
 		category: &category,
 	}

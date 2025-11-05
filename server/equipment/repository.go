@@ -1120,7 +1120,7 @@ type returnRequest struct {
 }
 
 type getReturnRequestParams struct {
-	userID *string
+	userID   *string
 	sort     *api.Sort
 	category *string
 }
