@@ -59,7 +59,7 @@ export function ReturnHeader(props: Props): JSX.Element {
 		<header className="flex flex-col w-full items-center justify-between gap-4">
 			<H2>Return</H2>
 
-			<Tabs defaultValue={ReturnTab.BorrowedItems} className="w-full">
+			<Tabs defaultValue={search.tab} className="w-full">
 				<TabsList className="w-full">
 					<TabsTrigger value={ReturnTab.BorrowedItems} asChild>
 						<Link to="/return" search={{ tab: ReturnTab.BorrowedItems }}>
