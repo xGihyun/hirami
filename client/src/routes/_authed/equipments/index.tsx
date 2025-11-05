@@ -35,7 +35,7 @@ import { BorrowSuccess } from "./-components/borrow-success";
 import { BorrowFailed } from "./-components/borrow-failed";
 import { Catalog } from "./-components/catalog";
 import { LabelMedium } from "@/components/typography";
-import { Loading } from "@/components/loading";
+import { FullScreenLoading } from "@/components/loading";
 import { CatalogCategories } from "./-components/catalog-categories";
 
 const searchSchema = z.object({
@@ -121,7 +121,7 @@ function RouteComponent(): JSX.Element {
 	}, [queryClient]);
 
 	if (mutationStatus === "pending") {
-		return <Loading />;
+		return <FullScreenLoading />;
 	}
 
 	if (search.success === true) {
