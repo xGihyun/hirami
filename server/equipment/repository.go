@@ -1315,6 +1315,8 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 
 	if params.sort != nil && *params.sort != "" {
 		query += fmt.Sprintf(" ORDER BY borrow_request.expected_return_at %s", *params.sort)
+	} else {
+		query += " ORDER BY borrow_request.expected_return_at DESC"
 	}
 
 	rows, err := r.querier.Query(ctx, query, args...)
