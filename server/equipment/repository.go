@@ -1209,6 +1209,7 @@ type borrowHistoryParams struct {
 	userID *string
 	status *borrowRequestStatus
 	sort   *api.Sort
+	category *string
 }
 
 func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error) {
@@ -1289,6 +1290,11 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	if params.status != nil && *params.status != "" {
 		query += " AND borrow_request.status = $2"
 		args = append(args, *params.status)
+	}
+
+	if params.category != nil && *params.category != "" {
+		query += " AND equipment_type.name = $3"
+		args = append(args, *params.category)
 	}
 
 	query += ` 
