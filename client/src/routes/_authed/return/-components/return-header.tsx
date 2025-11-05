@@ -9,7 +9,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button.tsx";
 import { IconArrowDownUp } from "@/lib/icons.ts";
 import { Sort } from "@/lib/api.ts";
@@ -61,11 +61,15 @@ export function ReturnHeader(props: Props): JSX.Element {
 
 			<Tabs defaultValue={ReturnTab.BorrowedItems} className="w-full">
 				<TabsList className="w-full">
-					<TabsTrigger value={ReturnTab.BorrowedItems}>
-						Borrowed Items
+					<TabsTrigger value={ReturnTab.BorrowedItems} asChild>
+						<Link to="/return" search={{ tab: ReturnTab.BorrowedItems }}>
+							Borrowed Items
+						</Link>
 					</TabsTrigger>
-					<TabsTrigger value={ReturnTab.ReturnRequestList}>
-						Return Request List
+					<TabsTrigger value={ReturnTab.ReturnRequestList} asChild>
+						<Link to="/return" search={{ tab: ReturnTab.ReturnRequestList }}>
+							Return Request List
+						</Link>
 					</TabsTrigger>
 				</TabsList>
 			</Tabs>
