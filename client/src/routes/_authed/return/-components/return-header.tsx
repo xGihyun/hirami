@@ -75,7 +75,7 @@ export function ReturnHeader(props: Props): JSX.Element {
 			</Tabs>
 
 			<div className="flex w-full gap-5">
-				<Select defaultValue="All" onValueChange={handleChange}>
+				<Select defaultValue={search.category || "All"} onValueChange={handleChange}>
 					<SelectTrigger className="w-full">
 						<SelectValue placeholder="Select category" />
 					</SelectTrigger>
