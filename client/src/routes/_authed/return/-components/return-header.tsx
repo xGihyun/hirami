@@ -59,7 +59,7 @@ export function ReturnHeader(props: Props): JSX.Element {
 		<header className="flex flex-col w-full items-center justify-between gap-4">
 			<H2>Return</H2>
 
-			<Tabs defaultValue={search.tab} className="w-full">
+			<Tabs value={search.tab} className="w-full">
 				<TabsList className="w-full">
 					<TabsTrigger value={ReturnTab.BorrowedItems} asChild>
 						<Link to="/return" search={{ tab: ReturnTab.BorrowedItems }}>
@@ -75,7 +75,7 @@ export function ReturnHeader(props: Props): JSX.Element {
 			</Tabs>
 
 			<div className="flex w-full gap-5">
-				<Select defaultValue={search.category || "All"} onValueChange={handleChange}>
+				<Select value={search.category || "All"} onValueChange={handleChange}>
 					<SelectTrigger className="w-full">
 						<SelectValue placeholder="Select category" />
 					</SelectTrigger>
