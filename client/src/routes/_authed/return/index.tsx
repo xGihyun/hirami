@@ -44,7 +44,19 @@ export const Route = createFileRoute("/_authed/return/")({
 function RouteComponent(): JSX.Element {
 	const search = useSearch({ from: "/_authed/return/" });
 	const auth = useAuth();
-	const equipmentNames = useQuery(equipmentNamesQuery());
+
+	// NOTE: Naive way to make sure the available options in equipment names are
+	// only the equipments included in the history
+	const borrowHistoryAllCategory = useQuery(
+		borrowHistoryQuery({
+			userId: auth.user?.id,
+			status: BorrowRequestStatus.Approved,
+			sort: search.dueDateSort,
+		}),
+	);
+	const equipmentNames = borrowHistoryAllCategory.data?.flatMap((history) =>
+		history.equipments.map((eq) => eq.name),
+	);
 
 	const queryClient = useQueryClient();
 
@@ -75,7 +87,7 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="space-y-4">
-			<ReturnHeader equipmentNames={equipmentNames.data || []} />
+			<ReturnHeader equipmentNames={equipmentNames || []} />
 
 			{search.tab === ReturnTab.BorrowedItems ? (
 				<BorrowedItemsTab />
