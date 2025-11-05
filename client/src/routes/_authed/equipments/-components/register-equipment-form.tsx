@@ -99,7 +99,7 @@ export function RegisterEquipmentForm(
 			return toast.loading("Registering equipment");
 		},
 		onSuccess: (data, _variables, toastId) => {
-			queryClient.invalidateQueries(equipmentsQuery());
+			queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
 			props.onSuccess();
 			toast.success(data.message, { id: toastId });
 		},

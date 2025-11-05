@@ -19,10 +19,13 @@ export type Equipment = {
 	borrower?: Borrower;
 };
 
-async function getEquipments(names?: string[]): Promise<Equipment[]> {
+async function getEquipments(params: GetEquipmentParams): Promise<Equipment[]> {
 	const url = new URL(`${BACKEND_URL}/equipments`);
-	if (names && names.length > 0) {
-		url.searchParams.append("name", names.join(","));
+	if (params.names && params.names.length > 0) {
+		url.searchParams.append("name", params.names.join(","));
+	}
+	if (params.search) {
+		url.searchParams.append("search", params.search);
 	}
 
 	const response = await fetch(url.toString(), {
@@ -37,10 +40,15 @@ async function getEquipments(names?: string[]): Promise<Equipment[]> {
 	return result.data;
 }
 
-export const equipmentsQuery = (names: string[] = []) =>
+type GetEquipmentParams = {
+	names: string[];
+	search?: string;
+};
+
+export const equipmentsQuery = (params: GetEquipmentParams) =>
 	queryOptions({
-		queryKey: ["equipments", ...names],
-		queryFn: () => getEquipments(names),
+		queryKey: ["equipments", ...params.names, params.search],
+		queryFn: () => getEquipments(params),
 		placeholderData: keepPreviousData,
 	});
 

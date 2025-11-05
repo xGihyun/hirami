@@ -1,13 +1,31 @@
 import { SearchInput } from "@/components/search-input";
 import { H1, TitleSmall } from "@/components/typography";
 import type { User } from "@/lib/user";
-import type { JSX } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useState, type JSX } from "react";
 
 type Props = {
 	user: User;
 };
 
 export function CatalogSearch(props: Props): JSX.Element {
+	const searchParams = useSearch({ from: "/_authed/equipments/" });
+	const navigate = useNavigate({ from: "/equipments" });
+	const [inputValue, setInputValue] = useState<string>(
+		searchParams.search || "",
+	);
+
+	async function onSubmit(e: React.FormEvent): Promise<void> {
+		e.preventDefault();
+
+		await navigate({
+			search: (prev) => ({
+				...prev,
+				search: inputValue,
+			}),
+		});
+	}
+
 	return (
 		<div className="space-y-4">
 			<section>
@@ -17,7 +35,13 @@ export function CatalogSearch(props: Props): JSX.Element {
 				<H1>Explore our Catalog</H1>
 			</section>
 
-			<SearchInput placeholder="Search for items" />
+			<form onSubmit={onSubmit}>
+				<SearchInput
+					placeholder="Search for items"
+					value={inputValue}
+					onChange={(e) => setInputValue(e.target.value)}
+				/>
+			</form>
 		</div>
 	);
 }

@@ -41,12 +41,13 @@ import { CatalogCategories } from "./-components/catalog-categories";
 const searchSchema = z.object({
 	success: z.boolean().optional(),
 	categories: z.array(z.string()).optional().default([]),
+	search: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_authed/equipments/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
-		context.queryClient.ensureQueryData(equipmentsQuery());
+		context.queryClient.ensureQueryData(equipmentsQuery({ names: [] }));
 		context.queryClient.ensureQueryData(equipmentNamesQuery());
 	},
 	validateSearch: searchSchema,
@@ -60,7 +61,12 @@ export type SelectedEquipment = {
 function RouteComponent(): JSX.Element {
 	const search = Route.useSearch();
 
-	const equipments = useQuery(equipmentsQuery(search.categories));
+	const equipments = useQuery(
+		equipmentsQuery({
+			search: search.search,
+			names: search.categories,
+		}),
+	);
 	const equipmentNames = useSuspenseQuery(equipmentNamesQuery());
 	const auth = useAuth();
 	const [isBorrowing, setIsBorrowing] = useState(false);
@@ -102,7 +108,7 @@ function RouteComponent(): JSX.Element {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
 
 		function handleEquipmentInvalidation(_: MessageEvent): void {
-			queryClient.invalidateQueries(equipmentsQuery());
+			queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
 			queryClient.invalidateQueries(equipmentNamesQuery());
 		}
 
