@@ -2,7 +2,7 @@ import { SearchInput } from "@/components/search-input";
 import { H1, TitleSmall } from "@/components/typography";
 import type { User } from "@/lib/user";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 
 type Props = {
 	user: User;
@@ -25,6 +25,22 @@ export function CatalogSearch(props: Props): JSX.Element {
 			}),
 		});
 	}
+
+	useEffect(() => {
+		const handler = setTimeout(() => {
+			if (searchParams.search !== inputValue) {
+				// Using replace: true prevents flooding the history with partial searches
+				navigate({
+					search: (prev) => ({ ...prev, search: inputValue }),
+					replace: true,
+				});
+			}
+		}, 250);
+
+		return () => {
+			clearTimeout(handler);
+		};
+	}, [inputValue, searchParams.search]);
 
 	return (
 		<div className="space-y-4">
