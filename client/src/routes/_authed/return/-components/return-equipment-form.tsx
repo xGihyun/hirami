@@ -205,6 +205,7 @@ export function ReturnEquipmentForm(
 										transaction={transaction}
 										handleUpdateQuantity={handleUpdateQuantity}
 										className="cursor-pointer group-has-data-[state=checked]:bg-primary group-has-data-[state=checked]:text-primary-foreground"
+                                        isSelected={isChecked}
 									/>
 								</label>
 							);

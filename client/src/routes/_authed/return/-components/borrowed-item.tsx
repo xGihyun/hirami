@@ -18,6 +18,7 @@ type Props = {
 		newQuantity: number,
 	) => void;
 	className?: string;
+	isSelected?: boolean;
 };
 
 enum DueStatus {
@@ -92,6 +93,7 @@ export function BorrowedItem(props: Props): JSX.Element {
 			</div>
 
 			<NumberInput
+				isDisabled={!props.isSelected}
 				className="w-40"
 				defaultValue={props.equipment.quantity}
 				maxValue={props.equipment.quantity}
