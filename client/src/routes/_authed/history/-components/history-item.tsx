@@ -1,3 +1,4 @@
+import { useAuth } from "@/auth";
 import { LabelLarge, LabelSmall } from "@/components/typography";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { BACKEND_URL } from "@/lib/api";
@@ -6,6 +7,7 @@ import {
 	type BorrowedEquipment,
 	type BorrowTransaction,
 } from "@/lib/equipment/borrow";
+import { UserRole } from "@/lib/user";
 import { capitalizeWords, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { JSX } from "react";
@@ -17,6 +19,7 @@ type Props = {
 };
 
 export function HistoryItem(props: Props): JSX.Element {
+    const auth = useAuth()
 	const equipmentImage = props.equipment.imageUrl
 		? `${BACKEND_URL}${props.equipment.imageUrl}`
 		: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
@@ -78,6 +81,14 @@ export function HistoryItem(props: Props): JSX.Element {
 							<span className="font-montserrat-bold">Returned On:</span>{" "}
 							{format(props.transaction.actualReturnAt, "h:mm a")} at{" "}
 							{format(props.transaction.actualReturnAt, "MM/dd/yyyy")}
+						</LabelSmall>
+					) : null}
+
+					{auth.user?.role === UserRole.EquipmentManager ? (
+						<LabelSmall>
+							<span className="font-montserrat-bold">Borrower:</span>{" "}
+							{props.transaction.borrower.firstName}{" "}
+							{props.transaction.borrower.lastName}
 						</LabelSmall>
 					) : null}
 
