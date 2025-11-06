@@ -1,7 +1,7 @@
-import { H1, TitleSmall } from "@/components/typography";
+import { H1, LabelSmall, TitleSmall } from "@/components/typography";
 import { registerIllustration } from "@/lib/assets";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import type { JSX } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
@@ -94,6 +94,13 @@ function RouteComponent(): JSX.Element {
 						</Button>
 					</form>
 				</Form>
+
+				<LabelSmall className="text-center mt-4">
+					Have an account?{" "}
+					<Link to="/login" className="font-montserrat-bold underline">
+						Login
+					</Link>
+				</LabelSmall>
 			</section>
 		</div>
 	);

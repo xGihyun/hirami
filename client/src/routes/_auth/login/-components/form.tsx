@@ -170,6 +170,16 @@ export function LoginForm(): JSX.Element {
 							Click here
 						</Link>
 					</LabelSmall>
+
+					<LabelSmall className="text-center">
+						No account?{" "}
+						<Link
+							to="/register"
+							className="font-montserrat-bold underline"
+						>
+                            Register
+						</Link>
+					</LabelSmall>
 				</form>
 			</Form>
 		</div>
