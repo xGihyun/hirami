@@ -75,14 +75,6 @@ function RouteComponent() {
 		};
 	}, [queryClient]);
 
-	if (history.data?.length === 0) {
-		return (
-			<LabelMedium className="text-muted text-center mt-10">
-				No history found
-			</LabelMedium>
-		);
-	}
-
 	return (
 		<div className="relative space-y-4">
 			<header className="flex flex-col w-full items-center justify-between gap-4">
