@@ -41,7 +41,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /return-requests", api.Handler(s.getReturnRequests))
 
 	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
-	mux.Handle("GET /borrowed-items", api.Handler(s.getBorrowHistory))
+	mux.Handle("GET /borrowed-items", api.Handler(s.getBorrowedItems))
 }
 
 const (
