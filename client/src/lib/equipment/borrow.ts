@@ -65,7 +65,7 @@ export type BorrowTransaction = {
 	expectedReturnAt: string;
 	actualReturnAt?: string;
 	status: BorrowRequestStatus;
-	borrowReviewedBy: UserBasicInfo;
+	borrowReviewedBy?: UserBasicInfo;
 	returnConfirmedBy?: UserBasicInfo;
 	remarks?: string;
 };
