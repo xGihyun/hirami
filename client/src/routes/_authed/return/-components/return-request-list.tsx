@@ -15,7 +15,7 @@ export function ReturnRequestList(props: Props): JSX.Element {
 	return (
 		<section className="space-y-3.5">
 			{props.returnRequests.map((request) => (
-				<div key={request.id}>
+				<div key={request.id} className="space-y-3.5">
 					{request.equipments.map((equipment) => {
 						return (
 							<ReturningItem
