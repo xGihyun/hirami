@@ -16,6 +16,7 @@ import z from "zod";
 import { ReturnTab } from "./-model";
 import { ReturnRequestList } from "./-components/return-request-list";
 import { ComponentLoading } from "@/components/loading";
+import { LabelMedium } from "@/components/typography";
 
 const searchSchema = z.object({
 	tab: z.enum(ReturnTab).default(ReturnTab.BorrowedItems),
@@ -134,6 +135,14 @@ function BorrowedItemsTab(): JSX.Element {
 		return <ComponentLoading />;
 	}
 
+	if (borrowHistory.data?.length === 0) {
+		return (
+			<LabelMedium className="text-muted text-center mt-10">
+				No borrowed equipment found
+			</LabelMedium>
+		);
+	}
+
 	return <ReturnEquipmentForm transactions={borrowHistory.data || []} />;
 }
 
@@ -150,6 +159,15 @@ function ReturnRequestListTab(): JSX.Element {
 
 	if (returnRequests.isLoading) {
 		return <ComponentLoading />;
+	}
+
+
+	if (returnRequests.data?.length === 0) {
+		return (
+			<LabelMedium className="text-muted text-center mt-10">
+				No borrowed equipment found
+			</LabelMedium>
+		);
 	}
 
 	return <ReturnRequestList returnRequests={returnRequests.data || []} />;
