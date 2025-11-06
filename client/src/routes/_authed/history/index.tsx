@@ -1,10 +1,7 @@
-import {
-	borrowHistoryQuery,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
+import { borrowHistoryQuery } from "@/lib/equipment/borrow";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { H2, LabelMedium } from "@/components/typography";
 import { BACKEND_URL, Sort } from "@/lib/api";
 import { UserRole } from "@/lib/user";
