@@ -29,6 +29,9 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { FullScreenLoading } from "@/components/loading.tsx";
+import { ReturnSuccess } from "./return-success.tsx";
+import { ReturnFailed } from "./return-failed.tsx";
 
 const returnEquipmentItemSchema = z.object({
 	borrowRequestItemId: z.string().nonempty(),
@@ -117,24 +120,26 @@ export function ReturnEquipmentForm(
 
 	const mutation = useMutation({
 		mutationFn: returnEquipments,
-		onMutate: () => {
-			return toast.loading("Submitting return request");
-		},
-		onSuccess: (data, _variables, toastId) => {
+		onSuccess: () => {
 			queryClient.invalidateQueries(
 				borrowHistoryQuery({ userId: auth.user?.id }),
 			);
 			queryClient.invalidateQueries(
 				returnRequestsQuery({ userId: auth.user?.id }),
 			);
-			setIsDialogOpen(false);
-			setSelectedEquipments([]);
-			toast.success(data.message, { id: toastId });
-		},
-		onError: (error, _variables, toastId) => {
-			toast.error(error.message, { id: toastId });
+			resetState();
 		},
 	});
+
+	function resetState(): void {
+		setIsDialogOpen(false);
+		setSelectedEquipments([]);
+	}
+
+	function reset(): void {
+		resetState();
+		mutation.reset();
+	}
 
 	async function onSubmit(value: ReturnEquipmentSchema): Promise<void> {
 		const equipmentsPayload = selectedEquipments.map((item) => ({
@@ -144,6 +149,20 @@ export function ReturnEquipmentForm(
 
 		value.items = equipmentsPayload;
 		mutation.mutate(value);
+	}
+
+	if (mutation.isPending) {
+		return <FullScreenLoading />;
+	}
+
+	if (mutation.isError) {
+		return (
+			<ReturnFailed reset={reset} retry={() => onSubmit(mutation.variables)} />
+		);
+	}
+
+	if (mutation.isSuccess) {
+		return <ReturnSuccess reset={reset} />;
 	}
 
 	return (
