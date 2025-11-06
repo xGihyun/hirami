@@ -33,7 +33,7 @@ export function BorrowedItem(props: Props): JSX.Element {
 	function getDueStatus(returnDate: Date): DueStatus | null {
 		const now = new Date();
 		const diff = differenceInMinutes(returnDate, now);
-		const isOverdue = isAfter(returnDate, now);
+		const isOverdue = isAfter(now, returnDate);
 
 		if (diff <= 30 && diff >= 0) {
 			return DueStatus.DueSoon;
