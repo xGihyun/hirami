@@ -125,3 +125,52 @@ export type ReviewBorrowRequest = {
 	remarks?: string;
 	status: BorrowRequestStatus;
 };
+
+type GetBorrowedItemParams = {
+	userId?: string;
+	status?: BorrowRequestStatus;
+	sort?: Sort;
+	category?: string;
+};
+
+async function getBorrowedItems(
+	params: GetBorrowedItemParams,
+): Promise<BorrowTransaction[]> {
+	const url = new URL(`${BACKEND_URL}/borrowed-items`);
+
+	if (params.userId) {
+		url.searchParams.append("userId", params.userId);
+	}
+	if (params.status) {
+		url.searchParams.append("status", params.status);
+	}
+	if (params.sort) {
+		url.searchParams.append("sort", params.sort);
+	}
+	if (params.category) {
+		url.searchParams.append("category", params.category);
+	}
+
+	const response = await fetch(url.toString(), {
+		method: "GET",
+	});
+
+	const result: ApiResponse<BorrowTransaction[]> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result.data;
+}
+
+export const borrowedItemsQuery = (params: GetBorrowedItemParams) =>
+	queryOptions({
+		queryKey: [
+			"borrowed-items",
+			params.userId,
+			params.status,
+			params.sort,
+			params.category,
+		],
+		queryFn: () => getBorrowedItems(params),
+	});

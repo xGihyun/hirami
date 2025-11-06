@@ -1,7 +1,7 @@
 import { useAuth } from "@/auth";
 import { BACKEND_URL, Sort } from "@/lib/api";
 import {
-	borrowHistoryQuery,
+	borrowedItemsQuery,
 	BorrowRequestStatus,
 } from "@/lib/equipment/borrow";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_authed/return/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
 		context.queryClient.ensureQueryData(
-			borrowHistoryQuery({
+			borrowedItemsQuery({
 				userId: context.session.user.id,
 				status: BorrowRequestStatus.Approved,
 				sort: Sort.Desc,
@@ -48,7 +48,7 @@ function RouteComponent(): JSX.Element {
 	// NOTE: Naive way to make sure the available options in equipment names are
 	// only the equipments included in the history or return request
 	const borrowHistoryAllCategory = useQuery(
-		borrowHistoryQuery({
+		borrowedItemsQuery({
 			userId: auth.user?.id,
 			status: BorrowRequestStatus.Approved,
 			sort: search.dueDateSort,
@@ -82,7 +82,7 @@ function RouteComponent(): JSX.Element {
 
 		function handleEvent(_: MessageEvent): void {
 			queryClient.invalidateQueries(
-				borrowHistoryQuery({
+				borrowedItemsQuery({
 					userId: auth.user?.id,
 					status: BorrowRequestStatus.Approved,
 					sort: search.dueDateSort,
@@ -122,7 +122,7 @@ function BorrowedItemsTab(): JSX.Element {
 	const search = useSearch({ from: "/_authed/return/" });
 	const auth = useAuth();
 	const borrowHistory = useQuery(
-		borrowHistoryQuery({
+		borrowedItemsQuery({
 			userId: auth.user?.id,
 			status: BorrowRequestStatus.Approved,
 			sort: search.dueDateSort,
