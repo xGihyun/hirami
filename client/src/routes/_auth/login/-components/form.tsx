@@ -78,11 +78,12 @@ export function LoginForm(): JSX.Element {
 		onMutate: () => {
 			return toast.loading("Logging in");
 		},
-		onSuccess: (result, _variables, toastId) => {
+		onSuccess: async (result, _variables, toastId) => {
 			setCookie("session", result.data.token);
-			toast.success("Login successful.", { id: toastId });
+			await navigate({ to: "/equipments" });
+
 			setIsError(false);
-			navigate({ to: "/equipments" });
+			toast.success("Login successful.", { id: toastId });
 		},
 		onError: (_error, _variables, toastId) => {
 			toast.dismiss(toastId);
