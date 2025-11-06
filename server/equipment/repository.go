@@ -1261,13 +1261,16 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			'lastName', person.last_name,
 			'avatarUrl', person.avatar_url
 		) AS borrower,
-		jsonb_build_object(
+		CASE
+		  WHEN person_borrow_reviewer.person_id IS NULL THEN NULL
+		  ELSE jsonb_build_object(
 			'id', person_borrow_reviewer.person_id,
 			'firstName', person_borrow_reviewer.first_name,
 			'middleName', person_borrow_reviewer.middle_name,
 			'lastName', person_borrow_reviewer.last_name,
 			'avatarUrl', person_borrow_reviewer.avatar_url
-		) AS borrow_reviewed_by,
+		  ) 
+		END AS borrow_reviewed_by,
 		CASE
 		  WHEN person_return_reviewer.person_id IS NULL THEN NULL
 		  ELSE jsonb_build_object(
