@@ -1307,19 +1307,24 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	`
 
 	var args []any
+	argIdx := 1
+
 	if params.userID != nil && *params.userID != "" {
-		query += " AND borrow_request.requested_by = $1"
+		query += fmt.Sprintf(" AND borrow_request.requested_by = $%d", argIdx)
 		args = append(args, *params.userID)
+		argIdx++
 	}
 
 	if params.status != nil && *params.status != "" {
-		query += " AND borrow_request.status = $2"
+		query += fmt.Sprintf(" AND borrow_request.status = $%d", argIdx)
 		args = append(args, *params.status)
+		argIdx++
 	}
 
 	if params.category != nil && *params.category != "" {
-		query += " AND equipment_type.name = $3"
+		query += fmt.Sprintf(" AND equipment_type.name = $%d", argIdx)
 		args = append(args, *params.category)
+		argIdx++
 	}
 
 	query += ` 
