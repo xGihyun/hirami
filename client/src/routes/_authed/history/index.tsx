@@ -16,7 +16,7 @@ import { HistoryList } from "./-components/history-list";
 
 const searchSchema = z.object({
 	category: z.string().optional(),
-	dueDateSort: z.enum(Sort).default(Sort.Desc),
+	dueDateSort: z.enum(Sort).default(Sort.Asc),
 });
 
 export const Route = createFileRoute("/_authed/history/")({
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authed/history/")({
 	loader: ({ context }) => {
 		if (context.session.user.role === UserRole.Borrower) {
 			context.queryClient.ensureQueryData(
-				borrowHistoryQuery({ userId: context.session.user.id }),
+				borrowHistoryQuery({ userId: context.session.user.id, sort: Sort.Asc }),
 			);
 			return;
 		}
@@ -63,6 +63,8 @@ function RouteComponent() {
 				borrowHistoryQuery({
 					userId:
 						auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
+					sort: search.dueDateSort,
+					category: search.category,
 				}),
 			);
 		}
