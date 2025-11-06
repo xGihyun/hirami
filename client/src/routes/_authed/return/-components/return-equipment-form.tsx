@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import type { SelectedBorrowedEquipment } from "../-model.ts";
 import { useAuth } from "@/auth";
 import { cn } from "@/lib/utils";
