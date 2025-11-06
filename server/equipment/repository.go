@@ -1226,7 +1226,7 @@ type borrowTransaction struct {
 	ExpectedReturnAt  time.Time           `json:"expectedReturnAt"`
 	ActualReturnAt    *time.Time          `json:"actualReturnAt"`
 	Status            borrowRequestStatus `json:"status"`
-	BorrowReviewedBy  user.BasicInfo      `json:"borrowReviewedBy"`
+	BorrowReviewedBy  *user.BasicInfo     `json:"borrowReviewedBy"`
 	ReturnConfirmedBy *user.BasicInfo     `json:"returnConfirmedBy"`
 	Remarks           *string             `json:"remarks"`
 }
@@ -1300,11 +1300,11 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	FROM borrow_request
 	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
-	JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
+	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
 	LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
-	WHERE borrow_request.status IN ('approved', 'fulfilled', 'rejected')
+	WHERE TRUE
 	`
 
 	var args []any
