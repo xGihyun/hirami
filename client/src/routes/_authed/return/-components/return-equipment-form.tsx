@@ -10,7 +10,7 @@ import type { SelectedBorrowedEquipment } from "../-model.ts";
 import { useAuth } from "@/auth";
 import { cn } from "@/lib/utils";
 import {
-	borrowHistoryQuery,
+	borrowedItemsQuery,
 	type BorrowedEquipment,
 	type BorrowTransaction,
 } from "@/lib/equipment/borrow";
@@ -93,7 +93,8 @@ export function ReturnEquipmentForm(
 			setSelectedEquipments((prev) => {
 				return prev.filter(
 					(item) =>
-						item.equipment.equipmentTypeId !== equipment.equipmentTypeId,
+						item.equipment.borrowRequestItemId !==
+						equipment.borrowRequestItemId,
 				);
 			});
 			return;
@@ -110,7 +111,7 @@ export function ReturnEquipmentForm(
 	): void {
 		setSelectedEquipments((prev) =>
 			prev.map((item) =>
-				item.equipment.equipmentTypeId === equipment.equipmentTypeId
+				item.equipment.borrowRequestItemId === equipment.borrowRequestItemId
 					? { ...item, quantity: newQuantity }
 					: item,
 			),
@@ -121,7 +122,7 @@ export function ReturnEquipmentForm(
 		mutationFn: returnEquipments,
 		onSuccess: () => {
 			queryClient.invalidateQueries(
-				borrowHistoryQuery({ userId: auth.user?.id }),
+				borrowedItemsQuery({ userId: auth.user?.id }),
 			);
 			queryClient.invalidateQueries(
 				returnRequestsQuery({ userId: auth.user?.id }),
@@ -195,7 +196,7 @@ export function ReturnEquipmentForm(
 										value={equipment.borrowRequestItemId}
 										checked={isChecked}
 										onCheckedChange={(checked) =>
-											handleSelect(equipment, 1, checked)
+											handleSelect(equipment, equipment.quantity, checked)
 										}
 									/>
 
