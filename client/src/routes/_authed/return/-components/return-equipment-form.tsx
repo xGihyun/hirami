@@ -151,6 +151,11 @@ export function ReturnEquipmentForm(
 		mutation.mutate(value);
 	}
 
+	const totalQuantity = selectedEquipments.reduce(
+		(total, cur) => total + cur.quantity,
+		0,
+	);
+
 	if (mutation.isPending) {
 		return <FullScreenLoading />;
 	}
@@ -234,7 +239,7 @@ export function ReturnEquipmentForm(
 								Confirm Equipment Return
 							</DialogTitle>
 							<DialogDescription className="text-start">
-								You are about to return {selectedEquipments.length} items. Do
+								You are about to return {totalQuantity} items. Do
 								you wish to proceed?
 							</DialogDescription>
 						</DialogHeader>
