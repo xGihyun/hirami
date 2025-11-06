@@ -81,7 +81,7 @@ function RouteComponent(): JSX.Element {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
 
 		function handleEvent(_: MessageEvent): void {
-			queryClient.ensureQueryData(
+			queryClient.invalidateQueries(
 				borrowHistoryQuery({
 					userId: auth.user?.id,
 					status: BorrowRequestStatus.Approved,
@@ -89,8 +89,11 @@ function RouteComponent(): JSX.Element {
 					category: search.category,
 				}),
 			);
-			queryClient.ensureQueryData(
-				returnRequestsQuery({ userId: auth.user?.id }),
+			queryClient.invalidateQueries(
+				returnRequestsQuery({
+					userId: auth.user?.id,
+					sort: search.dueDateSort,
+				}),
 			);
 		}
 
