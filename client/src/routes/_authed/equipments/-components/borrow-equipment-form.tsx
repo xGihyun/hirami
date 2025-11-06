@@ -97,6 +97,11 @@ export function BorrowEquipmentForm(
 		mutation.mutate(value);
 	}
 
+	const totalQuantity = props.selectedEquipments.reduce(
+		(total, cur) => total + cur.quantity,
+		0,
+	);
+
 	return (
 		<div className="h-full w-full">
 			<Button
@@ -281,7 +286,7 @@ export function BorrowEquipmentForm(
 											Confirm Equipment Borrow
 										</DialogTitle>
 										<DialogDescription className="text-start">
-											You are about to borrow {props.selectedEquipments.length}{" "}
+											You are about to borrow {totalQuantity}{" "}
 											items. Do you wish to proceed?
 										</DialogDescription>
 									</DialogHeader>
