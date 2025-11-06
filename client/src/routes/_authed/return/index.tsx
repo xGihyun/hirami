@@ -165,7 +165,7 @@ function ReturnRequestListTab(): JSX.Element {
 	if (returnRequests.data?.length === 0) {
 		return (
 			<LabelMedium className="text-muted text-center mt-10">
-				No borrowed equipment found
+				No equipments for returning found
 			</LabelMedium>
 		);
 	}
