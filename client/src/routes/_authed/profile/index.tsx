@@ -144,7 +144,7 @@ function RouteComponent() {
 						<button
 							type="button"
 							onClick={() => fileInputRef.current?.click()}
-							className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer z-50"
+							className="absolute inset-0 opacity-0 flex items-center justify-center cursor-pointer z-50"
 						>
 							<IconEdit className="size-6 text-white" />
 						</button>
