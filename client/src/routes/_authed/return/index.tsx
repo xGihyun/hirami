@@ -21,7 +21,7 @@ import { LabelMedium } from "@/components/typography";
 const searchSchema = z.object({
 	tab: z.enum(ReturnTab).default(ReturnTab.BorrowedItems),
 	category: z.string().optional(),
-	dueDateSort: z.enum(Sort).default(Sort.Desc),
+	dueDateSort: z.enum(Sort).default(Sort.Asc),
 });
 
 export const Route = createFileRoute("/_authed/return/")({
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_authed/return/")({
 			borrowedItemsQuery({
 				userId: context.session.user.id,
 				status: BorrowRequestStatus.Approved,
-				sort: Sort.Desc,
+				sort: Sort.Asc,
 			}),
 		);
 		context.queryClient.ensureQueryData(
