@@ -81,11 +81,13 @@ export function HistoryItem(props: Props): JSX.Element {
 						</LabelSmall>
 					) : null}
 
-					<LabelSmall>
-						<span className="font-montserrat-bold">Equipment Manager:</span>{" "}
-						{props.transaction.borrowReviewedBy.firstName}{" "}
-						{props.transaction.borrowReviewedBy.lastName}
-					</LabelSmall>
+					{props.transaction.borrowReviewedBy ? (
+						<LabelSmall>
+							<span className="font-montserrat-bold">Equipment Manager:</span>{" "}
+							{props.transaction.borrowReviewedBy.firstName}{" "}
+							{props.transaction.borrowReviewedBy.lastName}
+						</LabelSmall>
+					) : null}
 
 					<Badge
 						className="mt-1"
