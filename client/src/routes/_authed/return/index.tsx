@@ -107,7 +107,7 @@ function RouteComponent(): JSX.Element {
 	}, [queryClient]);
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-4 pb-12">
 			<ReturnHeader equipmentNames={equipmentNames || []} />
 
 			{search.tab === ReturnTab.BorrowedItems ? (
