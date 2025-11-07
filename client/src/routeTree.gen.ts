@@ -20,6 +20,7 @@ import { Route as AuthedHistoryIndexRouteImport } from './routes/_authed/history
 import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equipments/index'
 import { Route as AuthedBorrowRequestsIndexRouteImport } from './routes/_authed/borrow-requests/index'
 import { Route as AuthPasswordResetIndexRouteImport } from './routes/_auth/password-reset/index'
+import { Route as AuthOnboardingIndexRouteImport } from './routes/_auth/onboarding/index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 import { Route as AuthPasswordResetTokenRouteImport } from './routes/_auth/password-reset/$token'
 import { Route as AuthRegisterRegisterIndexRouteImport } from './routes/_auth/_register/register/index'
@@ -81,6 +82,11 @@ const AuthPasswordResetIndexRoute = AuthPasswordResetIndexRouteImport.update({
   path: '/password-reset/',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthOnboardingIndexRoute = AuthOnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
   id: '/login/',
   path: '/login/',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/login': typeof AuthLoginIndexRoute
+  '/onboarding': typeof AuthOnboardingIndexRoute
   '/password-reset': typeof AuthPasswordResetIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/login': typeof AuthLoginIndexRoute
+  '/onboarding': typeof AuthOnboardingIndexRoute
   '/password-reset': typeof AuthPasswordResetIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/_auth/_register': typeof AuthRegisterRouteWithChildren
   '/_auth/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/_auth/login/': typeof AuthLoginIndexRoute
+  '/_auth/onboarding/': typeof AuthOnboardingIndexRoute
   '/_auth/password-reset/': typeof AuthPasswordResetIndexRoute
   '/_authed/borrow-requests/': typeof AuthedBorrowRequestsIndexRoute
   '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/'
     | '/password-reset/$token'
     | '/login'
+    | '/onboarding'
     | '/password-reset'
     | '/borrow-requests'
     | '/equipments'
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/'
     | '/password-reset/$token'
     | '/login'
+    | '/onboarding'
     | '/password-reset'
     | '/borrow-requests'
     | '/equipments'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/_auth/_register'
     | '/_auth/password-reset/$token'
     | '/_auth/login/'
+    | '/_auth/onboarding/'
     | '/_auth/password-reset/'
     | '/_authed/borrow-requests/'
     | '/_authed/equipments/'
@@ -307,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthPasswordResetIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/onboarding/': {
+      id: '/_auth/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthOnboardingIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/login/': {
       id: '/_auth/login/'
       path: '/login'
@@ -376,6 +395,7 @@ interface AuthRouteChildren {
   AuthRegisterRoute: typeof AuthRegisterRouteWithChildren
   AuthPasswordResetTokenRoute: typeof AuthPasswordResetTokenRoute
   AuthLoginIndexRoute: typeof AuthLoginIndexRoute
+  AuthOnboardingIndexRoute: typeof AuthOnboardingIndexRoute
   AuthPasswordResetIndexRoute: typeof AuthPasswordResetIndexRoute
 }
 
@@ -383,6 +403,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthRegisterRoute: AuthRegisterRouteWithChildren,
   AuthPasswordResetTokenRoute: AuthPasswordResetTokenRoute,
   AuthLoginIndexRoute: AuthLoginIndexRoute,
+  AuthOnboardingIndexRoute: AuthOnboardingIndexRoute,
   AuthPasswordResetIndexRoute: AuthPasswordResetIndexRoute,
 }
 

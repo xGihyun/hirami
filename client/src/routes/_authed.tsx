@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_authed")({
 	beforeLoad: async ({ context }) => {
 		const session = await context.auth.validateSession();
 		if (session === null) {
-			throw redirect({ to: "/login" });
+			throw redirect({ to: "/onboarding" });
 		}
 
 		return {
