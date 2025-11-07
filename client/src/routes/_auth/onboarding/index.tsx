@@ -44,11 +44,13 @@ function Welcome(): JSX.Element {
 		<div className="h-full w-full flex flex-col justify-center items-center">
 			<div className="w-full space-y-20">
 				<section className="space-y-3.5 flex flex-col justify-center items-center w-full">
-					<img
-						src={morningWorkoutIllustration}
-						alt="Workout illustration"
-						className="w-full max-w-60 mx-auto"
-					/>
+					<div className="w-full max-w-60 mx-auto aspect-[24/25]">
+						<img
+							src={morningWorkoutIllustration}
+							alt="Workout illustration"
+							className="w-full h-full"
+						/>
+					</div>
 					<div className="space-y-1.5">
 						<DisplayLarge className="text-center">Welcome</DisplayLarge>
 						<TitleSmall className="text-center">
