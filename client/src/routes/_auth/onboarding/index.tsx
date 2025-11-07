@@ -1,14 +1,59 @@
 import { DisplayLarge, TitleSmall } from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { morningWorkoutIllustration } from "@/lib/assets";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	Link,
+	redirect,
+	useSearch,
+} from "@tanstack/react-router";
 import type { JSX } from "react";
+import z from "zod";
+import { Step1 } from "./-components/step-1";
+import { Step2 } from "./-components/step-2";
+import { Step3 } from "./-components/step-3";
+
+const searchSchema = z.object({
+	step: z.number().optional(),
+});
 
 export const Route = createFileRoute("/_auth/onboarding/")({
 	component: RouteComponent,
+	validateSearch: searchSchema,
+	beforeLoad: ({ search }) => {
+		if (!search.step) {
+			return;
+		}
+
+		if (search.step < 1 || search.step > 3) {
+			throw redirect({ to: "/onboarding" });
+		}
+	},
 });
 
 function RouteComponent(): JSX.Element {
+	const search = useSearch({ from: "/_auth/onboarding/" });
+
+	if (!search.step) {
+		return <Onboarding />;
+	}
+
+	if (search.step === 1) {
+		return <Step1 />;
+	}
+
+	if (search.step === 2) {
+		return <Step2 />;
+	}
+
+	if (search.step === 3) {
+		return <Step3 />;
+	}
+
+	return <Onboarding />;
+}
+
+function Onboarding(): JSX.Element {
 	return (
 		<div className="h-full w-full flex flex-col justify-center items-center">
 			<div className="w-full space-y-20">

@@ -9,6 +9,8 @@ import passwordResetIllustration from "./undraw_password-reset.svg";
 import homeRunIllustration from "./undraw_home-run.svg";
 import connectionLostIllustration from "./undraw_connection-lost.svg";
 import morningWorkoutIllustration from "./undraw_morning-workout.svg";
+import fitnessTrackerIllustration from "./undraw_fitness-tracker.svg";
+import indoorBikeIllustration from "./undraw_indoor-bike.svg";
 
 export {
 	hiramiLogo,
@@ -22,4 +24,6 @@ export {
 	homeRunIllustration,
 	connectionLostIllustration,
 	morningWorkoutIllustration,
+	fitnessTrackerIllustration,
+	indoorBikeIllustration,
 };
