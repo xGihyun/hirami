@@ -98,7 +98,7 @@ export function CatalogCategories(props: Props): JSX.Element {
 					))}
 				</div>
 
-				<ScrollBar orientation="horizontal" />
+				<ScrollBar orientation="horizontal" hidden />
 			</ScrollArea>
 		</section>
 	);
