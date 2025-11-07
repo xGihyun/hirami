@@ -10,6 +10,14 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button.tsx";
 import { IconArrowDownUp } from "@/lib/icons.ts";
 import { Sort } from "@/lib/api.ts";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Props = {
 	equipmentNames: string[];
@@ -23,7 +31,7 @@ export function Control(props: Props): JSX.Element {
 		if (value === "All") {
 			await navigate({
 				search: (prev) => ({
-					dueDateSort: prev.dueDateSort,
+					sort: prev.sort,
 				}),
 			});
 			return;
@@ -37,23 +45,27 @@ export function Control(props: Props): JSX.Element {
 		});
 	}
 
-	async function toggleSort(value: Sort): Promise<void> {
-		if (value === Sort.Asc) {
-			await navigate({
-				search: (prev) => ({
-					...prev,
-					dueDateSort: Sort.Desc,
-				}),
-			});
-			return;
-		}
+	type SortField = "borrowedAt" | "returnedAt" | "status";
+
+	async function toggleSort(field: SortField, order: Sort): Promise<void> {
+		const newOrder = order === Sort.Asc ? Sort.Desc : Sort.Asc;
 
 		await navigate({
 			search: (prev) => ({
 				...prev,
-				dueDateSort: Sort.Asc,
+				sortBy: field,
+				sort: newOrder,
 			}),
 		});
+	}
+
+	function handleSortChange(field: SortField) {
+		if (search.sortBy === field) {
+			toggleSort(field, search.sort);
+			return;
+		}
+
+		toggleSort(field, Sort.Asc);
 	}
 
 	return (
@@ -76,12 +88,24 @@ export function Control(props: Props): JSX.Element {
 				</SelectContent>
 			</Select>
 
-			<Button
-				className="size-12 bg-card text-card-foreground border border-accent shadow-none"
-				onClick={() => toggleSort(search.dueDateSort)}
-			>
-				<IconArrowDownUp className="size-5" />
-			</Button>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<Button className="size-12 bg-card text-card-foreground border border-accent shadow-none">
+						<IconArrowDownUp className="size-5" />
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent>
+					<DropdownMenuItem onClick={() => handleSortChange("borrowedAt")}>
+						Date and Time Borrowed
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => handleSortChange("returnedAt")}>
+						Date and Time Returned
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => handleSortChange("status")}>
+						Status
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
 		</div>
 	);
 }

@@ -13,7 +13,8 @@ import { HistoryList } from "./-components/history-list";
 
 const searchSchema = z.object({
 	category: z.string().optional(),
-	dueDateSort: z.enum(Sort).default(Sort.Asc),
+	sort: z.enum(Sort).default(Sort.Asc),
+	sortBy: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_authed/history/")({
@@ -36,18 +37,24 @@ function RouteComponent() {
 	const history = useQuery(
 		borrowHistoryQuery({
 			userId: auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
-			sort: search.dueDateSort,
+			sort: search.sort,
+			sortBy: search.sortBy,
 			category: search.category,
 		}),
 	);
 	const historyAllCategory = useQuery(
 		borrowHistoryQuery({
 			userId: auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
-			sort: search.dueDateSort,
+			sort: search.sort,
+			sortBy: search.sortBy,
 		}),
 	);
-	const historyEquipmentNames = historyAllCategory.data?.flatMap((history) =>
-		history.equipments.map((eq) => eq.name),
+	const historyEquipmentNames = Array.from(
+		new Set(
+			historyAllCategory.data?.flatMap((history) =>
+				history.equipments.map((eq) => eq.name),
+			),
+		),
 	);
 
 	const queryClient = useQueryClient();
@@ -60,7 +67,8 @@ function RouteComponent() {
 				borrowHistoryQuery({
 					userId:
 						auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
-					sort: search.dueDateSort,
+					sort: search.sort,
+					sortBy: search.sortBy,
 					category: search.category,
 				}),
 			);

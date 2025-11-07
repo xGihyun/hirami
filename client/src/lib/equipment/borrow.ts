@@ -74,6 +74,7 @@ type GetBorrowHistoryParams = {
 	userId?: string;
 	status?: BorrowRequestStatus;
 	sort?: Sort;
+	sortBy?: string;
 	category?: string;
 };
 
@@ -90,6 +91,9 @@ async function getBorrowHistory(
 	}
 	if (params.sort) {
 		url.searchParams.append("sort", params.sort);
+	}
+	if (params.sortBy) {
+		url.searchParams.append("sortBy", params.sortBy);
 	}
 	if (params.category) {
 		url.searchParams.append("category", params.category);
