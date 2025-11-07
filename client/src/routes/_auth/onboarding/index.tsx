@@ -9,9 +9,7 @@ import {
 } from "@tanstack/react-router";
 import type { JSX } from "react";
 import z from "zod";
-import { Step1 } from "./-components/step-1";
-import { Step2 } from "./-components/step-2";
-import { Step3 } from "./-components/step-3";
+import { Onboarding } from "./-components/onboarding";
 
 const searchSchema = z.object({
 	step: z.number().optional(),
@@ -34,26 +32,14 @@ export const Route = createFileRoute("/_auth/onboarding/")({
 function RouteComponent(): JSX.Element {
 	const search = useSearch({ from: "/_auth/onboarding/" });
 
-	if (!search.step) {
+	if (search.step) {
 		return <Onboarding />;
 	}
 
-	if (search.step === 1) {
-		return <Step1 />;
-	}
-
-	if (search.step === 2) {
-		return <Step2 />;
-	}
-
-	if (search.step === 3) {
-		return <Step3 />;
-	}
-
-	return <Onboarding />;
+	return <Welcome />;
 }
 
-function Onboarding(): JSX.Element {
+function Welcome(): JSX.Element {
 	return (
 		<div className="h-full w-full flex flex-col justify-center items-center">
 			<div className="w-full space-y-20">
