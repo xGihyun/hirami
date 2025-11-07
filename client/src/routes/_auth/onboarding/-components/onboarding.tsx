@@ -1,55 +1,68 @@
 import type { JSX } from "react";
-import { Step1 } from "./step-1";
 import { Button } from "@/components/ui/button";
 import { Link, useSearch } from "@tanstack/react-router";
-import { Step2 } from "./step-2";
-import { Step3 } from "./step-3";
-
-type Step = {
-	step: number;
-	element: JSX.Element;
-};
+import { Step } from "./step";
+import {
+	fitnessTrackerIllustration,
+	indoorBikeIllustration,
+	fitnessStatsIllustration,
+} from "@/lib/assets";
+import type { StepData } from "../-model";
 
 export function Onboarding(): JSX.Element {
 	const search = useSearch({ from: "/_auth/onboarding/" });
 	const currentStep = search.step || 1;
 
-	const steps: Step[] = [
+	const steps: StepData[] = [
 		{
-			step: 1,
-			element: <Step1 />,
+			imageUrl: fitnessTrackerIllustration,
+			title: "Manage and Borrow Sports Equipment with Ease",
+			description:
+				"Hirami simplifies the way you borrow, track, and manage sports and gym equipment — all in one app.",
 		},
 		{
-			step: 2,
-			element: <Step2 />,
+			imageUrl: indoorBikeIllustration,
+			title: "Borrow Smarter, Work Better",
+			description:
+				"Create your account, explore available equipment, and borrow what you need in just a few taps.  Stay organized with quick access to your borrowed items and history.",
 		},
 		{
-			step: 3,
-			element: <Step3 />,
+			imageUrl: fitnessStatsIllustration,
+			title: "Keep Equipment Organized and Accessible",
+			description:
+				"Track equipment availability, manage requests, and keep records accurate.  Approve or confirm returns, register new items, and manage user accounts seamlessly.",
 		},
 	];
 
-	const currentStepData = steps.find((s) => s.step === currentStep);
+	const currentStepData = steps[currentStep - 1];
 
 	return (
 		<div className="h-full w-full flex flex-col justify-center items-center">
 			<div className="w-full space-y-12">
-				<div className="h-[30rem] flex items-center justify-center">
-					{currentStepData?.element}
+				<div className="h-[30rem] flex items-center justify-center relative">
+					{steps.map((stepData, index) => (
+						<div
+							key={index}
+							className={`absolute inset-0 flex items-center justify-center ${
+								index + 1 === currentStep ? "block" : "hidden"
+							}`}
+						>
+							<Step {...stepData} />
+						</div>
+					))}
 				</div>
 
 				<div className="flex items-center justify-center gap-6">
-					{steps.map((step) => (
+					{steps.map((_, i) => (
 						<span
-							key={step.step}
+							key={i}
 							className={`size-2.5 rounded-full ${
-								step.step <= currentStep ? "bg-primary" : "bg-accent"
+								i + 1 <= currentStep ? "bg-primary" : "bg-accent"
 							}`}
 						/>
 					))}
 				</div>
 
-				{/* Navigation buttons */}
 				<section className="flex flex-col gap-1 w-full">
 					<Button className="w-full" asChild>
 						<Link
