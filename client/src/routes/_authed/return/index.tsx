@@ -61,6 +61,7 @@ function RouteComponent(): JSX.Element {
 			sort: search.dueDateSort,
 		}),
 	);
+    // NOTE: Getting the unique names should ideally be done on the server
 	const historyEquipmentNames = Array.from(
 		new Set(
 			borrowHistoryAllCategory.data?.flatMap((history) =>
