@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { LoginForm } from "./-components/form";
 import type { JSX } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,9 @@ function RouteComponent(): JSX.Element {
 	return (
 		<div className="h-full w-full">
 			<Button variant="ghost" size="icon" className="size-15">
-				<IconX className="size-8" />
+				<Link to="/onboarding">
+					<IconX className="size-8" />
+				</Link>
 			</Button>
 
 			<main className="mt-10 pb-10">

@@ -47,8 +47,7 @@ function RouteComponent(): JSX.Element {
 	async function handleBack(): Promise<void> {
 		const previousStep = getPreviousStep();
 		if (!previousStep) {
-			// TODO: Navigate to Welcome Page
-			await navigate({ to: "/login" });
+			await navigate({ to: "/onboarding" });
 			return;
 		}
 
