@@ -61,8 +61,12 @@ function RouteComponent(): JSX.Element {
 			sort: search.dueDateSort,
 		}),
 	);
-	const historyEquipmentNames = borrowHistoryAllCategory.data?.flatMap(
-		(history) => history.equipments.map((eq) => eq.name),
+	const historyEquipmentNames = Array.from(
+		new Set(
+			borrowHistoryAllCategory.data?.flatMap((history) =>
+				history.equipments.map((eq) => eq.name),
+			),
+		),
 	);
 	const returnEquipmentNames = Array.from(
 		new Set(
@@ -160,7 +164,6 @@ function ReturnRequestListTab(): JSX.Element {
 	if (returnRequests.isLoading) {
 		return <ComponentLoading />;
 	}
-
 
 	if (returnRequests.data?.length === 0) {
 		return (
