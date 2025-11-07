@@ -1235,6 +1235,7 @@ type borrowHistoryParams struct {
 	userID   *string
 	status   *borrowRequestStatus
 	sort     *api.Sort
+	sortBy   *string
 	category *string
 }
 
@@ -1353,11 +1354,26 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		latest_return_data.reviewed_by
 	`
 
-	if params.sort != nil && *params.sort != "" {
-		query += fmt.Sprintf(" ORDER BY borrow_request.expected_return_at %s", *params.sort)
-	} else {
-		query += " ORDER BY borrow_request.expected_return_at DESC"
+	sortByColumn := "borrow_request.expected_return_at" // default
+	if params.sortBy != nil {
+		switch *params.sortBy {
+		case "borrowedAt":
+			sortByColumn = "borrow_request.created_at"
+		case "expectedReturnAt":
+			sortByColumn = "borrow_request.expected_return_at"
+		case "returnedAt":
+			sortByColumn = "latest_return_data.created_at"
+		case "status":
+			sortByColumn = "borrow_request.status"
+		}
 	}
+
+	sortDirection := "ASC"
+	if params.sort != nil && *params.sort != "" {
+		sortDirection = string(*params.sort)
+	}
+
+	query += fmt.Sprintf(" ORDER BY %s %s", sortByColumn, sortDirection)
 
 	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
