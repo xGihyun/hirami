@@ -96,3 +96,16 @@ export function TitleSmall(props: Props): JSX.Element {
 		</p>
 	);
 }
+
+export function DisplayLarge(props: Props): JSX.Element {
+	return (
+		<h1
+			className={cn(
+				"font-montserrat-bold text-6xl tracking-tight leading-16",
+				props.className,
+			)}
+		>
+			{props.children}
+		</h1>
+	);
+}
