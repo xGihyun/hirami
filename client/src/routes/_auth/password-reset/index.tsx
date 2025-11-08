@@ -1,7 +1,7 @@
 import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -76,7 +76,9 @@ function RouteComponent() {
 	return (
 		<div className="h-full w-full">
 			<Button variant="ghost" size="icon" className="size-15">
-				<IconArrowLeft className="size-8" />
+				<Link to="/onboarding">
+					<IconArrowLeft className="size-8" />
+				</Link>
 			</Button>
 
 			<main className="mt-10 pb-10">
