@@ -25,6 +25,7 @@ type Repository interface {
 	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error)
 	confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error)
 	getReturnRequests(ctx context.Context, params getReturnRequestParams) ([]returnRequest, error)
+	getReturnRequestByID(ctx context.Context, id string) (returnRequest, error)
 
 	getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error)
 	getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]borrowedItem, error)
@@ -1213,6 +1214,67 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 		return nil, err
 	}
 	return returnRequests, nil
+}
+
+func (r *repository) getReturnRequestByID(ctx context.Context, id string) (returnRequest, error) {
+	query := `
+	SELECT 
+		return_request.return_request_id,
+		return_request.created_at,
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS borrower,
+		jsonb_agg(
+			jsonb_build_object(
+				'returnRequestItemId', return_request_item.return_request_item_id,
+				'id', equipment_type.equipment_type_id,
+				'name', equipment_type.name,
+				'brand', equipment_type.brand,
+				'model', equipment_type.model,
+				'imageUrl', equipment_type.image_url,
+				'quantity', return_request_item.quantity
+			)
+		) AS equipments,
+		borrow_request.expected_return_at
+	FROM return_request
+	JOIN borrow_request ON borrow_request.borrow_request_id = return_request.borrow_request_id
+	JOIN person ON person.person_id = borrow_request.requested_by
+	JOIN return_request_item ON return_request_item.return_request_id = return_request.return_request_id
+	JOIN borrow_request_item ON borrow_request_item.borrow_request_item_id = return_request_item.borrow_request_item_id
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
+	WHERE NOT EXISTS (
+		SELECT 1 
+		FROM return_transaction
+		WHERE return_transaction.return_request_item_id = return_request_item.return_request_item_id
+	) AND return_request.return_request_id = $1
+	GROUP BY 
+		return_request.return_request_id,
+		return_request.created_at,
+		person.person_id,
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		borrow_request.expected_return_at
+	`
+
+	var req returnRequest
+	row := r.querier.QueryRow(ctx, query, id)
+	if err := row.Scan(
+		&req.ReturnRequestID,
+		&req.CreatedAt,
+		&req.Borrower,
+		&req.Equipments,
+		&req.ExpectedReturnAt,
+	); err != nil {
+		return returnRequest{}, err
+	}
+
+	return req, nil
 }
 
 type borrowTransaction struct {
