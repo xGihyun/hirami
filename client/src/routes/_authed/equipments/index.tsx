@@ -13,15 +13,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/lib/api";
 import { useEffect, useState, type JSX } from "react";
-import {
-	Drawer,
-	DrawerClose,
-	DrawerContent,
-	DrawerFooter,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from "@/components/ui/drawer";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
 import { IconArrowLeft, IconPlus } from "@/lib/icons";
 import { useAuth } from "@/auth";
@@ -40,9 +31,6 @@ import { CatalogCategories } from "./-components/catalog-categories";
 import {
 	Dialog,
 	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { DialogClose } from "@radix-ui/react-dialog";
