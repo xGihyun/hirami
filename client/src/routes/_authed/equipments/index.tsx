@@ -107,7 +107,7 @@ function RouteComponent(): JSX.Element {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
 
 		function handleEquipmentInvalidation(_: MessageEvent): void {
-			queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
+			queryClient.invalidateQueries({ queryKey: ["equipments"] });
 			queryClient.invalidateQueries(equipmentNamesQuery());
 		}
 
@@ -123,7 +123,7 @@ function RouteComponent(): JSX.Element {
 			);
 			eventSource.close();
 		};
-	}, [queryClient]);
+	}, []);
 
 	if (mutationStatus === "pending") {
 		return <FullScreenLoading />;

@@ -47,7 +47,7 @@ type GetEquipmentParams = {
 
 export const equipmentsQuery = (params: GetEquipmentParams) =>
 	queryOptions({
-		queryKey: ["equipments", ...params.names, params.search],
+		queryKey: ["equipments", params],
 		queryFn: () => getEquipments(params),
 		placeholderData: keepPreviousData,
 	});
