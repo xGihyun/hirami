@@ -23,7 +23,7 @@ import {
 	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
-import { IconPlus } from "@/lib/icons";
+import { IconArrowLeft, IconPlus } from "@/lib/icons";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
 import { RegisterEquipmentForm } from "./-components/register-equipment-form";
@@ -45,6 +45,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 const searchSchema = z.object({
 	success: z.boolean().optional(),
@@ -184,8 +185,14 @@ function RouteComponent(): JSX.Element {
 							Register New Equipment
 						</Button>
 					</DialogTrigger>
-					<DialogContent className="p-5">
+					<DialogContent className="p-5" showCloseButton={false}>
 						<RegisterEquipmentForm onSuccess={onSuccess} />
+
+						<DialogClose className="absolute left-1 top-1" asChild>
+							<Button variant="ghost" className="size-15">
+								<IconArrowLeft className="size-8" />
+							</Button>
+						</DialogClose>
 					</DialogContent>
 				</Dialog>
 			) : (
