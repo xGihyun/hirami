@@ -20,9 +20,9 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authed/history/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
-		if (context.session.user.role === UserRole.Borrower) {
+		if (context.auth.user?.role === UserRole.Borrower) {
 			context.queryClient.ensureQueryData(
-				borrowHistoryQuery({ userId: context.session.user.id, sort: Sort.Asc }),
+				borrowHistoryQuery({ userId: context.auth.user?.id, sort: Sort.Asc }),
 			);
 			return;
 		}

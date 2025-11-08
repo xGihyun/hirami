@@ -29,13 +29,13 @@ export const Route = createFileRoute("/_authed/return/")({
 	loader: ({ context }) => {
 		context.queryClient.ensureQueryData(
 			borrowedItemsQuery({
-				userId: context.session.user.id,
+				userId: context.auth.user?.id,
 				status: BorrowRequestStatus.Approved,
 				sort: Sort.Asc,
 			}),
 		);
 		context.queryClient.ensureQueryData(
-			returnRequestsQuery({ userId: context.session.user.id }),
+			returnRequestsQuery({ userId: context.auth.user?.id }),
 		);
 		context.queryClient.ensureQueryData(equipmentNamesQuery());
 	},

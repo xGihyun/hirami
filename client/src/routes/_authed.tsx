@@ -4,15 +4,10 @@ import type { JSX } from "react";
 
 export const Route = createFileRoute("/_authed")({
 	component: RouteComponent,
-	beforeLoad: async ({ context }) => {
-		const session = await context.auth.validateSession();
-		if (session === null) {
+	beforeLoad: ({ context }) => {
+		if (!context.auth.user) {
 			throw redirect({ to: "/onboarding" });
 		}
-
-		return {
-			session: session,
-		};
 	},
 });
 
@@ -20,7 +15,7 @@ function RouteComponent(): JSX.Element {
 	return (
 		<div className="pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] px-4 lg:px-10">
 			<Outlet />
-			<Navbar /> 
+			<Navbar />
 		</div>
 	);
 }
