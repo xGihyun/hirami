@@ -23,11 +23,6 @@ export function Navbar(): JSX.Element {
 				label: "Catalog",
 				icon: IconBox,
 			},
-			{
-				to: "/barcode",
-				label: "Barcode",
-				icon: IconBox,
-			},
 		];
 
 		const profileOption = {
