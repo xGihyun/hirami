@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/xGihyun/hirami/api"
 	"github.com/xGihyun/hirami/user"
 )
 
@@ -26,6 +27,7 @@ type Repository interface {
 	getReturnRequests(ctx context.Context, params getReturnRequestParams) ([]returnRequest, error)
 
 	getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error)
+	getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]borrowedItem, error)
 }
 
 type repository struct {
@@ -68,7 +70,11 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) (cr
 	query := `
 	INSERT INTO equipment_type (name, brand, model, image_url)
 	VALUES ($1, $2, $3, $4)
-	ON CONFLICT ON CONSTRAINT equipment_type_name_brand_model_unique
+	ON CONFLICT (
+		name,
+		COALESCE(lower(TRIM(BOTH FROM brand)), ''),
+		COALESCE(lower(TRIM(BOTH FROM model)), '')
+	)
 	DO UPDATE SET 
 		equipment_type_id = equipment_type.equipment_type_id,
 		image_url = $4
@@ -126,6 +132,7 @@ type equipmentWithBorrower struct {
 type getEquipmentParams struct {
 	name   *string
 	status *equipmentStatus
+	search *string
 }
 
 func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]equipmentWithBorrower, error) {
@@ -203,15 +210,26 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 	`
 
 	var args []any
+	argIdx := 1
+
 	if params.name != nil && *params.name != "" {
 		names := strings.Split(*params.name, ",")
-		query += " AND name IN (SELECT unnest($1::text[]))"
+		query += fmt.Sprintf(" AND name IN (SELECT unnest($%d::text[]))", argIdx)
 		args = append(args, names)
+		argIdx++
 	}
 
 	if params.status != nil && *params.status != "" {
-		query += " AND status = $2"
+		query += fmt.Sprintf(" AND status = $%d", argIdx)
 		args = append(args, *params.status)
+		argIdx++
+	}
+
+	if params.search != nil && *params.search != "" {
+		searchTerm := "%" + strings.ToLower(*params.search) + "%"
+		query += fmt.Sprintf(" AND (LOWER(name) LIKE $%d OR LOWER(brand) LIKE $%d OR LOWER(model) LIKE $%d)", argIdx, argIdx, argIdx)
+		args = append(args, searchTerm)
+		argIdx++
 	}
 
 	query += " GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower ORDER BY status"
@@ -1115,7 +1133,9 @@ type returnRequest struct {
 }
 
 type getReturnRequestParams struct {
-	userID *string
+	userID   *string
+	sort     *api.Sort
+	category *string
 }
 
 func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequestParams) ([]returnRequest, error) {
@@ -1161,6 +1181,11 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 		args = append(args, *params.userID)
 	}
 
+	if params.category != nil && *params.category != "" {
+		query += " AND equipment_type.name = $2"
+		args = append(args, *params.category)
+	}
+
 	query += `
 	GROUP BY 
 		return_request.return_request_id,
@@ -1172,6 +1197,12 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 		person.avatar_url,
 		borrow_request.expected_return_at
 	`
+
+	if params.sort != nil && *params.sort != "" {
+		query += fmt.Sprintf(" ORDER BY borrow_request.expected_return_at %s", *params.sort)
+	} else {
+		query += " ORDER BY borrow_request.expected_return_at DESC"
+	}
 
 	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
@@ -1195,13 +1226,17 @@ type borrowTransaction struct {
 	ExpectedReturnAt  time.Time           `json:"expectedReturnAt"`
 	ActualReturnAt    *time.Time          `json:"actualReturnAt"`
 	Status            borrowRequestStatus `json:"status"`
-	BorrowReviewedBy  user.BasicInfo      `json:"borrowReviewedBy"`
+	BorrowReviewedBy  *user.BasicInfo     `json:"borrowReviewedBy"`
 	ReturnConfirmedBy *user.BasicInfo     `json:"returnConfirmedBy"`
 	Remarks           *string             `json:"remarks"`
 }
 
 type borrowHistoryParams struct {
-	userID *string
+	userID   *string
+	status   *borrowRequestStatus
+	sort     *api.Sort
+	sortBy   *string
+	category *string
 }
 
 func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error) {
@@ -1227,13 +1262,16 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			'lastName', person.last_name,
 			'avatarUrl', person.avatar_url
 		) AS borrower,
-		jsonb_build_object(
+		CASE
+		  WHEN person_borrow_reviewer.person_id IS NULL THEN NULL
+		  ELSE jsonb_build_object(
 			'id', person_borrow_reviewer.person_id,
 			'firstName', person_borrow_reviewer.first_name,
 			'middleName', person_borrow_reviewer.middle_name,
 			'lastName', person_borrow_reviewer.last_name,
 			'avatarUrl', person_borrow_reviewer.avatar_url
-		) AS borrow_reviewed_by,
+		  ) 
+		END AS borrow_reviewed_by,
 		CASE
 		  WHEN person_return_reviewer.person_id IS NULL THEN NULL
 		  ELSE jsonb_build_object(
@@ -1266,17 +1304,32 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	FROM borrow_request
 	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
-	JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
+	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
 	LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
-	WHERE borrow_request.status IN ('approved', 'fulfilled', 'rejected')
+	WHERE TRUE
 	`
 
 	var args []any
+	argIdx := 1
+
 	if params.userID != nil && *params.userID != "" {
-		query += " AND borrow_request.requested_by = $1"
+		query += fmt.Sprintf(" AND borrow_request.requested_by = $%d", argIdx)
 		args = append(args, *params.userID)
+		argIdx++
+	}
+
+	if params.status != nil && *params.status != "" {
+		query += fmt.Sprintf(" AND borrow_request.status = $%d", argIdx)
+		args = append(args, *params.status)
+		argIdx++
+	}
+
+	if params.category != nil && *params.category != "" {
+		query += fmt.Sprintf(" AND equipment_type.name = $%d", argIdx)
+		args = append(args, *params.category)
+		argIdx++
 	}
 
 	query += ` 
@@ -1299,14 +1352,171 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		borrow_request.borrow_request_id,
 		latest_return_data.created_at,
 		latest_return_data.reviewed_by
-	ORDER BY borrow_request.created_at DESC
 	`
+
+	sortByColumn := "borrow_request.expected_return_at" // default
+	if params.sortBy != nil {
+		switch *params.sortBy {
+		case "borrowedAt":
+			sortByColumn = "borrow_request.created_at"
+		case "expectedReturnAt":
+			sortByColumn = "borrow_request.expected_return_at"
+		case "returnedAt":
+			sortByColumn = "latest_return_data.created_at"
+		case "status":
+			sortByColumn = "borrow_request.status"
+		}
+	}
+
+	sortDirection := "ASC"
+	if params.sort != nil && *params.sort != "" {
+		sortDirection = string(*params.sort)
+	}
+
+	query += fmt.Sprintf(" ORDER BY %s %s", sortByColumn, sortDirection)
 
 	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	history, err := pgx.CollectRows(rows, pgx.RowToStructByName[borrowTransaction])
+	if err != nil {
+		return nil, err
+	}
+	return history, nil
+}
+
+type borrowedItem struct {
+	BorrowRequestID string              `json:"borrowRequestId"`
+	BorrowedAt      time.Time           `json:"borrowedAt"`
+	Borrower        user.BasicInfo      `json:"borrower"`
+	Equipments      []borrowedEquipment `json:"equipments"`
+	Location        string              `json:"location"`
+	Purpose         string              `json:"purpose"`
+
+	ExpectedReturnAt time.Time           `json:"expectedReturnAt"`
+	Status           borrowRequestStatus `json:"status"`
+	BorrowReviewedBy user.BasicInfo      `json:"borrowReviewedBy"`
+	Remarks          *string             `json:"remarks"`
+}
+
+type borrowedItemParams struct {
+	userID   *string
+	status   *borrowRequestStatus
+	sort     *api.Sort
+	category *string
+}
+
+func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]borrowedItem, error) {
+	query := `
+	WITH total_returned AS (
+		SELECT 
+			borrow_request_item.borrow_request_item_id,
+			COALESCE(SUM(return_request_item.quantity), 0) AS returned_quantity
+		FROM borrow_request_item
+		LEFT JOIN return_request_item 
+			ON return_request_item.borrow_request_item_id = borrow_request_item.borrow_request_item_id
+		GROUP BY borrow_request_item.borrow_request_item_id
+	),
+	pending_items AS (
+		SELECT 
+			borrow_request_item.borrow_request_item_id,
+			borrow_request_item.borrow_request_id,
+			borrow_request_item.equipment_type_id,
+			ABS(borrow_request_item.quantity - total_returned.returned_quantity) AS pending_quantity
+		FROM borrow_request_item
+		JOIN total_returned 
+			ON total_returned.borrow_request_item_id = borrow_request_item.borrow_request_item_id
+		WHERE borrow_request_item.quantity > total_returned.returned_quantity
+	)
+	SELECT 
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS borrower,
+		jsonb_build_object(
+			'id', person_borrow_reviewer.person_id,
+			'firstName', person_borrow_reviewer.first_name,
+			'middleName', person_borrow_reviewer.middle_name,
+			'lastName', person_borrow_reviewer.last_name,
+			'avatarUrl', person_borrow_reviewer.avatar_url
+		) AS borrow_reviewed_by,
+		jsonb_agg(
+			jsonb_build_object(
+				'equipmentTypeId', equipment_type.equipment_type_id,
+				'borrowRequestItemId', pending_items.borrow_request_item_id,
+				'name', equipment_type.name,
+				'brand', equipment_type.brand,
+				'model', equipment_type.model,
+				'imageUrl', equipment_type.image_url,
+				'quantity', pending_items.pending_quantity
+			)
+		) AS equipments,
+		borrow_request.borrow_request_id,
+		borrow_request.created_at AS borrowed_at,
+		borrow_request.location,
+		borrow_request.purpose,
+		borrow_request.expected_return_at,
+		borrow_request.status,
+		borrow_request.remarks
+	FROM borrow_request
+	JOIN person ON person.person_id = borrow_request.requested_by
+	JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
+	JOIN pending_items ON pending_items.borrow_request_id = borrow_request.borrow_request_id
+	JOIN equipment_type ON equipment_type.equipment_type_id = pending_items.equipment_type_id
+	WHERE borrow_request.status IN ('approved', 'fulfilled')
+	`
+
+	var args []any
+	argIdx := 1
+
+	if params.userID != nil && *params.userID != "" {
+		query += fmt.Sprintf(" AND borrow_request.requested_by = $%d", argIdx)
+		args = append(args, *params.userID)
+		argIdx++
+	}
+
+	if params.status != nil && *params.status != "" {
+		query += fmt.Sprintf(" AND borrow_request.status = $%d", argIdx)
+		args = append(args, *params.status)
+		argIdx++
+	}
+
+	if params.category != nil && *params.category != "" {
+		query += fmt.Sprintf(" AND equipment_type.name = $%d", argIdx)
+		args = append(args, *params.category)
+		argIdx++
+	}
+
+	query += ` 
+	GROUP BY 
+		person.person_id,
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		person_borrow_reviewer.person_id,
+		person_borrow_reviewer.first_name,
+		person_borrow_reviewer.middle_name,
+		person_borrow_reviewer.last_name,
+		person_borrow_reviewer.avatar_url,
+		borrow_request.borrow_request_id
+	`
+
+	if params.sort != nil && *params.sort != "" {
+		query += fmt.Sprintf(" ORDER BY borrow_request.expected_return_at %s", *params.sort)
+	} else {
+		query += " ORDER BY borrow_request.expected_return_at DESC"
+	}
+
+	rows, err := r.querier.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	history, err := pgx.CollectRows(rows, pgx.RowToStructByName[borrowedItem])
 	if err != nil {
 		return nil, err
 	}

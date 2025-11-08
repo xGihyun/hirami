@@ -17,3 +17,8 @@ export function toImageUrl(path?: string): string | undefined {
 
 	return `${BACKEND_URL}${path}`;
 }
+
+export enum Sort {
+	Asc = "asc",
+	Desc = "desc",
+}

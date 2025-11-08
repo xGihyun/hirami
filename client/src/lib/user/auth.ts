@@ -1,6 +1,5 @@
 import type { User } from ".";
 import { BACKEND_URL, type ApiResponse } from "../api";
-// import { fetch } from '@tauri-apps/plugin-http';
 
 export type Session = {
 	sessionId: string;
@@ -16,11 +15,20 @@ export type AuthSession = {
 export async function getAuthSession(
 	token: string,
 ): Promise<ApiResponse<AuthSession | null>> {
-	const response = await fetch(
-		`${BACKEND_URL}/sessions?token=${token}`,
-	);
+	let result: ApiResponse<AuthSession | null> = {
+		code: 500,
+		data: null,
+		message: "Failed to get auth session.",
+	};
 
-	const result: ApiResponse<AuthSession> = await response.json();
+	try {
+		const response = await fetch(`${BACKEND_URL}/sessions?token=${token}`);
 
-	return result;
+		result = await response.json();
+
+		return result;
+	} catch (error) {
+		console.error(error);
+		return result;
+	}
 }

@@ -19,7 +19,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RouteComponent(): JSX.Element {
 	return (
 		<div>
-			<Toaster closeButton position="top-right" />
+			<Toaster closeButton mobileOffset={{ bottom: "5rem" }} />
 			<Outlet />
 			{/* <TanstackDevtools */}
 			{/* 	config={{ */}
