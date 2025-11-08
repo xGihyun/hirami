@@ -1,6 +1,6 @@
 import { SearchInput } from "@/components/search-input";
 import { H1, TitleSmall } from "@/components/typography";
-import type { User } from "@/lib/user";
+import { UserRole, type User } from "@/lib/user";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type JSX } from "react";
 
@@ -14,6 +14,11 @@ export function CatalogSearch(props: Props): JSX.Element {
 	const [inputValue, setInputValue] = useState<string>(
 		searchParams.search || "",
 	);
+
+	const headerText =
+		props.user.role === UserRole.Borrower
+			? "Explore our Catalog"
+			: "Manage Inventory";
 
 	async function onSubmit(e: React.FormEvent): Promise<void> {
 		e.preventDefault();
@@ -48,7 +53,7 @@ export function CatalogSearch(props: Props): JSX.Element {
 				<TitleSmall className="text-muted">
 					Welcome back {props.user.firstName},
 				</TitleSmall>
-				<H1>Explore our Catalog</H1>
+				<H1>{headerText}</H1>
 			</section>
 
 			<form onSubmit={onSubmit}>
