@@ -129,42 +129,43 @@ export function RegisterEquipmentForm(
 					}) => (
 						<FormItem>
 							<FormControl>
-								<section>
-									<div className="relative group mb-2.5 mx-auto w-fit">
-										<div className="relative">
-											<Avatar className="size-38">
-												<AvatarImage src={previewUrl || undefined} className="object-cover" />
-												<AvatarFallback className="bg-accent" />
-											</Avatar>
-										</div>
-
-										<button
-											type="button"
-											onClick={() => fileInputRef.current?.click()}
-											className="absolute inset-0 opacity-0 flex items-center justify-center cursor-pointer z-50"
-										></button>
-
-										<input
-											{...fieldProps}
-											ref={fileInputRef}
-											type="file"
-											accept="image/jpeg,image/jpg,image/png"
-											className="hidden"
-											onChange={(e) => {
-												const file = e.target.files?.[0];
-												if (file) {
-													form.setValue("image", file);
-													const reader = new FileReader();
-													reader.onloadend = () => {
-														setPreviewUrl(reader.result as string);
-													};
-													reader.readAsDataURL(file);
-													onChange(file);
-												}
-											}}
-										/>
+								<div className="relative group mb-2.5 mx-auto w-fit">
+									<div className="relative">
+										<Avatar className="size-38">
+											<AvatarImage
+												src={previewUrl || undefined}
+												className="object-cover"
+											/>
+											<AvatarFallback className="bg-accent" />
+										</Avatar>
 									</div>
-								</section>
+
+									<button
+										type="button"
+										onClick={() => fileInputRef.current?.click()}
+										className="absolute inset-0 opacity-0 flex items-center justify-center cursor-pointer z-50"
+									></button>
+
+									<input
+										{...fieldProps}
+										ref={fileInputRef}
+										type="file"
+										accept="image/jpeg,image/jpg,image/png"
+										className="hidden"
+										onChange={(e) => {
+											const file = e.target.files?.[0];
+											if (file) {
+												form.setValue("image", file);
+												const reader = new FileReader();
+												reader.onloadend = () => {
+													setPreviewUrl(reader.result as string);
+												};
+												reader.readAsDataURL(file);
+												onChange(file);
+											}
+										}}
+									/>
+								</div>
 							</FormControl>
 
 							{fieldState.error ? (
