@@ -26,7 +26,7 @@ export function Navbar(): JSX.Element {
 			{
 				to: "/barcode",
 				label: "Barcode",
-				icon: IconHome,
+				icon: IconBox,
 			},
 		];
 
