@@ -83,7 +83,7 @@ function RouteComponent(): JSX.Element {
 	const [selectedEquipments, setSelectedEquipments] = useState<
 		SelectedEquipment[]
 	>([]);
-	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const mutationState = useMutationState({
 		filters: {
 			mutationKey: ["submit-borrow-request"],
@@ -107,7 +107,7 @@ function RouteComponent(): JSX.Element {
 
 	function onSuccess(): void {
 		setIsBorrowing(false);
-		setIsDrawerOpen(false);
+		setIsDialogOpen(false);
 		setSelectedEquipments([]);
 	}
 
@@ -179,7 +179,10 @@ function RouteComponent(): JSX.Element {
 			)}
 
 			{auth.user?.role === UserRole.EquipmentManager ? (
-				<Dialog>
+				<Dialog
+					open={isDialogOpen}
+					onOpenChange={(open) => setIsDialogOpen(open)}
+				>
 					<DialogTrigger asChild>
 						<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow">
 							Register New Equipment
