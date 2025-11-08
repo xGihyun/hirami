@@ -85,7 +85,7 @@ function RouteComponent() {
 						<img
 							src={passwordResetIllustration}
 							alt="Password reset illustration"
-							className="w-full max-w-52 mx-auto"
+							className="w-full max-w-52 mx-auto aspect-[208/167]"
 						/>
 
 						<div className="space-y-1.5">

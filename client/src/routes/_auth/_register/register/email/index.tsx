@@ -57,7 +57,7 @@ function RouteComponent(): JSX.Element {
 				<img
 					src={registerIllustration}
 					alt="Register illustration"
-					className="w-full max-w-xs mx-auto"
+					className="w-full max-w-xs mx-auto aspect-[4/3]"
 				/>
 
 				<div className="space-y-1.5">

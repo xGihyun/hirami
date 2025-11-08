@@ -107,7 +107,7 @@ export function LoginForm(): JSX.Element {
 				<img
 					src={loginIllustration}
 					alt="Login illustration"
-					className="w-full max-w-52 mx-auto"
+					className="w-full max-w-52 mx-auto aspect-square"
 				/>
 
 				<div className="space-y-1.5">
