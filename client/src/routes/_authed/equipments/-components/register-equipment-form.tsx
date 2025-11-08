@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { useRef, useState, type JSX } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { equipmentsQuery } from "@/lib/equipment";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const formSchema = z.object({
 	name: z.string().nonempty(),
@@ -93,6 +94,9 @@ export function RegisterEquipmentForm(
 		},
 	});
 
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
 	const mutation = useMutation({
 		mutationFn: register,
 		onMutate: () => {
@@ -114,7 +118,40 @@ export function RegisterEquipmentForm(
 
 	return (
 		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-4">
+			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+				<div className="relative group mb-2.5 mx-auto w-fit">
+					<div className="relative">
+						<Avatar className="size-38">
+							<AvatarImage src={previewUrl || undefined} />
+                            <AvatarFallback className="bg-accent" />
+						</Avatar>
+					</div>
+
+					<button
+						type="button"
+						onClick={() => fileInputRef.current?.click()}
+						className="absolute inset-0 opacity-0 flex items-center justify-center cursor-pointer z-50"
+					></button>
+
+					<input
+						ref={fileInputRef}
+						type="file"
+						accept="image/jpeg,image/jpg,image/png"
+						className="hidden"
+						onChange={(e) => {
+							const file = e.target.files?.[0];
+							if (file) {
+								form.setValue("image", file);
+								const reader = new FileReader();
+								reader.onloadend = () => {
+									setPreviewUrl(reader.result as string);
+								};
+								reader.readAsDataURL(file);
+							}
+						}}
+					/>
+				</div>
+
 				<FormField
 					control={form.control}
 					name="name"
@@ -211,28 +248,6 @@ export function RegisterEquipmentForm(
 									placeholder="Enter quantity"
 									{...field}
 									onChange={(e) => field.onChange(e.target.valueAsNumber)}
-								/>
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
-				<FormField
-					control={form.control}
-					name="image"
-					render={({ field: { value, onChange, ...fieldProps } }) => (
-						<FormItem>
-							<FormLabel>Image</FormLabel>
-							<FormControl>
-								<Input
-									{...fieldProps}
-									type="file"
-									accept="image/jpeg,image/jpg,image/png"
-									onChange={(e) => {
-										const file = e.target.files?.[0];
-										onChange(file);
-									}}
 								/>
 							</FormControl>
 							<FormMessage />

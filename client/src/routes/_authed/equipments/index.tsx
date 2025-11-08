@@ -37,6 +37,14 @@ import { Catalog } from "./-components/catalog";
 import { LabelMedium } from "@/components/typography";
 import { FullScreenLoading } from "@/components/loading";
 import { CatalogCategories } from "./-components/catalog-categories";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 
 const searchSchema = z.object({
 	success: z.boolean().optional(),
@@ -170,30 +178,16 @@ function RouteComponent(): JSX.Element {
 			)}
 
 			{auth.user?.role === UserRole.EquipmentManager ? (
-				<Drawer
-					open={isDrawerOpen}
-					onOpenChange={(open) => setIsDrawerOpen(open)}
-				>
-					<DrawerTrigger asChild>
-						<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-50 shadow">
-							<IconPlus className="h-full" />
-							Register Equipment
+				<Dialog>
+					<DialogTrigger asChild>
+						<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow">
+							Register New Equipment
 						</Button>
-					</DrawerTrigger>
-					<DrawerContent>
-						<DrawerHeader>
-							<DrawerTitle>Register Equipment</DrawerTitle>
-						</DrawerHeader>
-
+					</DialogTrigger>
+					<DialogContent className="p-5">
 						<RegisterEquipmentForm onSuccess={onSuccess} />
-
-						<DrawerFooter>
-							<DrawerClose asChild>
-								<Button variant="outline">Cancel</Button>
-							</DrawerClose>
-						</DrawerFooter>
-					</DrawerContent>
-				</Drawer>
+					</DialogContent>
+				</Dialog>
 			) : (
 				<>
 					{selectedEquipments.length > 0 ? (
