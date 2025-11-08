@@ -6,6 +6,15 @@ import type { ReturnRequest } from "@/lib/equipment/return";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { JSX } from "react";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogDescription,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import { QRCodeSVG } from "qrcode.react";
 
 type Props = {
 	returnRequests: ReturnRequest[];
@@ -18,11 +27,27 @@ export function ReturnRequestList(props: Props): JSX.Element {
 				<div key={request.id} className="space-y-3.5">
 					{request.equipments.map((equipment) => {
 						return (
-							<ReturningItem
-								key={equipment.id}
-								returnRequest={request}
-								equipment={equipment}
-							/>
+							<Dialog key={equipment.id}>
+								<DialogTrigger key={equipment.id} asChild>
+									<button className="w-full text-start">
+										<ReturningItem
+											returnRequest={request}
+											equipment={equipment}
+										/>
+									</button>
+								</DialogTrigger>
+								<DialogContent>
+									<DialogHeader>
+										<DialogTitle>Scan QR Code</DialogTitle>
+										<DialogDescription>
+											Show this QR Code to the equipment manager to confirm your
+											equipment return.
+										</DialogDescription>
+									</DialogHeader>
+
+									<QRCodeSVG value={request.id} className="w-full size-60" />
+								</DialogContent>
+							</Dialog>
 						);
 					})}
 				</div>
