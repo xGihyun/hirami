@@ -133,7 +133,7 @@ export function RegisterEquipmentForm(
 									<div className="relative group mb-2.5 mx-auto w-fit">
 										<div className="relative">
 											<Avatar className="size-38">
-												<AvatarImage src={previewUrl || undefined} />
+												<AvatarImage src={previewUrl || undefined} className="object-cover" />
 												<AvatarFallback className="bg-accent" />
 											</Avatar>
 										</div>
