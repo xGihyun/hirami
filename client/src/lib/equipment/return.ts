@@ -50,6 +50,26 @@ export const returnRequestsQuery = (params: GetReturnRequestParams) =>
 		queryFn: () => getReturnRequests(params),
 	});
 
+async function getReturnRequestById(id: string): Promise<ReturnRequest> {
+	const url = new URL(`${BACKEND_URL}/return-requests/${id}`);
+	const response = await fetch(url.toString(), {
+		method: "GET",
+	});
+
+	const result: ApiResponse<ReturnRequest> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result.data;
+}
+
+export const returnRequestByIdQuery = (id: string) =>
+	queryOptions({
+		queryKey: ["return-requests", id],
+		queryFn: () => getReturnRequestById(id),
+	});
+
 export type ConfirmReturnRequest = {
 	returnRequestId: string;
 	reviewedBy: string;
