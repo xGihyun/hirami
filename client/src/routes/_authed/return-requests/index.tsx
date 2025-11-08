@@ -1,4 +1,5 @@
 import {
+	returnRequestByIdQuery,
 	returnRequestsQuery,
 	type ConfirmReturnRequest,
 	type ReturnRequest,
@@ -9,7 +10,7 @@ import {
 	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type JSX } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import {
@@ -31,6 +32,8 @@ import type { User } from "@/lib/user";
 import { EmptyState } from "@/components/empty";
 import { EventSource } from "eventsource";
 import { Separator } from "react-aria-components";
+import QrScanner from "qr-scanner";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authed/return-requests/")({
 	component: RouteComponent,
@@ -64,7 +67,12 @@ async function confirmReturnRequest(
 function RouteComponent(): JSX.Element {
 	const { data } = useSuspenseQuery(returnRequestsQuery({}));
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-	const [selectedRequest, setSelectedRequest] = useState<ReturnRequest>();
+	const [selectedRequest, setSelectedRequest] = useState<ReturnRequest | null>(
+		null,
+	);
+	const [isScanning, setIsScanning] = useState(false);
+	const videoRef = useRef<HTMLVideoElement | null>(null);
+	const scannerRef = useRef<QrScanner | null>(null);
 	const auth = useAuth();
 	const queryClient = useQueryClient();
 
@@ -94,6 +102,62 @@ function RouteComponent(): JSX.Element {
 
 		mutation.mutate(payload);
 	}
+
+	async function handleScan() {
+		if (!videoRef.current) {
+			console.error("No video ref");
+			return;
+		}
+
+		setIsScanning(true);
+
+		scannerRef.current = new QrScanner(
+			videoRef.current!,
+			async (result) => {
+				const returnRequest = await queryClient.fetchQuery(
+					returnRequestByIdQuery(result.data),
+				);
+				setSelectedRequest(returnRequest);
+				handleScannerStop();
+			},
+			{
+				calculateScanRegion: (video) => ({
+					x: (video.videoWidth - 250) / 2,
+					y: (video.videoHeight - 250) / 2,
+					width: 250,
+					height: 250,
+					downScaledWidth: 200,
+					downScaledHeight: 200,
+				}),
+				preferredCamera: "environment",
+				maxScansPerSecond: 5,
+				highlightCodeOutline: true,
+				highlightScanRegion: true,
+			},
+		);
+
+		await scannerRef.current.start();
+	}
+
+	function handleScannerStop() {
+		if (!scannerRef.current) {
+			return;
+		}
+		scannerRef.current.stop();
+		scannerRef.current.destroy();
+		setIsScanning(false);
+	}
+
+	useEffect(() => {
+		return () => {
+			if (!scannerRef.current) {
+				return;
+			}
+
+			scannerRef.current.destroy();
+			scannerRef.current = null;
+		};
+	}, []);
 
 	useEffect(() => {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
@@ -125,48 +189,42 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<div className="relative space-y-4">
+		<div className="relative space-y-4 pb-12">
 			<H2>Return Requests</H2>
 
 			<Separator />
 
+			<div className="relative h-full w-full aspect-[3/4]">
+				<video
+					ref={videoRef}
+					className="h-full w-full absolute insert-0 object-cover"
+				/>
+			</div>
+
+			{!isScanning ? (
+				<Button
+					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50"
+					onClick={handleScan}
+				>
+					Scan
+				</Button>
+			) : (
+				<Button
+					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50"
+					onClick={handleScannerStop}
+				>
+					Stop Scanning
+				</Button>
+			)}
+
 			<Drawer
-				open={isDrawerOpen}
-				onOpenChange={(open) => setIsDrawerOpen(open)}
+				open={selectedRequest !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setSelectedRequest(null);
+					}
+				}}
 			>
-				<div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
-					{data.map((request) => {
-						const borrowerInitials = `${request.borrower.firstName[0]}${request.borrower.lastName[0]}`;
-						const borrowerName = `${request.borrower.lastName}, ${request.borrower.firstName}`;
-						const requestedAt = format(
-							request.createdAt,
-							"MMM d, yyyy - hh:mm a",
-						);
-						return (
-							<DrawerTrigger asChild key={request.id}>
-								<button
-									onClick={() => setSelectedRequest(request)}
-									className="border rounded p-4 text-start bg-card cursor-pointer hover:bg-card/50 transition-colors flex gap-2 items-center"
-								>
-									<Avatar className="size-12">
-										<AvatarImage src={toImageUrl(request.borrower.avatarUrl)} />
-										<AvatarFallback className="font-montserrat-bold">
-											{borrowerInitials}
-										</AvatarFallback>
-									</Avatar>
-
-									<div className="flex flex-col">
-										<p className="font-montserrat-bold">{borrowerName}</p>
-										<p className="text-sm font-montserrat-medium">
-											{requestedAt}
-										</p>
-									</div>
-								</button>
-							</DrawerTrigger>
-						);
-					})}
-				</div>
-
 				<DrawerContent className="space-y-4">
 					<DrawerHeader>
 						<DrawerTitle className="items-center flex flex-col">
@@ -201,36 +259,40 @@ function RouteComponent(): JSX.Element {
 										: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 
 									return (
-										<div
-											key={equipment.id}
-											className="flex items-center gap-2 justify-between py-2"
-										>
-											<div className="flex items-center gap-2 w-full">
-												<img
-													src={equipmentImage}
-													alt={`${equipment.name} ${equipment.brand}`}
-													className="size-20 object-cover"
-												/>
+										<div className="flex flex-col gap-2 w-full">
+											<div
+												key={equipment.id}
+												className="flex items-center gap-2 justify-between py-2"
+											>
+												<div className="flex items-center gap-2 w-full">
+													<img
+														src={equipmentImage}
+														alt={`${equipment.name} ${equipment.brand}`}
+														className="size-20 object-cover"
+													/>
 
-												<div className="flex flex-col">
-													<p className="font-montserrat-semibold text-base leading-6">
-														{equipment.name}
+													<div className="flex flex-col">
+														<p className="font-montserrat-semibold text-base leading-6">
+															{equipment.name}
+														</p>
+
+														<Caption>
+															{equipment.brand}
+															{equipment.model ? " - " : null}
+															{equipment.model}
+														</Caption>
+													</div>
+												</div>
+
+												<div className="flex items-center gap-1">
+													<p className="font-montserrat-bold text-lg">
+														{equipment.quantity}
 													</p>
-
-													<Caption>
-														{equipment.brand}
-														{equipment.model ? " - " : null}
-														{equipment.model}
-													</Caption>
+													<Caption>pcs.</Caption>
 												</div>
 											</div>
 
-											<div className="flex items-center gap-1">
-												<p className="font-montserrat-bold text-lg">
-													{equipment.quantity}
-												</p>
-												<Caption>pcs.</Caption>
-											</div>
+											<Input placeholder="Add remarks here or something" />
 										</div>
 									);
 								})}
@@ -254,7 +316,7 @@ function RouteComponent(): JSX.Element {
 						>
 							Confirm
 						</Button>
-						<DrawerClose asChild>
+						<DrawerClose asChild onClick={() => setSelectedRequest(null)}>
 							<Button variant="outline">Close</Button>
 						</DrawerClose>
 					</DrawerFooter>
