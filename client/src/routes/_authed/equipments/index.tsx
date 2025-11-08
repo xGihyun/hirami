@@ -31,6 +31,8 @@ import { CatalogCategories } from "./-components/catalog-categories";
 import {
 	Dialog,
 	DialogContent,
+	DialogHeader,
+	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { DialogClose } from "@radix-ui/react-dialog";
@@ -177,6 +179,10 @@ function RouteComponent(): JSX.Element {
 						</Button>
 					</DialogTrigger>
 					<DialogContent className="p-5" showCloseButton={false}>
+						<DialogHeader className="sr-only">
+							<DialogTitle>Register Equipment</DialogTitle>
+						</DialogHeader>
+
 						<RegisterEquipmentForm onSuccess={onSuccess} />
 
 						<DialogClose className="absolute left-1 top-1" asChild>
