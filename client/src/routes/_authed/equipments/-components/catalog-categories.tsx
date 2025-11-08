@@ -1,12 +1,11 @@
 import type { JSX } from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { H2, LabelMedium, TitleSmall } from "@/components/typography";
+import { LabelMedium, TitleSmall } from "@/components/typography";
 import { Toggle } from "@/components/ui/toggle";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
 	Dialog,
 	DialogContent,
-	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
