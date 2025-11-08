@@ -120,44 +120,67 @@ export function RegisterEquipmentForm(
 	return (
 		<Form {...form}>
 			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-7.5">
-				<section>
-					<div className="relative group mb-2.5 mx-auto w-fit">
-						<div className="relative">
-							<Avatar className="size-38">
-								<AvatarImage src={previewUrl || undefined} />
-								<AvatarFallback className="bg-accent" />
-							</Avatar>
-						</div>
+				<FormField
+					control={form.control}
+					name="image"
+					render={({
+						field: { value, onChange, ...fieldProps },
+						fieldState,
+					}) => (
+						<FormItem>
+							<FormControl>
+								<section>
+									<div className="relative group mb-2.5 mx-auto w-fit">
+										<div className="relative">
+											<Avatar className="size-38">
+												<AvatarImage src={previewUrl || undefined} />
+												<AvatarFallback className="bg-accent" />
+											</Avatar>
+										</div>
 
-						<button
-							type="button"
-							onClick={() => fileInputRef.current?.click()}
-							className="absolute inset-0 opacity-0 flex items-center justify-center cursor-pointer z-50"
-						></button>
+										<button
+											type="button"
+											onClick={() => fileInputRef.current?.click()}
+											className="absolute inset-0 opacity-0 flex items-center justify-center cursor-pointer z-50"
+										></button>
 
-						<input
-							ref={fileInputRef}
-							type="file"
-							accept="image/jpeg,image/jpg,image/png"
-							className="hidden"
-							onChange={(e) => {
-								const file = e.target.files?.[0];
-								if (file) {
-									form.setValue("image", file);
-									const reader = new FileReader();
-									reader.onloadend = () => {
-										setPreviewUrl(reader.result as string);
-									};
-									reader.readAsDataURL(file);
-								}
-							}}
-						/>
-					</div>
+										<input
+											{...fieldProps}
+											ref={fileInputRef}
+											type="file"
+											accept="image/jpeg,image/jpg,image/png"
+											className="hidden"
+											onChange={(e) => {
+												const file = e.target.files?.[0];
+												if (file) {
+													form.setValue("image", file);
+													const reader = new FileReader();
+													reader.onloadend = () => {
+														setPreviewUrl(reader.result as string);
+													};
+													reader.readAsDataURL(file);
+													onChange(file);
+												}
+											}}
+										/>
+									</div>
+								</section>
+							</FormControl>
 
-					<LabelMedium className="text-muted text-center">
-						Image must be PNG or JPG, under 5MB
-					</LabelMedium>
-				</section>
+							{fieldState.error ? (
+								<FormMessage className="text-center mt-1" />
+							) : value ? (
+								<LabelMedium className="text-muted text-center mt-1">
+									{value.name}
+								</LabelMedium>
+							) : (
+								<LabelMedium className="text-muted text-center mt-1">
+									Image must be in PNG or JPG, under 5MB
+								</LabelMedium>
+							)}
+						</FormItem>
+					)}
+				/>
 
 				<section className="space-y-4">
 					<FormField
@@ -238,7 +261,9 @@ export function RegisterEquipmentForm(
 												{field.value ? (
 													field.value.toLocaleDateString()
 												) : (
-													<LabelMedium className="text-muted">Select date</LabelMedium>
+													<LabelMedium className="text-muted">
+														Select date
+													</LabelMedium>
 												)}
 												<ChevronDownIcon className="size-4" />
 											</Button>
