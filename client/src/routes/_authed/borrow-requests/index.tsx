@@ -42,7 +42,7 @@ export const Route = createFileRoute("/_authed/borrow-requests/")({
 	},
 });
 
-async function approveBorrowRequest(
+async function reviewBorrowRequest(
 	value: ReviewBorrowRequest,
 ): Promise<ApiResponse> {
 	const response = await fetch(`${BACKEND_URL}/review-borrow-requests`, {
@@ -69,7 +69,7 @@ function RouteComponent(): JSX.Element {
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
 	const mutation = useMutation({
-		mutationFn: approveBorrowRequest,
+		mutationFn: reviewBorrowRequest,
 		onMutate: () => {
 			return toast.loading("Reviewing borrow request");
 		},
