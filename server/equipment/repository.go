@@ -476,6 +476,7 @@ const (
 	pending   borrowRequestStatus = "pending"
 	approved  borrowRequestStatus = "approved"
 	rejected  borrowRequestStatus = "rejected"
+	received  borrowRequestStatus = "received"
 	fulfilled borrowRequestStatus = "fulfilled"
 )
 
