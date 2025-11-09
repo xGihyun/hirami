@@ -91,7 +91,7 @@ function RouteComponent(): JSX.Element {
 				</div>
 			</section>
 
-			{borrowRequest.data.status === BorrowRequestStatus.Pending ? (
+			{borrowRequest.data.status === BorrowRequestStatus.Approved ? (
 				<Dialog>
 					<DialogTrigger asChild>
 						<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 !shadow-item">
