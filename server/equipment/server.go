@@ -35,6 +35,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
 	mux.Handle("PATCH /review-borrow-requests", api.Handler(s.reviewBorrowRequest))
 	mux.Handle("GET /borrow-requests", api.Handler(s.getBorrowRequests))
+	mux.Handle("GET /borrow-requests/{id}", api.Handler(s.getBorrowRequestByID))
 
 	mux.Handle("POST /return-requests", api.Handler(s.createReturnRequest))
 	mux.Handle("PATCH /return-requests/{id}", api.Handler(s.confirmReturnRequest))
@@ -469,6 +470,26 @@ func (s *Server) getBorrowRequests(w http.ResponseWriter, r *http.Request) api.R
 	ctx := r.Context()
 
 	borrowRequests, err := s.repository.getBorrowRequests(ctx)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get borrow requests: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get borrow requests.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched borrow requests.",
+		Data:    borrowRequests,
+	}
+}
+
+func (s *Server) getBorrowRequestByID(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	borrowRequestID := r.PathValue("id")
+	borrowRequests, err := s.repository.getBorrowRequestByID(ctx, borrowRequestID)
 	if err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("get borrow requests: %w", err),

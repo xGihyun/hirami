@@ -21,6 +21,7 @@ type Repository interface {
 	createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error)
 	reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error)
 	getBorrowRequests(ctx context.Context) ([]borrowRequest, error)
+	getBorrowRequestByID(ctx context.Context, id string) (borrowRequest, error)
 
 	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error)
 	confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error)
@@ -973,6 +974,71 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 		return nil, err
 	}
 	return borrowRequests, nil
+}
+
+func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borrowRequest, error) {
+	query := `
+	SELECT 
+		borrow_request.borrow_request_id,
+		borrow_request.created_at,
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS borrower,
+		jsonb_agg(
+			jsonb_build_object(
+				'borrowRequestItemId', borrow_request_item.borrow_request_item_id,
+				'equipmentTypeId', equipment_type.equipment_type_id,
+				'name', equipment_type.name,
+				'brand', equipment_type.brand,
+				'model', equipment_type.model,
+				'imageUrl', equipment_type.image_url,
+				'quantity', borrow_request_item.quantity
+			)
+		) AS equipments,
+		borrow_request.location,
+		borrow_request.purpose,
+		borrow_request.expected_return_at
+	FROM borrow_request
+	JOIN person ON person.person_id = borrow_request.requested_by
+	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
+	WHERE NOT EXISTS (
+		SELECT 1 FROM borrow_transaction
+		WHERE borrow_transaction.borrow_request_item_id = borrow_request_item.borrow_request_item_id
+	) AND borrow_request.status = 'pending' AND borrow_request.borrow_request_id = $1
+	GROUP BY 
+		borrow_request.borrow_request_id,
+		borrow_request.created_at,
+		person.person_id,
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		borrow_request.location,
+		borrow_request.purpose,
+		borrow_request.expected_return_at
+	ORDER BY borrow_request.created_at
+	`
+
+	var req borrowRequest
+	row := r.querier.QueryRow(ctx, query, id)
+	if err := row.Scan(
+		&req.BorrowRequestID,
+		&req.CreatedAt,
+		&req.Borrower,
+		&req.Equipments,
+		&req.Location,
+		&req.Purpose,
+		&req.ExpectedReturnAt,
+	); err != nil {
+		return borrowRequest{}, err
+	}
+
+	return req, nil
 }
 
 type confirmReturnRequest struct {
