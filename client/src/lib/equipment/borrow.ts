@@ -28,7 +28,7 @@ export type BorrowRequest = {
 	location: string;
 	purpose: string;
 	expectedReturnAt: string;
-    status: BorrowRequestStatus;
+	status: BorrowRequestStatus;
 };
 
 async function getBorrowRequests(): Promise<BorrowRequest[]> {
@@ -153,7 +153,6 @@ export type ReviewBorrowRequest = {
 
 type GetBorrowedItemParams = {
 	userId?: string;
-	status?: BorrowRequestStatus;
 	sort?: Sort;
 	category?: string;
 };
@@ -165,9 +164,6 @@ async function getBorrowedItems(
 
 	if (params.userId) {
 		url.searchParams.append("userId", params.userId);
-	}
-	if (params.status) {
-		url.searchParams.append("status", params.status);
 	}
 	if (params.sort) {
 		url.searchParams.append("sort", params.sort);
@@ -190,12 +186,6 @@ async function getBorrowedItems(
 
 export const borrowedItemsQuery = (params: GetBorrowedItemParams) =>
 	queryOptions({
-		queryKey: [
-			"borrowed-items",
-			params.userId,
-			params.status,
-			params.sort,
-			params.category,
-		],
+		queryKey: ["borrowed-items", params],
 		queryFn: () => getBorrowedItems(params),
 	});

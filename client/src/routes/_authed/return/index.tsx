@@ -2,7 +2,6 @@ import { useAuth } from "@/auth";
 import { BACKEND_URL, Sort } from "@/lib/api";
 import {
 	borrowedItemsQuery,
-	BorrowRequestStatus,
 } from "@/lib/equipment/borrow";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
@@ -30,7 +29,6 @@ export const Route = createFileRoute("/_authed/return/")({
 		context.queryClient.ensureQueryData(
 			borrowedItemsQuery({
 				userId: context.auth.user?.id,
-				status: BorrowRequestStatus.Approved,
 				sort: Sort.Asc,
 			}),
 		);
@@ -51,7 +49,6 @@ function RouteComponent(): JSX.Element {
 	const borrowHistoryAllCategory = useQuery(
 		borrowedItemsQuery({
 			userId: auth.user?.id,
-			status: BorrowRequestStatus.Approved,
 			sort: search.dueDateSort,
 		}),
 	);
@@ -90,7 +87,6 @@ function RouteComponent(): JSX.Element {
 			queryClient.invalidateQueries(
 				borrowedItemsQuery({
 					userId: auth.user?.id,
-					status: BorrowRequestStatus.Approved,
 					sort: search.dueDateSort,
 					category: search.category,
 				}),
@@ -130,7 +126,6 @@ function BorrowedItemsTab(): JSX.Element {
 	const borrowHistory = useQuery(
 		borrowedItemsQuery({
 			userId: auth.user?.id,
-			status: BorrowRequestStatus.Approved,
 			sort: search.dueDateSort,
 			category: search.category,
 		}),
