@@ -52,6 +52,7 @@ export enum BorrowRequestStatus {
 	Pending = "pending",
 	Approved = "approved",
 	Rejected = "rejected",
+	Received = "received",
 	Fulfilled = "fulfilled",
 }
 
