@@ -78,7 +78,7 @@ export function Catalog(props: Props): JSX.Element {
 										<img
 											src={equipmentImage}
 											alt={`${equipment.name} ${equipment.brand}`}
-											className="w-full h-full object-contain"
+											className="w-full object-contain aspect-[164/112]"
 										/>
 									</div>
 
