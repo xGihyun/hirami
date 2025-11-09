@@ -47,6 +47,7 @@ type equipmentStatus string
 
 const (
 	available equipmentStatus = "available"
+	reserved  equipmentStatus = "reserved"
 	borrowed  equipmentStatus = "borrowed"
 )
 
@@ -158,6 +159,14 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 						WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
 					)
 				) THEN 'borrowed'
+				WHEN EXISTS (
+					SELECT 1 
+					FROM borrow_request_item
+					JOIN borrow_request 
+						ON borrow_request.borrow_request_id = borrow_request_item.borrow_request_id
+					WHERE borrow_request_item.equipment_type_id = equipment.equipment_type_id
+					AND borrow_request.status = 'approved'
+				) THEN 'reserved'
 				ELSE 'available'
 			END AS status,
 			CASE
@@ -192,6 +201,30 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 							= borrow_transaction.borrow_transaction_id
 					)
 					ORDER BY borrow_transaction.created_at DESC
+					LIMIT 1
+				)
+				WHEN EXISTS (
+					SELECT 1 
+					FROM borrow_request_item
+					JOIN borrow_request 
+						ON borrow_request.borrow_request_id = borrow_request_item.borrow_request_id
+					WHERE borrow_request_item.equipment_type_id = equipment.equipment_type_id
+					AND borrow_request.status = 'approved'
+				) THEN (
+					SELECT jsonb_build_object(
+						'id', person.person_id,
+						'firstName', person.first_name,
+						'middleName', person.middle_name,
+						'lastName', person.last_name,
+						'avatarUrl', person.avatar_url
+					)
+					FROM borrow_request_item
+					JOIN borrow_request 
+						ON borrow_request.borrow_request_id = borrow_request_item.borrow_request_id
+					JOIN person ON person.person_id = borrow_request.requested_by
+					WHERE borrow_request_item.equipment_type_id = equipment.equipment_type_id
+					AND borrow_request.status = 'approved'
+					ORDER BY borrow_request.created_at DESC
 					LIMIT 1
 				)
 				ELSE NULL
@@ -493,6 +526,12 @@ type updateBorrowResponse struct {
 }
 
 func (r *repository) updateBorrowRequest(ctx context.Context, arg updateBorrowRequest) (updateBorrowResponse, error) {
+	tx, err := r.querier.Begin(ctx)
+	if err != nil {
+		return updateBorrowResponse{}, err
+	}
+	defer tx.Rollback(ctx)
+
 	query := `
 	UPDATE borrow_request
 	SET status = $1
@@ -500,7 +539,7 @@ func (r *repository) updateBorrowRequest(ctx context.Context, arg updateBorrowRe
 	RETURNING borrow_request_id, status
 	`
 
-	row := r.querier.QueryRow(
+	row := tx.QueryRow(
 		ctx,
 		query,
 		arg.Status,
@@ -513,6 +552,99 @@ func (r *repository) updateBorrowRequest(ctx context.Context, arg updateBorrowRe
 		&res.BorrowRequestID,
 		&res.Status,
 	); err != nil {
+		return updateBorrowResponse{}, err
+	}
+
+	// Create borrow transactions when status is set to pending (item received)
+	if arg.Status == pending {
+		// Get all items in this borrow request
+		itemsQuery := `
+		SELECT borrow_request_item_id, equipment_type_id, quantity
+		FROM borrow_request_item
+		WHERE borrow_request_id = $1
+		`
+
+		itemRows, err := tx.Query(ctx, itemsQuery, arg.BorrowRequestID)
+		if err != nil {
+			return updateBorrowResponse{}, err
+		}
+
+		type requestItem struct {
+			itemID          string
+			equipmentTypeID string
+			quantity        int16
+		}
+
+		var items []requestItem
+		for itemRows.Next() {
+			var item requestItem
+			if err := itemRows.Scan(&item.itemID, &item.equipmentTypeID, &item.quantity); err != nil {
+				return updateBorrowResponse{}, err
+			}
+			items = append(items, item)
+		}
+
+		equipmentQuery := `
+		WITH equipment_with_status AS (
+			SELECT DISTINCT
+				equipment.equipment_id,
+				equipment.equipment_type_id,
+				CASE 
+					WHEN EXISTS (
+						SELECT 1 FROM borrow_transaction
+						WHERE borrow_transaction.equipment_id = equipment.equipment_id
+						AND NOT EXISTS (
+							SELECT 1 FROM return_transaction
+							WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
+						)
+					) THEN 'borrowed'
+					ELSE 'available'
+				END AS status
+			FROM equipment
+			WHERE equipment.equipment_type_id = $1
+		)
+		SELECT equipment_id 
+		FROM equipment_with_status
+		WHERE status = $2
+		ORDER BY equipment_id
+		LIMIT $3
+		`
+
+		transactionQuery := `
+		INSERT INTO borrow_transaction (borrow_request_item_id, equipment_id)
+		VALUES ($1, $2)
+		`
+
+		for _, item := range items {
+			quantity := int(item.quantity)
+
+			equipmentRows, err := tx.Query(ctx, equipmentQuery, item.equipmentTypeID, available, quantity)
+			if err != nil {
+				return updateBorrowResponse{}, err
+			}
+
+			var equipmentIDs []string
+			for equipmentRows.Next() {
+				var equipmentID string
+				if err := equipmentRows.Scan(&equipmentID); err != nil {
+					return updateBorrowResponse{}, err
+				}
+				equipmentIDs = append(equipmentIDs, equipmentID)
+			}
+
+			if len(equipmentIDs) < quantity {
+				return updateBorrowResponse{}, errInsufficientEquipmentQuantity
+			}
+
+			for _, equipmentID := range equipmentIDs {
+				if _, err := tx.Exec(ctx, transactionQuery, item.itemID, equipmentID); err != nil {
+					return updateBorrowResponse{}, err
+				}
+			}
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return updateBorrowResponse{}, err
 	}
 
@@ -642,11 +774,6 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 		LIMIT $3
 		`
 
-		transactionQuery := `
-		INSERT INTO borrow_transaction (borrow_request_item_id, equipment_id)
-		VALUES ($1, $2)
-		`
-
 		for _, item := range items {
 			quantity := int(item.quantity)
 
@@ -666,12 +793,6 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 
 			if len(equipmentIDs) < quantity {
 				return reviewBorrowResponse{}, errInsufficientEquipmentQuantity
-			}
-
-			for _, equipmentID := range equipmentIDs {
-				if _, err := tx.Exec(ctx, transactionQuery, item.itemID, equipmentID); err != nil {
-					return reviewBorrowResponse{}, err
-				}
 			}
 		}
 	}
