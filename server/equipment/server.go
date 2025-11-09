@@ -33,6 +33,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
 
 	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
+	mux.Handle("PATCH /borrow-requests/{id}", api.Handler(s.updateBorrowRequest))
 	mux.Handle("PATCH /review-borrow-requests", api.Handler(s.reviewBorrowRequest))
 	mux.Handle("GET /borrow-requests", api.Handler(s.getBorrowRequests))
 	mux.Handle("GET /borrow-requests/{id}", api.Handler(s.getBorrowRequestByID))
@@ -317,6 +318,67 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully created borrow request.",
+		Data:    res,
+	}
+}
+
+func (s *Server) updateBorrowRequest(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	var data updateBorrowRequest
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid update borrow request.",
+		}
+	}
+
+	borrowRequestID := r.PathValue("id")
+	if data.BorrowRequestID != borrowRequestID {
+		return api.Response{
+			Error:   fmt.Errorf("borrow request ID mismatch: path=%s, body=%s", borrowRequestID, data.BorrowRequestID),
+			Code:    http.StatusBadRequest,
+			Message: "Borrow request ID in URL does not match ID in request body.",
+		}
+	}
+
+	res, err := s.repository.updateBorrowRequest(ctx, data)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update borrow request.",
+		}
+	}
+
+	eventRes := sse.EventResponse{
+		Event: "equipment:create",
+		Data:  res,
+	}
+	jsonData, err := json.Marshal(eventRes)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update borrow request.",
+		}
+	}
+
+	pubCmd := s.valkeyClient.B().Publish().Channel("equipment").Message(string(jsonData)).Build()
+	if res := s.valkeyClient.Do(ctx, pubCmd); res.Error() != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update borrow request.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully updated borrow request.",
 		Data:    res,
 	}
 }

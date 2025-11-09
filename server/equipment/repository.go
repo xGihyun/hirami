@@ -22,6 +22,7 @@ type Repository interface {
 	reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error)
 	getBorrowRequests(ctx context.Context) ([]borrowRequest, error)
 	getBorrowRequestByID(ctx context.Context, id string) (borrowRequest, error)
+	updateBorrowRequest(ctx context.Context, arg updateBorrowRequest) (updateBorrowResponse, error)
 
 	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error)
 	confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error)
@@ -480,6 +481,43 @@ const (
 	received  borrowRequestStatus = "received"
 	fulfilled borrowRequestStatus = "fulfilled"
 )
+
+type updateBorrowRequest struct {
+	BorrowRequestID string              `json:"id"`
+	Status          borrowRequestStatus `json:"status"`
+}
+
+type updateBorrowResponse struct {
+	BorrowRequestID string              `json:"id"`
+	Status          borrowRequestStatus `json:"status"`
+}
+
+func (r *repository) updateBorrowRequest(ctx context.Context, arg updateBorrowRequest) (updateBorrowResponse, error) {
+	query := `
+	UPDATE borrow_request
+	SET status = $1
+	WHERE borrow_request_id = $2
+	RETURNING borrow_request_id, status
+	`
+
+	row := r.querier.QueryRow(
+		ctx,
+		query,
+		arg.Status,
+		arg.BorrowRequestID,
+	)
+
+	var res updateBorrowResponse
+
+	if err := row.Scan(
+		&res.BorrowRequestID,
+		&res.Status,
+	); err != nil {
+		return updateBorrowResponse{}, err
+	}
+
+	return res, nil
+}
 
 type reviewBorrowRequest struct {
 	BorrowRequestID string              `json:"id"`
