@@ -555,9 +555,8 @@ func (r *repository) updateBorrowRequest(ctx context.Context, arg updateBorrowRe
 		return updateBorrowResponse{}, err
 	}
 
-	// Create borrow transactions when status is set to pending (item received)
-	if arg.Status == pending {
-		// Get all items in this borrow request
+	// Create borrow transactions when the items are received
+	if arg.Status == received {
 		itemsQuery := `
 		SELECT borrow_request_item_id, equipment_type_id, quantity
 		FROM borrow_request_item
