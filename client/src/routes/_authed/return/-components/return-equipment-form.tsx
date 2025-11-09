@@ -120,25 +120,25 @@ export function ReturnEquipmentForm(
 
 	const mutation = useMutation({
 		mutationFn: returnEquipments,
-		onSuccess: () => {
-			queryClient.invalidateQueries(
-				borrowedItemsQuery({ userId: auth.user?.id }),
-			);
-			queryClient.invalidateQueries(
-				returnRequestsQuery({ userId: auth.user?.id }),
-			);
-			resetState();
-		},
 	});
 
 	function resetState(): void {
 		setIsDialogOpen(false);
 		setSelectedEquipments([]);
+		console.log("State reset");
 	}
 
 	function reset(): void {
+		queryClient.invalidateQueries(
+			borrowedItemsQuery({ userId: auth.user?.id }),
+		);
+		queryClient.invalidateQueries(
+			returnRequestsQuery({ userId: auth.user?.id }),
+		);
+
 		resetState();
 		mutation.reset();
+		console.log("Full reset");
 	}
 
 	async function onSubmit(value: ReturnEquipmentSchema): Promise<void> {
@@ -210,7 +210,7 @@ export function ReturnEquipmentForm(
 										transaction={transaction}
 										handleUpdateQuantity={handleUpdateQuantity}
 										className="cursor-pointer group-has-data-[state=checked]:bg-primary group-has-data-[state=checked]:text-primary-foreground"
-                                        isSelected={isChecked}
+										isSelected={isChecked}
 									/>
 								</label>
 							);
@@ -239,8 +239,8 @@ export function ReturnEquipmentForm(
 								Confirm Equipment Return
 							</DialogTitle>
 							<DialogDescription className="text-start">
-								You are about to return {totalQuantity} items. Do
-								you wish to proceed?
+								You are about to return {totalQuantity} items. Do you wish to
+								proceed?
 							</DialogDescription>
 						</DialogHeader>
 
