@@ -68,7 +68,7 @@ export function Catalog(props: Props): JSX.Element {
 									onCheckedChange={(checked) =>
 										handleSelect(equipment, 1, checked)
 									}
-									disabled={equipment.status == EquipmentStatus.Borrowed}
+									disabled={equipment.status !== EquipmentStatus.Available}
 								/>
 
 								<div className="space-y-1">

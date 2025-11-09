@@ -5,6 +5,7 @@ import type { Borrower } from "./borrow";
 
 export enum EquipmentStatus {
 	Available = "available",
+	Reserved = "reserved",
 	Borrowed = "borrowed",
 }
 
