@@ -66,7 +66,6 @@ async function confirmReturnRequest(
 
 function RouteComponent(): JSX.Element {
 	const { data } = useSuspenseQuery(returnRequestsQuery({}));
-	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [selectedRequest, setSelectedRequest] = useState<ReturnRequest | null>(
 		null,
 	);
@@ -83,7 +82,6 @@ function RouteComponent(): JSX.Element {
 		},
 		onSuccess: (data, _variables, toastId) => {
 			queryClient.invalidateQueries(returnRequestsQuery({}));
-			setIsDrawerOpen(false);
 			toast.success(data.message, { id: toastId });
 		},
 		onError: (error, _variables, toastId) => {
