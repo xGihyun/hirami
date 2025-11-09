@@ -1006,10 +1006,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 	JOIN person ON person.person_id = borrow_request.requested_by
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
-	WHERE NOT EXISTS (
-		SELECT 1 FROM borrow_transaction
-		WHERE borrow_transaction.borrow_request_item_id = borrow_request_item.borrow_request_item_id
-	) AND borrow_request.status = 'pending' AND borrow_request.borrow_request_id = $1
+	WHERE borrow_request.borrow_request_id = $1
 	GROUP BY 
 		borrow_request.borrow_request_id,
 		borrow_request.created_at,
