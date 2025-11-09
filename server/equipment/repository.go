@@ -975,8 +975,9 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 }
 
 type confirmReturnRequest struct {
-	ReturnRequestID string `json:"returnRequestId"`
-	ReviewedBy      string `json:"reviewedBy"`
+	ReturnRequestID string  `json:"returnRequestId"`
+	ReviewedBy      string  `json:"reviewedBy"`
+	Remarks         *string `json:"remarks"`
 }
 
 var errReturnRequestAlreadyConfirmed = fmt.Errorf("return request is already confirmed")
@@ -1006,12 +1007,13 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 
 	updateQuery := `
 	UPDATE return_request
-	SET reviewed_by = $1
-	WHERE return_request_id = $2
+	SET reviewed_by = $1,
+		remarks = $2
+	WHERE return_request_id = $3
 	RETURNING borrow_request_id
 	`
 	var borrowRequestID string
-	if err := tx.QueryRow(ctx, updateQuery, arg.ReviewedBy, arg.ReturnRequestID).Scan(&borrowRequestID); err != nil {
+	if err := tx.QueryRow(ctx, updateQuery, arg.ReviewedBy, arg.Remarks, arg.ReturnRequestID).Scan(&borrowRequestID); err != nil {
 		return confirmReturnRequest{}, err
 	}
 
