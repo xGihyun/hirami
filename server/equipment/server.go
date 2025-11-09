@@ -476,7 +476,7 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 			}
 		}
 
-		if errors.Is(err, errBorrowRequestNotApproved) {
+		if errors.Is(err, errInvalidBorrowRequestStatus) {
 			return api.Response{
 				Error:   fmt.Errorf("create return request: %w", err),
 				Code:    http.StatusBadRequest,

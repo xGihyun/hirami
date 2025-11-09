@@ -830,7 +830,7 @@ type returnRequestGroup struct {
 }
 
 var (
-	errBorrowRequestNotApproved         = fmt.Errorf("borrow request is not approved")
+	errInvalidBorrowRequestStatus       = fmt.Errorf("invalid borrow request status")
 	errExceedsRemainingBorrowedQuantity = fmt.Errorf("return quantity exceeds remaining borrowed quantity")
 	errInvalidReturnQuantity            = fmt.Errorf("return quantity must be greater than zero")
 	errEmptyReturnItemList              = fmt.Errorf("return items list cannot be empty")
@@ -901,8 +901,8 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 		if err := statusRows.Scan(&id, &status); err != nil {
 			return createReturnResponse{}, err
 		}
-		if status != approved {
-			return createReturnResponse{}, errBorrowRequestNotApproved
+		if status != received {
+			return createReturnResponse{}, errInvalidBorrowRequestStatus
 		}
 	}
 	if err = statusRows.Err(); err != nil {
