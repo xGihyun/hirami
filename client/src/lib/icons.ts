@@ -12,6 +12,7 @@ import IconUserPen from "~icons/lucide/user-pen";
 import IconBox from "~icons/lucide/box";
 import IconArrowDownUp from "~icons/lucide/arrow-down-up";
 import IconUserRoundCog from "~icons/lucide/user-round-cog";
+import IconQrCode from "~icons/lucide/qr-code";
 
 export {
 	IconRoundArrowDown,
@@ -28,4 +29,5 @@ export {
 	IconBox,
 	IconArrowDownUp,
 	IconUserRoundCog,
+	IconQrCode,
 };

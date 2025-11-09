@@ -4,6 +4,7 @@ import {
 	IconBox,
 	IconHistory,
 	IconProfile,
+	IconQrCode,
 	IconRoundArrowDown,
 	IconRoundArrowUp,
     IconUserRoundCog,
@@ -46,6 +47,11 @@ export function Navbar(): JSX.Element {
 					label: "Return",
 					icon: IconRoundArrowUp,
 				},
+                {
+					to: "/borrow-scan",
+					label: "Scan",
+					icon: IconQrCode,
+                },
 				historyOption,
 				profileOption,
 			];
