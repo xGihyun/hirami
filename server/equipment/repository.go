@@ -141,7 +141,26 @@ type getEquipmentParams struct {
 
 func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]equipmentWithBorrower, error) {
 	query := `
-	WITH equipment_with_status AS (
+	WITH reserved_counts AS (
+		SELECT 
+			borrow_request_item.equipment_type_id,
+			SUM(borrow_request_item.quantity) AS reserved_quantity,
+			jsonb_build_object(
+				'id', person.person_id,
+				'firstName', person.first_name,
+				'middleName', person.middle_name,
+				'lastName', person.last_name,
+				'avatarUrl', person.avatar_url
+			) AS reserver
+		FROM borrow_request_item
+		JOIN borrow_request 
+			ON borrow_request.borrow_request_id = borrow_request_item.borrow_request_id
+		JOIN person ON person.person_id = borrow_request.requested_by
+		WHERE borrow_request.status = 'approved'
+		GROUP BY borrow_request_item.equipment_type_id, person.person_id, person.first_name, 
+			person.middle_name, person.last_name, person.avatar_url
+	),
+	equipment_with_status AS (
 		SELECT
 			equipment_type.equipment_type_id,
 			equipment_type.name,
@@ -150,6 +169,7 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 			equipment_type.image_url,
 			equipment.equipment_id,
 			CASE
+				-- Check if equipment is currently borrowed
 				WHEN EXISTS (
 					SELECT 1 FROM borrow_transaction
 					WHERE borrow_transaction.equipment_id = equipment.equipment_id
@@ -159,17 +179,35 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 						WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
 					)
 				) THEN 'borrowed'
+				-- Check if this specific equipment should be marked as reserved
+				-- by using ROW_NUMBER to assign reserved status to the first N equipments
 				WHEN EXISTS (
-					SELECT 1 
-					FROM borrow_request_item
-					JOIN borrow_request 
-						ON borrow_request.borrow_request_id = borrow_request_item.borrow_request_id
-					WHERE borrow_request_item.equipment_type_id = equipment.equipment_type_id
-					AND borrow_request.status = 'approved'
-				) THEN 'reserved'
+					SELECT 1 FROM reserved_counts
+					WHERE reserved_counts.equipment_type_id = equipment.equipment_type_id
+				)
+				AND (
+					SELECT COUNT(*)
+					FROM equipment e2
+					WHERE e2.equipment_type_id = equipment.equipment_type_id
+					AND e2.equipment_id <= equipment.equipment_id
+					AND NOT EXISTS (
+						SELECT 1 FROM borrow_transaction bt
+						WHERE bt.equipment_id = e2.equipment_id
+						AND NOT EXISTS (
+							SELECT 1 FROM return_transaction rt
+							WHERE rt.borrow_transaction_id = bt.borrow_transaction_id
+						)
+					)
+				) <= COALESCE((
+					SELECT reserved_quantity 
+					FROM reserved_counts 
+					WHERE reserved_counts.equipment_type_id = equipment.equipment_type_id
+				), 0)
+				THEN 'reserved'
 				ELSE 'available'
 			END AS status,
 			CASE
+				-- Get borrower info if equipment is borrowed
 				WHEN EXISTS (
 					SELECT 1 FROM borrow_transaction
 					WHERE borrow_transaction.equipment_id = equipment.equipment_id
@@ -203,28 +241,33 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 					ORDER BY borrow_transaction.created_at DESC
 					LIMIT 1
 				)
+				-- Get reserver info if equipment is reserved
 				WHEN EXISTS (
-					SELECT 1 
-					FROM borrow_request_item
-					JOIN borrow_request 
-						ON borrow_request.borrow_request_id = borrow_request_item.borrow_request_id
-					WHERE borrow_request_item.equipment_type_id = equipment.equipment_type_id
-					AND borrow_request.status = 'approved'
-				) THEN (
-					SELECT jsonb_build_object(
-						'id', person.person_id,
-						'firstName', person.first_name,
-						'middleName', person.middle_name,
-						'lastName', person.last_name,
-						'avatarUrl', person.avatar_url
+					SELECT 1 FROM reserved_counts
+					WHERE reserved_counts.equipment_type_id = equipment.equipment_type_id
+				)
+				AND (
+					SELECT COUNT(*)
+					FROM equipment e2
+					WHERE e2.equipment_type_id = equipment.equipment_type_id
+					AND e2.equipment_id <= equipment.equipment_id
+					AND NOT EXISTS (
+						SELECT 1 FROM borrow_transaction bt
+						WHERE bt.equipment_id = e2.equipment_id
+						AND NOT EXISTS (
+							SELECT 1 FROM return_transaction rt
+							WHERE rt.borrow_transaction_id = bt.borrow_transaction_id
+						)
 					)
-					FROM borrow_request_item
-					JOIN borrow_request 
-						ON borrow_request.borrow_request_id = borrow_request_item.borrow_request_id
-					JOIN person ON person.person_id = borrow_request.requested_by
-					WHERE borrow_request_item.equipment_type_id = equipment.equipment_type_id
-					AND borrow_request.status = 'approved'
-					ORDER BY borrow_request.created_at DESC
+				) <= COALESCE((
+					SELECT reserved_quantity 
+					FROM reserved_counts 
+					WHERE reserved_counts.equipment_type_id = equipment.equipment_type_id
+				), 0)
+				THEN (
+					SELECT reserver
+					FROM reserved_counts
+					WHERE reserved_counts.equipment_type_id = equipment.equipment_type_id
 					LIMIT 1
 				)
 				ELSE NULL
@@ -268,7 +311,16 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 		argIdx++
 	}
 
-	query += " GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower ORDER BY status"
+	query += " GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower"
+	query += `
+	ORDER BY 
+	CASE status
+		WHEN 'available' THEN 1
+		WHEN 'reserved' THEN 2
+		WHEN 'borrowed' THEN 3
+		ELSE 4
+	END
+	`
 
 	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
