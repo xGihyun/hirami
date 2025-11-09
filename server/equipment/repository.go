@@ -1418,7 +1418,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		latest_return_data.reviewed_by
 	`
 
-	sortByColumn := "borrow_request.expected_return_at" // default
+	sortByColumn := "borrow_request.status" // default
 	if params.sortBy != nil {
 		switch *params.sortBy {
 		case "borrowedAt":
