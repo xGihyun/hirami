@@ -288,8 +288,6 @@ func (r *repository) Update(ctx context.Context, arg UpdateRequest) error {
 	WHERE person_id = $7
 	`
 
-	fmt.Println(*arg.Role)
-
 	if _, err := r.querier.Exec(
 		ctx,
 		query,

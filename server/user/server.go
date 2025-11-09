@@ -289,18 +289,21 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 		return &trimmed
 	}
 
-	role := Role(r.FormValue("role"))
+	var role *Role
+	if roleStr := r.FormValue("role"); roleStr != "" {
+		v := Role(roleStr)
+		role = &v
+	}
+
 	data := UpdateRequest{
 		PersonID:   r.FormValue("id"),
 		Email:      toOptionalString(r.FormValue("email")),
 		FirstName:  toOptionalString(r.FormValue("firstName")),
 		MiddleName: toOptionalString(r.FormValue("middleName")),
 		LastName:   toOptionalString(r.FormValue("lastName")),
-		Role:       &role,
+		Role:       role,
 		AvatarURL:  avatarURL,
 	}
-
-	fmt.Println(*data.Role)
 
 	if err := s.repository.Update(ctx, data); err != nil {
 		return api.Response{
