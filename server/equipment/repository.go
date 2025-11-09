@@ -1759,7 +1759,7 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 	JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
 	JOIN pending_items ON pending_items.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = pending_items.equipment_type_id
-	WHERE borrow_request.status IN ('approved', 'fulfilled')
+	WHERE borrow_request.status = 'received'
 	`
 
 	var args []any
