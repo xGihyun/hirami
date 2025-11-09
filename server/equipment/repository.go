@@ -915,6 +915,7 @@ type borrowRequest struct {
 	Location         string              `json:"location"`
 	Purpose          string              `json:"purpose"`
 	ExpectedReturnAt time.Time           `json:"expectedReturnAt"`
+	Status           borrowRequestStatus `json:"status"`
 }
 
 func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, error) {
@@ -942,7 +943,8 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 		) AS equipments,
 		borrow_request.location,
 		borrow_request.purpose,
-		borrow_request.expected_return_at
+		borrow_request.expected_return_at,
+		borrow_request.status
 	FROM borrow_request
 	JOIN person ON person.person_id = borrow_request.requested_by
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
@@ -961,7 +963,8 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 		person.avatar_url,
 		borrow_request.location,
 		borrow_request.purpose,
-		borrow_request.expected_return_at
+		borrow_request.expected_return_at,
+		borrow_request.status
 	ORDER BY borrow_request.created_at
 	`
 
@@ -1001,7 +1004,8 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 		) AS equipments,
 		borrow_request.location,
 		borrow_request.purpose,
-		borrow_request.expected_return_at
+		borrow_request.expected_return_at,
+		borrow_request.status
 	FROM borrow_request
 	JOIN person ON person.person_id = borrow_request.requested_by
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
@@ -1017,7 +1021,8 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 		person.avatar_url,
 		borrow_request.location,
 		borrow_request.purpose,
-		borrow_request.expected_return_at
+		borrow_request.expected_return_at,
+		borrow_request.status
 	ORDER BY borrow_request.created_at
 	`
 
@@ -1031,6 +1036,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 		&req.Location,
 		&req.Purpose,
 		&req.ExpectedReturnAt,
+		&req.Status,
 	); err != nil {
 		return borrowRequest{}, err
 	}
