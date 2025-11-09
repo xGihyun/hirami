@@ -28,6 +28,7 @@ export type BorrowRequest = {
 	location: string;
 	purpose: string;
 	expectedReturnAt: string;
+    status: BorrowRequestStatus;
 };
 
 async function getBorrowRequests(): Promise<BorrowRequest[]> {
@@ -47,6 +48,25 @@ export const borrowRequestsQuery = queryOptions({
 	queryKey: ["borrow-requests"],
 	queryFn: getBorrowRequests,
 });
+
+async function getBorrowRequestById(id: string): Promise<BorrowRequest> {
+	const response = await fetch(`${BACKEND_URL}/borrow-requests/${id}`, {
+		method: "GET",
+	});
+
+	const result: ApiResponse<BorrowRequest> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result.data;
+}
+
+export const borrowRequestByIdQuery = (id: string) =>
+	queryOptions({
+		queryKey: ["borrow-requests", id],
+		queryFn: () => getBorrowRequestById(id),
+	});
 
 export enum BorrowRequestStatus {
 	Pending = "pending",

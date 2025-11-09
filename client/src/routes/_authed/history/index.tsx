@@ -10,6 +10,7 @@ import { EventSource } from "eventsource";
 import z from "zod";
 import { Control } from "./-components/control";
 import { HistoryList } from "./-components/history-list";
+import { ManagerHistoryList } from "./-components/manager-history-list";
 
 const searchSchema = z.object({
 	category: z.string().optional(),
@@ -94,7 +95,13 @@ function RouteComponent() {
 					Failed to load equipment catalog
 				</LabelMedium>
 			) : (
-				<HistoryList history={history.data} />
+				<>
+					{auth.user?.role === UserRole.Borrower ? (
+						<HistoryList history={history.data} />
+					) : (
+						<ManagerHistoryList history={history.data} />
+					)}
+				</>
 			)}
 		</div>
 	);

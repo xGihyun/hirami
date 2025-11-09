@@ -23,6 +23,7 @@ import { Route as AuthPasswordResetIndexRouteImport } from './routes/_auth/passw
 import { Route as AuthOnboardingIndexRouteImport } from './routes/_auth/onboarding/index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 import { Route as AuthPasswordResetTokenRouteImport } from './routes/_auth/password-reset/$token'
+import { Route as AuthedHistoryBorrowRequestIdIndexRouteImport } from './routes/_authed/history/$borrowRequestId/index'
 import { Route as AuthRegisterRegisterIndexRouteImport } from './routes/_auth/_register/register/index'
 import { Route as AuthRegisterRegisterPersonalIndexRouteImport } from './routes/_auth/_register/register/personal/index'
 import { Route as AuthRegisterRegisterPasswordIndexRouteImport } from './routes/_auth/_register/register/password/index'
@@ -97,6 +98,12 @@ const AuthPasswordResetTokenRoute = AuthPasswordResetTokenRouteImport.update({
   path: '/password-reset/$token',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthedHistoryBorrowRequestIdIndexRoute =
+  AuthedHistoryBorrowRequestIdIndexRouteImport.update({
+    id: '/history/$borrowRequestId/',
+    path: '/history/$borrowRequestId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthRegisterRegisterIndexRoute =
   AuthRegisterRegisterIndexRouteImport.update({
     id: '/register/',
@@ -135,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/return-requests': typeof AuthedReturnRequestsIndexRoute
   '/return': typeof AuthedReturnIndexRoute
   '/register': typeof AuthRegisterRegisterIndexRoute
+  '/history/$borrowRequestId': typeof AuthedHistoryBorrowRequestIdIndexRoute
   '/register/email': typeof AuthRegisterRegisterEmailIndexRoute
   '/register/password': typeof AuthRegisterRegisterPasswordIndexRoute
   '/register/personal': typeof AuthRegisterRegisterPersonalIndexRoute
@@ -152,6 +160,7 @@ export interface FileRoutesByTo {
   '/return-requests': typeof AuthedReturnRequestsIndexRoute
   '/return': typeof AuthedReturnIndexRoute
   '/register': typeof AuthRegisterRegisterIndexRoute
+  '/history/$borrowRequestId': typeof AuthedHistoryBorrowRequestIdIndexRoute
   '/register/email': typeof AuthRegisterRegisterEmailIndexRoute
   '/register/password': typeof AuthRegisterRegisterPasswordIndexRoute
   '/register/personal': typeof AuthRegisterRegisterPersonalIndexRoute
@@ -173,6 +182,7 @@ export interface FileRoutesById {
   '/_authed/return-requests/': typeof AuthedReturnRequestsIndexRoute
   '/_authed/return/': typeof AuthedReturnIndexRoute
   '/_auth/_register/register/': typeof AuthRegisterRegisterIndexRoute
+  '/_authed/history/$borrowRequestId/': typeof AuthedHistoryBorrowRequestIdIndexRoute
   '/_auth/_register/register/email/': typeof AuthRegisterRegisterEmailIndexRoute
   '/_auth/_register/register/password/': typeof AuthRegisterRegisterPasswordIndexRoute
   '/_auth/_register/register/personal/': typeof AuthRegisterRegisterPersonalIndexRoute
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/return-requests'
     | '/return'
     | '/register'
+    | '/history/$borrowRequestId'
     | '/register/email'
     | '/register/password'
     | '/register/personal'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/return-requests'
     | '/return'
     | '/register'
+    | '/history/$borrowRequestId'
     | '/register/email'
     | '/register/password'
     | '/register/personal'
@@ -229,6 +241,7 @@ export interface FileRouteTypes {
     | '/_authed/return-requests/'
     | '/_authed/return/'
     | '/_auth/_register/register/'
+    | '/_authed/history/$borrowRequestId/'
     | '/_auth/_register/register/email/'
     | '/_auth/_register/register/password/'
     | '/_auth/_register/register/personal/'
@@ -340,6 +353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthPasswordResetTokenRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_authed/history/$borrowRequestId/': {
+      id: '/_authed/history/$borrowRequestId/'
+      path: '/history/$borrowRequestId'
+      fullPath: '/history/$borrowRequestId'
+      preLoaderRoute: typeof AuthedHistoryBorrowRequestIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_auth/_register/register/': {
       id: '/_auth/_register/register/'
       path: '/register'
@@ -416,6 +436,7 @@ interface AuthedRouteChildren {
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
   AuthedReturnRequestsIndexRoute: typeof AuthedReturnRequestsIndexRoute
   AuthedReturnIndexRoute: typeof AuthedReturnIndexRoute
+  AuthedHistoryBorrowRequestIdIndexRoute: typeof AuthedHistoryBorrowRequestIdIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -425,6 +446,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
   AuthedReturnRequestsIndexRoute: AuthedReturnRequestsIndexRoute,
   AuthedReturnIndexRoute: AuthedReturnIndexRoute,
+  AuthedHistoryBorrowRequestIdIndexRoute:
+    AuthedHistoryBorrowRequestIdIndexRoute,
 }
 
 const AuthedRouteWithChildren =
