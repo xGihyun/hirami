@@ -82,6 +82,7 @@ function RouteComponent(): JSX.Element {
 		},
 		onSuccess: (data, _variables, toastId) => {
 			queryClient.invalidateQueries(returnRequestsQuery({}));
+            setSelectedRequest(null)
 			toast.success(data.message, { id: toastId });
 		},
 		onError: (error, _variables, toastId) => {
