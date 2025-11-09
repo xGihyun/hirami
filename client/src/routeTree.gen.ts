@@ -13,6 +13,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/_register'
+import { Route as AuthedUsersIndexRouteImport } from './routes/_authed/users/index'
 import { Route as AuthedReturnIndexRouteImport } from './routes/_authed/return/index'
 import { Route as AuthedReturnRequestsIndexRouteImport } from './routes/_authed/return-requests/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
@@ -45,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/_register',
   getParentRoute: () => AuthRoute,
+} as any)
+const AuthedUsersIndexRoute = AuthedUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedReturnIndexRoute = AuthedReturnIndexRouteImport.update({
   id: '/return/',
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthedProfileIndexRoute
   '/return-requests': typeof AuthedReturnRequestsIndexRoute
   '/return': typeof AuthedReturnIndexRoute
+  '/users': typeof AuthedUsersIndexRoute
   '/register': typeof AuthRegisterRegisterIndexRoute
   '/history/$borrowRequestId': typeof AuthedHistoryBorrowRequestIdIndexRoute
   '/register/email': typeof AuthRegisterRegisterEmailIndexRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthedProfileIndexRoute
   '/return-requests': typeof AuthedReturnRequestsIndexRoute
   '/return': typeof AuthedReturnIndexRoute
+  '/users': typeof AuthedUsersIndexRoute
   '/register': typeof AuthRegisterRegisterIndexRoute
   '/history/$borrowRequestId': typeof AuthedHistoryBorrowRequestIdIndexRoute
   '/register/email': typeof AuthRegisterRegisterEmailIndexRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/_authed/profile/': typeof AuthedProfileIndexRoute
   '/_authed/return-requests/': typeof AuthedReturnRequestsIndexRoute
   '/_authed/return/': typeof AuthedReturnIndexRoute
+  '/_authed/users/': typeof AuthedUsersIndexRoute
   '/_auth/_register/register/': typeof AuthRegisterRegisterIndexRoute
   '/_authed/history/$borrowRequestId/': typeof AuthedHistoryBorrowRequestIdIndexRoute
   '/_auth/_register/register/email/': typeof AuthRegisterRegisterEmailIndexRoute
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/return-requests'
     | '/return'
+    | '/users'
     | '/register'
     | '/history/$borrowRequestId'
     | '/register/email'
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/return-requests'
     | '/return'
+    | '/users'
     | '/register'
     | '/history/$borrowRequestId'
     | '/register/email'
@@ -240,6 +251,7 @@ export interface FileRouteTypes {
     | '/_authed/profile/'
     | '/_authed/return-requests/'
     | '/_authed/return/'
+    | '/_authed/users/'
     | '/_auth/_register/register/'
     | '/_authed/history/$borrowRequestId/'
     | '/_auth/_register/register/email/'
@@ -282,6 +294,13 @@ declare module '@tanstack/react-router' {
       fullPath: ''
       preLoaderRoute: typeof AuthRegisterRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/_authed/users/': {
+      id: '/_authed/users/'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthedUsersIndexRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/return/': {
       id: '/_authed/return/'
@@ -436,6 +455,7 @@ interface AuthedRouteChildren {
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
   AuthedReturnRequestsIndexRoute: typeof AuthedReturnRequestsIndexRoute
   AuthedReturnIndexRoute: typeof AuthedReturnIndexRoute
+  AuthedUsersIndexRoute: typeof AuthedUsersIndexRoute
   AuthedHistoryBorrowRequestIdIndexRoute: typeof AuthedHistoryBorrowRequestIdIndexRoute
 }
 
@@ -446,6 +466,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
   AuthedReturnRequestsIndexRoute: AuthedReturnRequestsIndexRoute,
   AuthedReturnIndexRoute: AuthedReturnIndexRoute,
+  AuthedUsersIndexRoute: AuthedUsersIndexRoute,
   AuthedHistoryBorrowRequestIdIndexRoute:
     AuthedHistoryBorrowRequestIdIndexRoute,
 }

@@ -6,6 +6,7 @@ import {
 	IconProfile,
 	IconRoundArrowDown,
 	IconRoundArrowUp,
+    IconUserRoundCog,
 } from "@/lib/icons";
 import { LabelSmall } from "./typography";
 import { useAuth } from "@/auth";
@@ -54,15 +55,20 @@ export function Navbar(): JSX.Element {
 			...commonOptions,
 			{
 				to: "/borrow-requests",
-				label: "Borrows",
-				icon: IconRoundArrowDown,
-			},
-			{
-				to: "/return-requests",
-				label: "Returns",
+				label: "Requests",
 				icon: IconRoundArrowUp,
 			},
 			historyOption,
+			{
+				to: "/return-requests",
+				label: "Return",
+				icon: IconRoundArrowUp,
+			},
+			{
+				to: "/users",
+				label: "Users",
+				icon: IconUserRoundCog,
+			},
 			profileOption,
 		];
 	};
