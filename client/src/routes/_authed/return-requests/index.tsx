@@ -188,7 +188,7 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<div className="relative space-y-4 pb-12">
+		<div className="relative space-y-4 pb-15 !mb-0">
 			<H2>Return Requests</H2>
 
 			<Separator />

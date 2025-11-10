@@ -108,7 +108,7 @@ function RouteComponent(): JSX.Element {
 	}, [queryClient]);
 
 	return (
-		<div className="space-y-4 pb-12">
+		<main className="space-y-4 pb-15 !mb-0">
 			<ReturnHeader equipmentNames={equipmentNames || []} />
 
 			{search.tab === ReturnTab.BorrowedItems ? (
@@ -116,7 +116,7 @@ function RouteComponent(): JSX.Element {
 			) : (
 				<ReturnRequestListTab />
 			)}
-		</div>
+		</main>
 	);
 }
 

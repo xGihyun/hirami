@@ -46,7 +46,7 @@ function RouteComponent(): JSX.Element {
 	const borrowerInitials = borrower.firstName[0] + borrower.lastName[0];
 
 	return (
-		<div className="space-y-4 pb-12">
+		<div className="space-y-4 pb-15 !mb-0">
 			<Button variant="ghost" size="icon" className="size-15 mb-0">
 				<Link to="/history">
 					<IconArrowLeft className="size-8" />

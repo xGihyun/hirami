@@ -49,7 +49,7 @@ export function Catalog(props: Props): JSX.Element {
 	}
 
 	return (
-		<section className="pb-12">
+		<section className="pb-15 !mb-0">
 			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 				{props.equipments.map((equipment) => {
 					const key = `${equipment.id}-${equipment.status}`;
