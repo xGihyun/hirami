@@ -26,6 +26,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
+import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authed/history/$borrowRequestId/")({
 	component: RouteComponent,
@@ -44,6 +45,7 @@ function RouteComponent(): JSX.Element {
 
 	const borrower = borrowRequest.data.borrower;
 	const borrowerInitials = borrower.firstName[0] + borrower.lastName[0];
+	const transaction = borrowRequest.data;
 
 	return (
 		<div className="space-y-4 pb-15 !mb-0">
@@ -54,16 +56,37 @@ function RouteComponent(): JSX.Element {
 			</Button>
 
 			<section className="w-fit mx-auto">
-				<Avatar className="size-30 mx-auto">
-					<AvatarImage src={toImageUrl(borrower.avatarUrl)} />
-					<AvatarFallback className="font-montserrat-bold">
-						{borrowerInitials}
-					</AvatarFallback>
-				</Avatar>
+				<div>
+					<Avatar className="size-30 mx-auto">
+						<AvatarImage src={toImageUrl(borrower.avatarUrl)} />
+						<AvatarFallback className="font-montserrat-bold">
+							{borrowerInitials}
+						</AvatarFallback>
+					</Avatar>
 
-				<H2 className="text-center">
-					{borrower.firstName} {borrower.lastName}
-				</H2>
+					<H2 className="text-center">
+						{borrower.firstName} {borrower.lastName}
+					</H2>
+				</div>
+
+				<div>
+					<LabelSmall>
+						Borrowed On {format(transaction.borrowedAt, "h:mm a")} at{" "}
+						{format(transaction.borrowedAt, "MM/dd/yyyy")}
+					</LabelSmall>
+
+					<LabelSmall>
+						Will Return On {format(transaction.expectedReturnAt, "h:mm a")} at{" "}
+						{format(transaction.expectedReturnAt, "MM/dd/yyyy")}
+					</LabelSmall>
+
+					{transaction.actualReturnAt ? (
+						<LabelSmall>
+							Returned On {format(transaction.actualReturnAt, "h:mm a")} at{" "}
+							{format(transaction.actualReturnAt, "MM/dd/yyyy")}
+						</LabelSmall>
+					) : null}
+				</div>
 			</section>
 
 			<section className="space-y-2 h-full">
