@@ -49,12 +49,12 @@ export const borrowRequestsQuery = queryOptions({
 	queryFn: getBorrowRequests,
 });
 
-async function getBorrowRequestById(id: string): Promise<BorrowRequest> {
+async function getBorrowRequestById(id: string): Promise<BorrowTransaction> {
 	const response = await fetch(`${BACKEND_URL}/borrow-requests/${id}`, {
 		method: "GET",
 	});
 
-	const result: ApiResponse<BorrowRequest> = await response.json();
+	const result: ApiResponse<BorrowTransaction> = await response.json();
 	if (!response.ok) {
 		throw new Error(result.message);
 	}
