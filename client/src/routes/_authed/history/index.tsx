@@ -76,6 +76,7 @@ function RouteComponent() {
 		}
 
 		eventSource.addEventListener("equipment:create", handleEvent);
+		eventSource.addEventListener("equipment:anomaly", handleEvent);
 
 		return () => {
 			eventSource.removeEventListener("equipment:create", handleEvent);

@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { BACKEND_URL, Sort, type ApiResponse } from "../api";
 import type { UserBasicInfo } from "../user";
+import type { AnomalyResult } from "./anomaly";
 
 export type Borrower = {
 	id: string;
@@ -89,6 +90,7 @@ export type BorrowTransaction = {
 	borrowReviewedBy?: UserBasicInfo;
 	returnConfirmedBy?: UserBasicInfo;
 	remarks?: string;
+	anomalyResult?: AnomalyResult;
 };
 
 type GetBorrowHistoryParams = {
