@@ -1,9 +1,11 @@
 package equipment
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -292,6 +294,12 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 			Message: "Failed to create borrow request.",
 		}
 	}
+
+	go func() {
+		if err := s.detectAnomaly(context.Background(), res); err != nil {
+			slog.Error(err.Error())
+		}
+	}()
 
 	eventRes := sse.EventResponse{
 		Event: "equipment:create",
