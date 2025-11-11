@@ -73,6 +73,7 @@ services:
       - "8000:8000"
     volumes:
       - ../ml:/app
+      - /app/.venv
     command: uv run uvicorn main:app --host 0.0.0.0
 
 volumes:
