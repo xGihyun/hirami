@@ -6,12 +6,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/xGihyun/hirami/sse"
 )
 
 func (s *Server) detectAnomaly(ctx context.Context, arg createBorrowResponse) error {
-	fmt.Println(arg)
+	phTime, err := time.LoadLocation("Asia/Manila")
+	if err != nil {
+		return err
+	}
+
+	// Convert timestamps to PH time since it also sensitive on the hour of the day
+	arg.CreatedAt = arg.CreatedAt.In(phTime)
+	arg.ExpectedReturnAt = arg.ExpectedReturnAt.In(phTime)
+
 	payload := []createBorrowResponse{arg}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
