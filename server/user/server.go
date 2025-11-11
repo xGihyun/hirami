@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -28,6 +29,9 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /logout", api.Handler(s.Logout))
 	mux.Handle("GET /users/{id}", api.Handler(s.Get))
 	mux.Handle("PATCH /users/{id}", api.Handler(s.Update))
+
+	mux.Handle("POST /password-reset-request", api.Handler(s.RequestPasswordReset))
+	mux.Handle("POST /password-reset", api.Handler(s.ResetPassword))
 
 	mux.Handle("GET /sessions", api.Handler(s.GetSession))
 }
@@ -309,5 +313,95 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully updated user.",
+	}
+}
+
+func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	type requestBody struct {
+		Email string `json:"email"`
+	}
+
+	var data requestBody
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("request password reset: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request.",
+		}
+	}
+
+	rawToken := generateResetToken(32)
+	tokenHash := hashToken(rawToken)
+
+	expiry := time.Now().Add(15 * time.Minute)
+
+	if err := s.repository.createPasswordResetToken(ctx, data.Email, tokenHash, expiry); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("password reset: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to reset password.",
+		}
+	}
+
+	// NOTE: Hardcoded client URL
+	resetLink := fmt.Sprintf("hirami://password-reset/%s", rawToken) // Mobile URL
+	// resetLink := fmt.Sprintf("http://localhost:3000/password-reset/%s", rawToken) // Web URL
+	subject := "Password Reset Request"
+	bodyHTML := fmt.Sprintf(`
+	  <p>Click the button below to reset your password:</p>
+	  <p><a href="%s" style="display:inline-block;padding:10px 20px;background-color:#4CAF50;color:#fff;text-decoration:none;border-radius:5px;">Reset Password</a></p>
+	  <p>If the button doesn’t work, copy and paste this link into your browser:<br><code>%s</code></p>
+	  <p>This link will expire in 15 minutes.</p>
+	`, resetLink, resetLink)
+
+	if err := api.SendEmail(data.Email, subject, bodyHTML); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("password reset email: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to send reset email.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Password reset email sent successfully.",
+	}
+}
+
+func (s *Server) ResetPassword(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	type resetBody struct {
+		Token           string `json:"token"`
+		NewPassword     string `json:"newPassword"`
+		ConfirmPassword string `json:"confirmPassword"`
+	}
+
+	var body resetBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Token == "" || body.NewPassword == "" {
+		return api.Response{
+			Error:   fmt.Errorf("password reset: invalid body"),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request.",
+		}
+	}
+
+	hashedToken := hashToken(body.Token)
+
+	if err := s.repository.resetPasswordWithToken(ctx, hashedToken, body.NewPassword); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("password reset: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid or expired reset token.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Password has been successfully reset.",
 	}
 }

@@ -12,14 +12,21 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRegisterRouteImport } from './routes/_auth/_register'
 import { Route as AuthedReturnIndexRouteImport } from './routes/_authed/return/index'
 import { Route as AuthedReturnRequestsIndexRouteImport } from './routes/_authed/return-requests/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedHistoryIndexRouteImport } from './routes/_authed/history/index'
 import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equipments/index'
 import { Route as AuthedBorrowRequestsIndexRouteImport } from './routes/_authed/borrow-requests/index'
-import { Route as AuthRegisterIndexRouteImport } from './routes/_auth/register/index'
+import { Route as AuthPasswordResetIndexRouteImport } from './routes/_auth/password-reset/index'
+import { Route as AuthOnboardingIndexRouteImport } from './routes/_auth/onboarding/index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
+import { Route as AuthPasswordResetTokenRouteImport } from './routes/_auth/password-reset/$token'
+import { Route as AuthRegisterRegisterIndexRouteImport } from './routes/_auth/_register/register/index'
+import { Route as AuthRegisterRegisterPersonalIndexRouteImport } from './routes/_auth/_register/register/personal/index'
+import { Route as AuthRegisterRegisterPasswordIndexRouteImport } from './routes/_auth/_register/register/password/index'
+import { Route as AuthRegisterRegisterEmailIndexRouteImport } from './routes/_auth/_register/register/email/index'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -33,6 +40,10 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/_register',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthedReturnIndexRoute = AuthedReturnIndexRouteImport.update({
   id: '/return/',
@@ -66,9 +77,14 @@ const AuthedBorrowRequestsIndexRoute =
     path: '/borrow-requests/',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthRegisterIndexRoute = AuthRegisterIndexRouteImport.update({
-  id: '/register/',
-  path: '/register/',
+const AuthPasswordResetIndexRoute = AuthPasswordResetIndexRouteImport.update({
+  id: '/password-reset/',
+  path: '/password-reset/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthOnboardingIndexRoute = AuthOnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
@@ -76,79 +92,146 @@ const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
   path: '/login/',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthPasswordResetTokenRoute = AuthPasswordResetTokenRouteImport.update({
+  id: '/password-reset/$token',
+  path: '/password-reset/$token',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRegisterRegisterIndexRoute =
+  AuthRegisterRegisterIndexRouteImport.update({
+    id: '/register/',
+    path: '/register/',
+    getParentRoute: () => AuthRegisterRoute,
+  } as any)
+const AuthRegisterRegisterPersonalIndexRoute =
+  AuthRegisterRegisterPersonalIndexRouteImport.update({
+    id: '/register/personal/',
+    path: '/register/personal/',
+    getParentRoute: () => AuthRegisterRoute,
+  } as any)
+const AuthRegisterRegisterPasswordIndexRoute =
+  AuthRegisterRegisterPasswordIndexRouteImport.update({
+    id: '/register/password/',
+    path: '/register/password/',
+    getParentRoute: () => AuthRegisterRoute,
+  } as any)
+const AuthRegisterRegisterEmailIndexRoute =
+  AuthRegisterRegisterEmailIndexRouteImport.update({
+    id: '/register/email/',
+    path: '/register/email/',
+    getParentRoute: () => AuthRegisterRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/login': typeof AuthLoginIndexRoute
-  '/register': typeof AuthRegisterIndexRoute
+  '/onboarding': typeof AuthOnboardingIndexRoute
+  '/password-reset': typeof AuthPasswordResetIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
   '/return-requests': typeof AuthedReturnRequestsIndexRoute
   '/return': typeof AuthedReturnIndexRoute
+  '/register': typeof AuthRegisterRegisterIndexRoute
+  '/register/email': typeof AuthRegisterRegisterEmailIndexRoute
+  '/register/password': typeof AuthRegisterRegisterPasswordIndexRoute
+  '/register/personal': typeof AuthRegisterRegisterPersonalIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/login': typeof AuthLoginIndexRoute
-  '/register': typeof AuthRegisterIndexRoute
+  '/onboarding': typeof AuthOnboardingIndexRoute
+  '/password-reset': typeof AuthPasswordResetIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
   '/return-requests': typeof AuthedReturnRequestsIndexRoute
   '/return': typeof AuthedReturnIndexRoute
+  '/register': typeof AuthRegisterRegisterIndexRoute
+  '/register/email': typeof AuthRegisterRegisterEmailIndexRoute
+  '/register/password': typeof AuthRegisterRegisterPasswordIndexRoute
+  '/register/personal': typeof AuthRegisterRegisterPersonalIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
   '/_authed': typeof AuthedRouteWithChildren
+  '/_auth/_register': typeof AuthRegisterRouteWithChildren
+  '/_auth/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/_auth/login/': typeof AuthLoginIndexRoute
-  '/_auth/register/': typeof AuthRegisterIndexRoute
+  '/_auth/onboarding/': typeof AuthOnboardingIndexRoute
+  '/_auth/password-reset/': typeof AuthPasswordResetIndexRoute
   '/_authed/borrow-requests/': typeof AuthedBorrowRequestsIndexRoute
   '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
   '/_authed/history/': typeof AuthedHistoryIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
   '/_authed/return-requests/': typeof AuthedReturnRequestsIndexRoute
   '/_authed/return/': typeof AuthedReturnIndexRoute
+  '/_auth/_register/register/': typeof AuthRegisterRegisterIndexRoute
+  '/_auth/_register/register/email/': typeof AuthRegisterRegisterEmailIndexRoute
+  '/_auth/_register/register/password/': typeof AuthRegisterRegisterPasswordIndexRoute
+  '/_auth/_register/register/personal/': typeof AuthRegisterRegisterPersonalIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/password-reset/$token'
     | '/login'
-    | '/register'
+    | '/onboarding'
+    | '/password-reset'
     | '/borrow-requests'
     | '/equipments'
     | '/history'
     | '/profile'
     | '/return-requests'
     | '/return'
+    | '/register'
+    | '/register/email'
+    | '/register/password'
+    | '/register/personal'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/password-reset/$token'
     | '/login'
-    | '/register'
+    | '/onboarding'
+    | '/password-reset'
     | '/borrow-requests'
     | '/equipments'
     | '/history'
     | '/profile'
     | '/return-requests'
     | '/return'
+    | '/register'
+    | '/register/email'
+    | '/register/password'
+    | '/register/personal'
   id:
     | '__root__'
     | '/'
     | '/_auth'
     | '/_authed'
+    | '/_auth/_register'
+    | '/_auth/password-reset/$token'
     | '/_auth/login/'
-    | '/_auth/register/'
+    | '/_auth/onboarding/'
+    | '/_auth/password-reset/'
     | '/_authed/borrow-requests/'
     | '/_authed/equipments/'
     | '/_authed/history/'
     | '/_authed/profile/'
     | '/_authed/return-requests/'
     | '/_authed/return/'
+    | '/_auth/_register/register/'
+    | '/_auth/_register/register/email/'
+    | '/_auth/_register/register/password/'
+    | '/_auth/_register/register/personal/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -179,6 +262,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_auth/_register': {
+      id: '/_auth/_register'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_authed/return/': {
       id: '/_authed/return/'
@@ -222,11 +312,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedBorrowRequestsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_auth/register/': {
-      id: '/_auth/register/'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof AuthRegisterIndexRouteImport
+    '/_auth/password-reset/': {
+      id: '/_auth/password-reset/'
+      path: '/password-reset'
+      fullPath: '/password-reset'
+      preLoaderRoute: typeof AuthPasswordResetIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/onboarding/': {
+      id: '/_auth/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthOnboardingIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/login/': {
@@ -236,17 +333,78 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/password-reset/$token': {
+      id: '/_auth/password-reset/$token'
+      path: '/password-reset/$token'
+      fullPath: '/password-reset/$token'
+      preLoaderRoute: typeof AuthPasswordResetTokenRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/_register/register/': {
+      id: '/_auth/_register/register/'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof AuthRegisterRegisterIndexRouteImport
+      parentRoute: typeof AuthRegisterRoute
+    }
+    '/_auth/_register/register/personal/': {
+      id: '/_auth/_register/register/personal/'
+      path: '/register/personal'
+      fullPath: '/register/personal'
+      preLoaderRoute: typeof AuthRegisterRegisterPersonalIndexRouteImport
+      parentRoute: typeof AuthRegisterRoute
+    }
+    '/_auth/_register/register/password/': {
+      id: '/_auth/_register/register/password/'
+      path: '/register/password'
+      fullPath: '/register/password'
+      preLoaderRoute: typeof AuthRegisterRegisterPasswordIndexRouteImport
+      parentRoute: typeof AuthRegisterRoute
+    }
+    '/_auth/_register/register/email/': {
+      id: '/_auth/_register/register/email/'
+      path: '/register/email'
+      fullPath: '/register/email'
+      preLoaderRoute: typeof AuthRegisterRegisterEmailIndexRouteImport
+      parentRoute: typeof AuthRegisterRoute
+    }
   }
 }
 
+interface AuthRegisterRouteChildren {
+  AuthRegisterRegisterIndexRoute: typeof AuthRegisterRegisterIndexRoute
+  AuthRegisterRegisterEmailIndexRoute: typeof AuthRegisterRegisterEmailIndexRoute
+  AuthRegisterRegisterPasswordIndexRoute: typeof AuthRegisterRegisterPasswordIndexRoute
+  AuthRegisterRegisterPersonalIndexRoute: typeof AuthRegisterRegisterPersonalIndexRoute
+}
+
+const AuthRegisterRouteChildren: AuthRegisterRouteChildren = {
+  AuthRegisterRegisterIndexRoute: AuthRegisterRegisterIndexRoute,
+  AuthRegisterRegisterEmailIndexRoute: AuthRegisterRegisterEmailIndexRoute,
+  AuthRegisterRegisterPasswordIndexRoute:
+    AuthRegisterRegisterPasswordIndexRoute,
+  AuthRegisterRegisterPersonalIndexRoute:
+    AuthRegisterRegisterPersonalIndexRoute,
+}
+
+const AuthRegisterRouteWithChildren = AuthRegisterRoute._addFileChildren(
+  AuthRegisterRouteChildren,
+)
+
 interface AuthRouteChildren {
+  AuthRegisterRoute: typeof AuthRegisterRouteWithChildren
+  AuthPasswordResetTokenRoute: typeof AuthPasswordResetTokenRoute
   AuthLoginIndexRoute: typeof AuthLoginIndexRoute
-  AuthRegisterIndexRoute: typeof AuthRegisterIndexRoute
+  AuthOnboardingIndexRoute: typeof AuthOnboardingIndexRoute
+  AuthPasswordResetIndexRoute: typeof AuthPasswordResetIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthRegisterRoute: AuthRegisterRouteWithChildren,
+  AuthPasswordResetTokenRoute: AuthPasswordResetTokenRoute,
   AuthLoginIndexRoute: AuthLoginIndexRoute,
-  AuthRegisterIndexRoute: AuthRegisterIndexRoute,
+  AuthOnboardingIndexRoute: AuthOnboardingIndexRoute,
+  AuthPasswordResetIndexRoute: AuthPasswordResetIndexRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)

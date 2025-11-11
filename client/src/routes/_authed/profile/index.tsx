@@ -23,8 +23,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useRef, useState } from "react";
-import { IconEdit } from "@/lib/icons";
+import { IconEdit, IconUserPen } from "@/lib/icons";
 import { Separator } from "@/components/ui/separator";
+import { H2 } from "@/components/typography";
 
 export const Route = createFileRoute("/_authed/profile/")({
 	component: RouteComponent,
@@ -124,11 +125,13 @@ function RouteComponent() {
 
 	return (
 		<div className="flex flex-col justify-between gap-4">
-			<div className="space-y-4">
+			<div className="space-y-6">
 				<section className="flex flex-col items-center justify-center">
-					<div className="relative group">
+					<H2>Profile</H2>
+
+					<div className="relative group mb-2.5">
 						<div className="relative">
-							<Avatar className="size-20">
+							<Avatar className="size-50">
 								<AvatarImage src={previewUrl || avatarUrl} />
 								<AvatarFallback className="text-3xl font-montserrat-semibold">
 									{auth.user?.firstName[0]}
@@ -136,15 +139,15 @@ function RouteComponent() {
 								</AvatarFallback>
 							</Avatar>
 
-							<div className="size-6 flex justify-center items-center absolute right-0 bottom-0 rounded-full bg-foreground z-10">
-								<IconEdit className="size-3 text-background" />
+							<div className="size-12 flex justify-center items-center absolute right-0 bottom-0 rounded-full bg-card z-10">
+								<IconUserPen className="size-6 text-primary" />
 							</div>
 						</div>
 
 						<button
 							type="button"
 							onClick={() => fileInputRef.current?.click()}
-							className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer z-50"
+							className="absolute inset-0 opacity-0 flex items-center justify-center cursor-pointer z-50"
 						>
 							<IconEdit className="size-6 text-white" />
 						</button>
@@ -168,9 +171,9 @@ function RouteComponent() {
 						/>
 					</div>
 
-					<p className="font-montserrat-semibold">
+					<H2>
 						{auth.user?.firstName} {auth.user?.lastName}
-					</p>
+					</H2>
 				</section>
 
 				<Separator />
@@ -237,27 +240,28 @@ function RouteComponent() {
 							)}
 						/>
 
-						<Button
-							type="submit"
-							className="w-full"
-							variant="secondary"
-							disabled={mutation.isPending}
-						>
-							Update Profile
-						</Button>
+						<div className="space-y-2.5">
+							<Button
+								type="submit"
+								className="w-full"
+								disabled={mutation.isPending}
+							>
+								Update Profile
+							</Button>
+
+							<Button
+								type="button"
+								onClick={handleLogout}
+								className="w-full"
+								variant="secondary"
+								disabled={mutation.isPending}
+							>
+								Log Out
+							</Button>
+						</div>
 					</form>
 				</Form>
 			</div>
-
-            <Separator />
-
-			<Button
-				onClick={handleLogout}
-				className="w-full"
-				disabled={mutation.isPending}
-			>
-				Log Out
-			</Button>
 		</div>
 	);
 }

@@ -24,7 +24,7 @@ import {
 	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { BACKEND_URL, toImageUrl, type ApiResponse } from "@/lib/api";
-import { Caption, H1, H2, P } from "@/components/typography";
+import { Caption, H2, P } from "@/components/typography";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";

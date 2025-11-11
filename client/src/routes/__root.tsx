@@ -5,7 +5,7 @@ import { QueryClient } from "@tanstack/react-query";
 
 import { Toaster } from "@/components/ui/sonner";
 import { type AuthContextValue } from "@/auth";
-import type { JSX } from "react";
+import { type JSX } from "react";
 
 type RouterContext = {
 	auth: AuthContextValue;
@@ -19,7 +19,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RouteComponent(): JSX.Element {
 	return (
 		<div>
-			<Toaster closeButton position="top-right" />
+			<Toaster closeButton mobileOffset={{ bottom: "5rem" }} />
 			<Outlet />
 			{/* <TanstackDevtools */}
 			{/* 	config={{ */}

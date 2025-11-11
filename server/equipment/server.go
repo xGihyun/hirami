@@ -41,6 +41,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /return-requests", api.Handler(s.getReturnRequests))
 
 	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
+	mux.Handle("GET /borrowed-items", api.Handler(s.getBorrowedItems))
 }
 
 const (
@@ -179,8 +180,12 @@ func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
 	name := r.URL.Query().Get("name")
+	status := equipmentStatus(r.URL.Query().Get("status"))
+	search := r.URL.Query().Get("search")
 	params := getEquipmentParams{
-		name: &name,
+		name:   &name,
+		status: &status,
+		search: &search,
 	}
 	equipments, err := s.repository.getAll(ctx, params)
 	if err != nil {
@@ -550,9 +555,13 @@ func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) ap
 func (s *Server) getReturnRequests(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	userID := r.PathValue("userId")
+	userID := r.URL.Query().Get("userId")
+	sort := api.Sort(r.URL.Query().Get("sort"))
+	category := r.URL.Query().Get("category")
 	params := getReturnRequestParams{
-		userID: &userID,
+		userID:   &userID,
+		sort:     &sort,
+		category: &category,
 	}
 	returnRequests, err := s.repository.getReturnRequests(ctx, params)
 	if err != nil {
@@ -574,8 +583,16 @@ func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Re
 	ctx := r.Context()
 
 	userID := r.URL.Query().Get("userId")
+	status := borrowRequestStatus(r.URL.Query().Get("status"))
+	sort := api.Sort(r.URL.Query().Get("sort"))
+	sortBy := r.URL.Query().Get("sortBy")
+	category := r.URL.Query().Get("category")
 	params := borrowHistoryParams{
-		userID: &userID,
+		userID:   &userID,
+		status:   &status,
+		sort:     &sort,
+		sortBy:   &sortBy,
+		category: &category,
 	}
 	history, err := s.repository.getBorrowHistory(ctx, params)
 	if err != nil {
@@ -589,6 +606,35 @@ func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Re
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully fetched borrow history.",
+		Data:    history,
+	}
+}
+
+func (s *Server) getBorrowedItems(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	userID := r.URL.Query().Get("userId")
+	status := borrowRequestStatus(r.URL.Query().Get("status"))
+	sort := api.Sort(r.URL.Query().Get("sort"))
+	category := r.URL.Query().Get("category")
+	params := borrowedItemParams{
+		userID:   &userID,
+		status:   &status,
+		sort:     &sort,
+		category: &category,
+	}
+	history, err := s.repository.getBorrowedItems(ctx, params)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get borrowed items: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get borrowed items.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched borrowed items.",
 		Data:    history,
 	}
 }

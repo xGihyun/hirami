@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { useRef, useState, type JSX } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -20,7 +20,7 @@ import {
 	type ApiResponse,
 } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronDownIcon } from "lucide-react";
 import {
 	Popover,
 	PopoverContent,
@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { equipmentsQuery } from "@/lib/equipment";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LabelMedium } from "@/components/typography";
 
 const formSchema = z.object({
 	name: z.string().nonempty(),
@@ -93,13 +95,16 @@ export function RegisterEquipmentForm(
 		},
 	});
 
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
 	const mutation = useMutation({
 		mutationFn: register,
 		onMutate: () => {
 			return toast.loading("Registering equipment");
 		},
 		onSuccess: (data, _variables, toastId) => {
-			queryClient.invalidateQueries(equipmentsQuery());
+			queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
 			props.onSuccess();
 			toast.success(data.message, { id: toastId });
 		},
@@ -114,134 +119,181 @@ export function RegisterEquipmentForm(
 
 	return (
 		<Form {...form}>
-			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-4">
-				<FormField
-					control={form.control}
-					name="name"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Name</FormLabel>
-							<FormControl>
-								<Input placeholder="Volleyball" {...field} />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
-				<FormField
-					control={form.control}
-					name="brand"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Brand</FormLabel>
-							<FormControl>
-								<Input placeholder="Mikasa" {...field} />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
-				<FormField
-					control={form.control}
-					name="model"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Model</FormLabel>
-							<FormControl>
-								<Input placeholder="V200W" {...field} />
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
-				<FormField
-					control={form.control}
-					name="acquisitionDate"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Acquisition Date</FormLabel>
-							<Popover>
-								<PopoverTrigger asChild>
-									<FormControl>
-										<Button
-											variant={"outline"}
-											className={cn(
-												"w-full bg-card pl-3 text-left",
-												!field.value && "text-muted-foreground",
-											)}
-										>
-											{field.value ? (
-												format(field.value, "PPP")
-											) : (
-												<span>Pick a date</span>
-											)}
-											<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-										</Button>
-									</FormControl>
-								</PopoverTrigger>
-								<PopoverContent className="w-auto p-0" align="start">
-									<Calendar
-										mode="single"
-										selected={field.value}
-										onSelect={field.onChange}
-										disabled={(date) =>
-											date > new Date() || date < new Date("1900-01-01")
-										}
-										captionLayout="dropdown"
-									/>
-								</PopoverContent>
-							</Popover>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
-				<FormField
-					control={form.control}
-					name="quantity"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Quantity</FormLabel>
-							<FormControl>
-								<Input
-									type="number"
-									placeholder="Enter quantity"
-									{...field}
-									onChange={(e) => field.onChange(e.target.valueAsNumber)}
-								/>
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
+			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-7.5">
 				<FormField
 					control={form.control}
 					name="image"
-					render={({ field: { value, onChange, ...fieldProps } }) => (
+					render={({
+						field: { value, onChange, ...fieldProps },
+						fieldState,
+					}) => (
 						<FormItem>
-							<FormLabel>Image</FormLabel>
 							<FormControl>
-								<Input
-									{...fieldProps}
-									type="file"
-									accept="image/jpeg,image/jpg,image/png"
-									onChange={(e) => {
-										const file = e.target.files?.[0];
-										onChange(file);
-									}}
-								/>
+								<div className="relative group mb-2.5 mx-auto w-fit">
+									<div className="relative">
+										<Avatar className="size-38">
+											<AvatarImage
+												src={previewUrl || undefined}
+												className="object-cover"
+											/>
+											<AvatarFallback className="bg-accent" />
+										</Avatar>
+									</div>
+
+									<button
+										type="button"
+										onClick={() => fileInputRef.current?.click()}
+										className="absolute inset-0 opacity-0 flex items-center justify-center cursor-pointer z-50"
+									></button>
+
+									<input
+										{...fieldProps}
+										ref={fileInputRef}
+										type="file"
+										accept="image/jpeg,image/jpg,image/png"
+										className="hidden"
+										onChange={(e) => {
+											const file = e.target.files?.[0];
+											if (file) {
+												form.setValue("image", file);
+												const reader = new FileReader();
+												reader.onloadend = () => {
+													setPreviewUrl(reader.result as string);
+												};
+												reader.readAsDataURL(file);
+												onChange(file);
+											}
+										}}
+									/>
+								</div>
 							</FormControl>
-							<FormMessage />
+
+							{fieldState.error ? (
+								<FormMessage className="text-center mt-1" />
+							) : value ? (
+								<LabelMedium className="text-muted text-center mt-1">
+									{value.name}
+								</LabelMedium>
+							) : (
+								<LabelMedium className="text-muted text-center mt-1">
+									Image must be in PNG or JPG, under 5MB
+								</LabelMedium>
+							)}
 						</FormItem>
 					)}
 				/>
 
-				<Button type="submit" className="w-full">
-					Register Equipment
+				<section className="space-y-4">
+					<FormField
+						control={form.control}
+						name="name"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Equipment Name</FormLabel>
+								<FormControl>
+									<Input placeholder="Volleyball" {...field} />
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="brand"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Equipment Brand</FormLabel>
+								<FormControl>
+									<Input placeholder="Mikasa" {...field} />
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="model"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Equipment Model</FormLabel>
+								<FormControl>
+									<Input placeholder="V200W" {...field} />
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="quantity"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Quantity</FormLabel>
+								<FormControl>
+									<Input
+										type="number"
+										placeholder="Enter quantity"
+										{...field}
+										onChange={(e) => field.onChange(e.target.valueAsNumber)}
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="acquisitionDate"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Acquisition Date</FormLabel>
+								<Popover>
+									<PopoverTrigger asChild>
+										<FormControl>
+											<Button
+												type="button"
+												variant="outline"
+												className="flex-1 justify-between bg-card font-open-sans text-base text-foreground border-accent"
+											>
+												{field.value ? (
+													field.value.toLocaleDateString()
+												) : (
+													<LabelMedium className="text-muted">
+														Select date
+													</LabelMedium>
+												)}
+												<ChevronDownIcon className="size-4" />
+											</Button>
+										</FormControl>
+									</PopoverTrigger>
+									<PopoverContent className="w-auto p-0" align="start">
+										<Calendar
+											mode="single"
+											selected={field.value}
+											onSelect={field.onChange}
+											disabled={(date) =>
+												date > new Date() || date < new Date("1900-01-01")
+											}
+											captionLayout="dropdown"
+										/>
+									</PopoverContent>
+								</Popover>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+				</section>
+
+				<Button
+					type="submit"
+					className="w-full shadow-none"
+					disabled={!form.formState.isValid || mutation.isPending}
+				>
+					Save
 				</Button>
 			</form>
 		</Form>

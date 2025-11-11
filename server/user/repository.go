@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -14,6 +15,9 @@ type Repository interface {
 	login(ctx context.Context, arg loginRequest) (signInResponse, error)
 	get(ctx context.Context, userID string) (user, error)
 	Update(ctx context.Context, arg UpdateRequest) error
+
+	createPasswordResetToken(ctx context.Context, email, tokenHash string, expiresAt time.Time) error
+	resetPasswordWithToken(ctx context.Context, tokenHash, newPassword string) error
 
 	getByEmail(ctx context.Context, email string) (user, error)
 	invalidateSession(ctx context.Context, token string) error
@@ -297,6 +301,68 @@ func (r *repository) Update(ctx context.Context, arg UpdateRequest) error {
 		arg.AvatarURL,
 		arg.PersonID,
 	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *repository) createPasswordResetToken(ctx context.Context, email, tokenHash string, expiresAt time.Time) error {
+	var personID string
+
+	query := "SELECT person_id FROM person WHERE email = $1"
+	if err := r.querier.QueryRow(ctx, query, email).Scan(&personID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("no user with email: %s", email)
+		}
+		return err
+	}
+
+	query = `
+		INSERT INTO password_reset_token (person_id, token_hash, expires_at)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (person_id)
+		DO UPDATE SET 
+			token_hash = EXCLUDED.token_hash, 
+			expires_at = EXCLUDED.expires_at,
+			created_at = NOW()
+	`
+
+	if _, err := r.querier.Exec(ctx, query, personID, tokenHash, expiresAt); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *repository) resetPasswordWithToken(ctx context.Context, tokenHash, newPassword string) error {
+	var personID string
+
+	query := `
+		SELECT person_id FROM password_reset_token
+		WHERE token_hash = $1 AND expires_at > NOW()
+	`
+
+	if err := r.querier.QueryRow(ctx, query, tokenHash).Scan(&personID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("invalid or expired token")
+		}
+		return err
+	}
+
+	// Update password
+	hashedPassword, err := hashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+
+	query = `UPDATE person SET password_hash = $1 WHERE person_id = $2`
+	if _, err = r.querier.Exec(ctx, query, hashedPassword, personID); err != nil {
+		return err
+	}
+
+	query = `DELETE FROM password_reset_token WHERE token_hash = $1`
+	if _, err := r.querier.Exec(ctx, query, tokenHash); err != nil {
 		return err
 	}
 
