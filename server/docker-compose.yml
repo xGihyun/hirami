@@ -64,6 +64,17 @@ services:
       - HOST=server
       - PORT=3002
 
+  ml:
+    build:
+      context: ../ml
+      dockerfile: Dockerfile
+    container_name: hirami-ml
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../ml:/app
+    command: uv run uvicorn main:app --host 0.0.0.0
+
 volumes:
   hirami-pg:
   hirami-valkey:
