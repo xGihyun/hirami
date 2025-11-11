@@ -13,30 +13,38 @@ from contextlib import asynccontextmanager
 
 
 class Equipment(BaseModel):
+    borrow_request_item_id: str = Field(alias="borrowRequestItemId")
     equipment_type_id: str = Field(alias="equipmentTypeId")
+    name: str
+    brand: Optional[str]
+    model: Optional[str]
+    image_url: Optional[str] = Field(alias="imageUrl")
     quantity: int
 
 
 class UserBasicInfo(BaseModel):
-    user_id: str = Field(alias="userId")
-    name: str
+    user_id: str = Field(alias="id")
+    first_name: str = Field(alias="firstName")
+    middle_name: Optional[str] = Field(alias="middleName")
+    last_name: str = Field(alias="lastName")
+    avatar_url: Optional[str] = Field(alias="avatarUrl")
 
 
 class BorrowTransaction(BaseModel):
     borrow_request_id: str = Field(alias="borrowRequestId")
-    borrowed_at: str = Field(alias="borrowedAt")
+    created_at: str = Field(alias="createdAt")
     expected_return_at: str = Field(alias="expectedReturnAt")
-    actual_return_at: Optional[str] = Field(default=None, alias="actualReturnAt")
     borrower: UserBasicInfo
     equipments: List[Equipment]
     location: str
     purpose: str
-    borrow_reviewed_by: UserBasicInfo = Field(alias="borrowReviewedBy")
-    return_confirmed_by: Optional[UserBasicInfo] = Field(
-        default=None, alias="returnConfirmedBy"
-    )
-    remarks: Optional[str] = None
-    status: str
+
+
+class AnomalyResult(BaseModel):
+    borrow_request_id: str = Field(alias="borrowRequestId")
+    score: float
+    is_anomaly: bool = Field(alias="isAnomaly")
+    is_false_positive: Optional[bool] = Field(alias="isFalsePositive")
 
 
 # ====================================
@@ -54,10 +62,10 @@ class BorrowRecord(BaseModel):
 
 def transaction_to_record(tx: BorrowTransaction) -> BorrowRecord:
     """Convert a BorrowTransaction into numeric features for anomaly detection."""
-    borrowed_at = datetime.fromisoformat(tx.borrowed_at)
+    created_at = datetime.fromisoformat(tx.created_at)
     expected_return_at = datetime.fromisoformat(tx.expected_return_at)
 
-    borrow_duration_hours = (expected_return_at - borrowed_at).total_seconds() / 3600.0
+    borrow_duration_hours = (expected_return_at - created_at).total_seconds() / 3600.0
     num_items = sum(eq.quantity for eq in tx.equipments)
     num_item_types = len(tx.equipments)
 
@@ -65,8 +73,8 @@ def transaction_to_record(tx: BorrowTransaction) -> BorrowRecord:
         num_items=num_items,
         num_item_types=num_item_types,
         borrow_duration_hours=borrow_duration_hours,
-        borrow_hour_of_day=borrowed_at.hour,
-        day_of_week=borrowed_at.weekday(),
+        borrow_hour_of_day=created_at.hour,
+        day_of_week=created_at.weekday(),
     )
 
 
@@ -101,7 +109,7 @@ async def lifespan(app: FastAPI):
     normal_samples = []
 
     # Generate diverse but realistic normal patterns
-    for _ in range(300):
+    for _ in range(500):
         # Mix of different normal scenarios
         scenario = np.random.choice(["short", "medium", "day"])
 
@@ -118,7 +126,7 @@ async def lifespan(app: FastAPI):
             num_types = np.random.randint(1, 4)
             duration = np.random.uniform(6, 14)
 
-        hour = np.random.randint(7, 19)  # 7am-7pm (wider range)
+        hour = np.random.randint(6, 20)  # 6am-8pm
         day = np.random.randint(0, 7)  # Include weekends
 
         normal_samples.append([num_items, num_types, duration, hour, day])
@@ -157,17 +165,18 @@ def detect_anomalies(transactions: List[BorrowTransaction]):
 
     scores, preds = detect_borrow_anomalies(model, X)
 
-    results = []
+    results: List[AnomalyResult] = []
     for tx, score, pred in zip(transactions, scores, preds):
         results.append(
-            {
-                "borrowRequestId": tx.borrow_request_id,
-                "score": score,
-                "status": "anomaly" if pred == -1 else "normal",
-            }
+            AnomalyResult(
+                borrowRequestId=tx.borrow_request_id,
+                score=score,
+                isAnomaly=pred == -1,
+                isFalsePositive=None,
+            )
         )
 
-    return {"results": results}
+    return results
 
 
 # ====================================
