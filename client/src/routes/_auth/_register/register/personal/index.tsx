@@ -310,7 +310,7 @@ function Success(): JSX.Element {
 				<img
 					src={doneIllustration}
 					alt="Done illustration"
-					className="w-full max-w-xs mx-auto"
+					className="w-full max-w-xs mx-auto aspect-[320/275]"
 				/>
 
 				<H1 className="text-center">
@@ -332,7 +332,7 @@ function Failed(): JSX.Element {
 				<img
 					src={accessDeniedIllustration}
 					alt="Failed illustration"
-					className="w-full max-w-xs mx-auto"
+					className="w-full max-w-xs mx-auto aspect-[320/308]"
 				/>
 
 				<div className="space-y-1.5">

@@ -33,12 +33,15 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
 
 	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
+	mux.Handle("PATCH /borrow-requests/{id}", api.Handler(s.updateBorrowRequest))
 	mux.Handle("PATCH /review-borrow-requests", api.Handler(s.reviewBorrowRequest))
 	mux.Handle("GET /borrow-requests", api.Handler(s.getBorrowRequests))
+	mux.Handle("GET /borrow-requests/{id}", api.Handler(s.getBorrowRequestByID))
 
 	mux.Handle("POST /return-requests", api.Handler(s.createReturnRequest))
 	mux.Handle("PATCH /return-requests/{id}", api.Handler(s.confirmReturnRequest))
 	mux.Handle("GET /return-requests", api.Handler(s.getReturnRequests))
+	mux.Handle("GET /return-requests/{id}", api.Handler(s.getReturnRequestByID))
 
 	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
 	mux.Handle("GET /borrowed-items", api.Handler(s.getBorrowedItems))
@@ -319,6 +322,67 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 }
 
+func (s *Server) updateBorrowRequest(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	var data updateBorrowRequest
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid update borrow request.",
+		}
+	}
+
+	borrowRequestID := r.PathValue("id")
+	if data.BorrowRequestID != borrowRequestID {
+		return api.Response{
+			Error:   fmt.Errorf("borrow request ID mismatch: path=%s, body=%s", borrowRequestID, data.BorrowRequestID),
+			Code:    http.StatusBadRequest,
+			Message: "Borrow request ID in URL does not match ID in request body.",
+		}
+	}
+
+	res, err := s.repository.updateBorrowRequest(ctx, data)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update borrow request.",
+		}
+	}
+
+	eventRes := sse.EventResponse{
+		Event: "equipment:create",
+		Data:  res,
+	}
+	jsonData, err := json.Marshal(eventRes)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update borrow request.",
+		}
+	}
+
+	pubCmd := s.valkeyClient.B().Publish().Channel("equipment").Message(string(jsonData)).Build()
+	if res := s.valkeyClient.Do(ctx, pubCmd); res.Error() != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update borrow request.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully updated borrow request.",
+		Data:    res,
+	}
+}
+
 func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
@@ -412,7 +476,7 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 			}
 		}
 
-		if errors.Is(err, errBorrowRequestNotApproved) {
+		if errors.Is(err, errInvalidBorrowRequestStatus) {
 			return api.Response{
 				Error:   fmt.Errorf("create return request: %w", err),
 				Code:    http.StatusBadRequest,
@@ -468,6 +532,26 @@ func (s *Server) getBorrowRequests(w http.ResponseWriter, r *http.Request) api.R
 	ctx := r.Context()
 
 	borrowRequests, err := s.repository.getBorrowRequests(ctx)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get borrow requests: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get borrow requests.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched borrow requests.",
+		Data:    borrowRequests,
+	}
+}
+
+func (s *Server) getBorrowRequestByID(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	borrowRequestID := r.PathValue("id")
+	borrowRequests, err := s.repository.getBorrowRequestByID(ctx, borrowRequestID)
 	if err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("get borrow requests: %w", err),
@@ -576,6 +660,26 @@ func (s *Server) getReturnRequests(w http.ResponseWriter, r *http.Request) api.R
 		Code:    http.StatusOK,
 		Message: "Successfully fetched return requests.",
 		Data:    returnRequests,
+	}
+}
+
+func (s *Server) getReturnRequestByID(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	returnRequestID := r.PathValue("id")
+	returnRequest, err := s.repository.getReturnRequestByID(ctx, returnRequestID)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get return request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get return requests.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched return request.",
+		Data:    returnRequest,
 	}
 }
 

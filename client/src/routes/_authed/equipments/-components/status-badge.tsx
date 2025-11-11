@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { toImageUrl } from "@/lib/api";
 import { EquipmentStatus, type Equipment } from "@/lib/equipment";
 import { capitalizeWords } from "@/lib/utils";
@@ -10,14 +10,21 @@ type Props = {
 };
 
 export function StatusBadge(props: Props): JSX.Element {
+	function getBadgeVariant(status: EquipmentStatus): BadgeVariant {
+		switch (status) {
+			case EquipmentStatus.Available:
+				return "success";
+			case EquipmentStatus.Borrowed:
+				return "warning";
+		}
+
+		return "default";
+	}
+
 	return (
 		<Badge
 			className="absolute top-1 right-1 h-7.5"
-			variant={
-				props.equipment.status === EquipmentStatus.Available
-					? "success"
-					: "warning"
-			}
+			variant={getBadgeVariant(props.equipment.status)}
 		>
 			{capitalizeWords(props.equipment.status)}
 

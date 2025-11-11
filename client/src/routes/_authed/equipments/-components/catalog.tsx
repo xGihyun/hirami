@@ -49,7 +49,7 @@ export function Catalog(props: Props): JSX.Element {
 	}
 
 	return (
-		<section className="pb-12">
+		<section className="pb-15 !mb-0">
 			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 				{props.equipments.map((equipment) => {
 					const key = `${equipment.id}-${equipment.status}`;
@@ -68,7 +68,7 @@ export function Catalog(props: Props): JSX.Element {
 									onCheckedChange={(checked) =>
 										handleSelect(equipment, 1, checked)
 									}
-									disabled={equipment.status == EquipmentStatus.Borrowed}
+									disabled={equipment.status !== EquipmentStatus.Available}
 								/>
 
 								<div className="space-y-1">
@@ -78,14 +78,14 @@ export function Catalog(props: Props): JSX.Element {
 										<img
 											src={equipmentImage}
 											alt={`${equipment.name} ${equipment.brand}`}
-											className="w-full h-full object-contain"
+											className="w-full object-contain aspect-[164/112]"
 										/>
 									</div>
 
 									<div className="flex flex-col">
 										<LabelLarge>
-											{equipment.brand}
-											{equipment.model ? " - " : null}
+											{equipment.brand ? equipment.brand : "No Brand"}
+											{equipment.model ? " " : null}
 											{equipment.model}
 										</LabelLarge>
 

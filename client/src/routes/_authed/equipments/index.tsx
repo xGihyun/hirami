@@ -192,21 +192,17 @@ function RouteComponent(): JSX.Element {
 						</DialogClose>
 					</DialogContent>
 				</Dialog>
-			) : (
-				<>
-					{selectedEquipments.length > 0 ? (
-						<Button
-							className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 !shadow-item"
-							onClick={() => {
-								setIsBorrowing(true);
-								window.scrollTo({ top: 0, behavior: "instant" });
-							}}
-						>
-							Borrow Equipments ({selectedEquipments.length})
-						</Button>
-					) : null}
-				</>
-			)}
+			) : selectedEquipments.length > 0 ? (
+				<Button
+					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 !shadow-item"
+					onClick={() => {
+						setIsBorrowing(true);
+						window.scrollTo({ top: 0, behavior: "instant" });
+					}}
+				>
+					Borrow Equipments ({selectedEquipments.length})
+				</Button>
+			) : null}
 		</div>
 	);
 }
