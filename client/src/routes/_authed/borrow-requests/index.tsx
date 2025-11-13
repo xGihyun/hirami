@@ -1,7 +1,7 @@
 import {
 	borrowRequestsQuery,
 	BorrowRequestStatus,
-	type BorrowRequest,
+	type BorrowTransaction,
 	type ReviewBorrowRequest,
 } from "@/lib/equipment/borrow";
 import {
@@ -34,11 +34,12 @@ import { useAuth } from "@/auth";
 import type { User } from "@/lib/user";
 import { EmptyState } from "@/components/empty";
 import { EventSource } from "eventsource";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authed/borrow-requests/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
-		return context.queryClient.ensureQueryData(borrowRequestsQuery);
+		context.queryClient.prefetchQuery(borrowRequestsQuery);
 	},
 });
 
@@ -63,7 +64,7 @@ async function reviewBorrowRequest(
 
 function RouteComponent(): JSX.Element {
 	const { data } = useSuspenseQuery(borrowRequestsQuery);
-	const [selectedRequest, setSelectedRequest] = useState<BorrowRequest>();
+	const [selectedRequest, setSelectedRequest] = useState<BorrowTransaction>();
 	const auth = useAuth();
 	const queryClient = useQueryClient();
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -84,13 +85,13 @@ function RouteComponent(): JSX.Element {
 	});
 
 	async function handleReview(
-		request: BorrowRequest,
+		request: BorrowTransaction,
 		reviewedBy: User,
-        status: BorrowRequestStatus,
+		status: BorrowRequestStatus,
 		remarks?: string,
 	): Promise<void> {
 		const payload: ReviewBorrowRequest = {
-			id: request.id,
+			id: request.borrowRequestId,
 			status: status,
 			reviewedBy: reviewedBy.id,
 			remarks: remarks,
@@ -145,11 +146,12 @@ function RouteComponent(): JSX.Element {
 						const borrowerInitials = `${request.borrower.firstName[0]}${request.borrower.lastName[0]}`;
 						const borrowerName = `${request.borrower.lastName}, ${request.borrower.firstName}`;
 						const requestedAt = format(
-							request.createdAt,
+							request.borrowedAt,
 							"MMM d, yyyy - hh:mm a",
 						);
+						const anomalyResult = request.anomalyResult;
 						return (
-							<DrawerTrigger asChild key={request.id}>
+							<DrawerTrigger asChild key={request.borrowRequestId}>
 								<button
 									onClick={() => setSelectedRequest(request)}
 									className="border rounded p-4 text-start bg-card cursor-pointer hover:bg-card/50 transition-colors flex gap-2 items-center"
@@ -166,6 +168,15 @@ function RouteComponent(): JSX.Element {
 										<p className="text-sm font-montserrat-medium">
 											{requestedAt}
 										</p>
+
+										{anomalyResult && anomalyResult.isAnomaly ? (
+											<Badge
+												className="mt-1 mx-auto block"
+												variant="destructive"
+											>
+												Anomaly
+											</Badge>
+										) : null}
 									</div>
 								</button>
 							</DrawerTrigger>
@@ -194,7 +205,7 @@ function RouteComponent(): JSX.Element {
 						<DrawerDescription>
 							Requested on{" "}
 							{selectedRequest &&
-								format(selectedRequest.createdAt, "MMM d, yyyy - hh:mm a")}
+								format(selectedRequest.borrowedAt, "MMM d, yyyy - hh:mm a")}
 							<br />
 							Will return on{" "}
 							{selectedRequest &&
@@ -276,7 +287,11 @@ function RouteComponent(): JSX.Element {
 									alert("Please log in to review borrow request");
 									return;
 								}
-								handleReview(selectedRequest, auth.user, BorrowRequestStatus.Approved);
+								handleReview(
+									selectedRequest,
+									auth.user,
+									BorrowRequestStatus.Approved,
+								);
 							}}
 						>
 							Approve
@@ -292,14 +307,18 @@ function RouteComponent(): JSX.Element {
 									alert("Please log in to review borrow request");
 									return;
 								}
-								handleReview(selectedRequest, auth.user, BorrowRequestStatus.Rejected);
+								handleReview(
+									selectedRequest,
+									auth.user,
+									BorrowRequestStatus.Rejected,
+								);
 							}}
-                            variant="destructive"
+							variant="destructive"
 						>
 							Reject
 						</Button>
 
-                        <Separator />
+						<Separator />
 
 						<DrawerClose asChild>
 							<Button variant="outline">Close</Button>

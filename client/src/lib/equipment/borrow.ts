@@ -32,12 +32,12 @@ export type BorrowRequest = {
 	status: BorrowRequestStatus;
 };
 
-async function getBorrowRequests(): Promise<BorrowRequest[]> {
+async function getBorrowRequests(): Promise<BorrowTransaction[]> {
 	const response = await fetch(`${BACKEND_URL}/borrow-requests`, {
 		method: "GET",
 	});
 
-	const result: ApiResponse<BorrowRequest[]> = await response.json();
+	const result: ApiResponse<BorrowTransaction[]> = await response.json();
 	if (!response.ok) {
 		throw new Error(result.message);
 	}

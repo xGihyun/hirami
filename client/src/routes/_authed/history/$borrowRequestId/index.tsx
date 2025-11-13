@@ -46,6 +46,7 @@ function RouteComponent(): JSX.Element {
 	const borrower = borrowRequest.data.borrower;
 	const borrowerInitials = borrower.firstName[0] + borrower.lastName[0];
 	const transaction = borrowRequest.data;
+	const anomalyResult = borrowRequest.data.anomalyResult;
 
 	return (
 		<div className="space-y-4 pb-15 !mb-0">
@@ -87,6 +88,12 @@ function RouteComponent(): JSX.Element {
 						</LabelSmall>
 					) : null}
 				</div>
+
+				{anomalyResult && anomalyResult.isAnomaly ? (
+					<Badge className="mt-1 mx-auto block" variant="destructive">
+						Anomaly
+					</Badge>
+				) : null}
 			</section>
 
 			<section className="space-y-2 h-full">
@@ -131,7 +138,7 @@ function RouteComponent(): JSX.Element {
 						</DialogHeader>
 
 						<QRCodeSVG
-							value={borrowRequest.data.id}
+							value={borrowRequest.data.borrowRequestId}
 							className="w-full size-60"
 						/>
 					</DialogContent>
