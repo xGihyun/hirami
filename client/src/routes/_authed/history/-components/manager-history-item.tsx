@@ -31,6 +31,8 @@ export function ManagerHistoryItem(props: Props): JSX.Element {
 				return "success";
 			case BorrowRequestStatus.Rejected:
 				return "destructive";
+			case BorrowRequestStatus.Received:
+				return "secondary";
 		}
 
 		return "default";
@@ -97,18 +99,20 @@ export function ManagerHistoryItem(props: Props): JSX.Element {
 						</LabelSmall>
 					) : null}
 
-					<Badge
-						className="mt-1"
-						variant={getBadgeVariant(props.transaction.status)}
-					>
-						Status: {capitalizeWords(props.transaction.status)}
-					</Badge>
-
-					{anomalyResult && anomalyResult.isAnomaly ? (
-						<Badge className="mt-1" variant="destructive">
-							Anomaly
+					<div className="space-x-1">
+						<Badge
+							className="mt-1"
+							variant={getBadgeVariant(props.transaction.status)}
+						>
+							Status: {capitalizeWords(props.transaction.status)}
 						</Badge>
-					) : null}
+
+						{anomalyResult && anomalyResult.isAnomaly ? (
+							<Badge className="mt-1" variant="destructive">
+								Anomaly
+							</Badge>
+						) : null}
+					</div>
 				</div>
 			</div>
 		</div>

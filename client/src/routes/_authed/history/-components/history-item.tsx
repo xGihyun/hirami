@@ -32,6 +32,8 @@ export function HistoryItem(props: Props): JSX.Element {
 				return "success";
 			case BorrowRequestStatus.Rejected:
 				return "destructive";
+			case BorrowRequestStatus.Received:
+				return "secondary";
 		}
 
 		return "default";

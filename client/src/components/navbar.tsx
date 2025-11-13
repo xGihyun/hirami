@@ -67,7 +67,7 @@ export function Navbar(): JSX.Element {
 			historyOption,
 			{
 				to: "/return-requests",
-				label: "Return",
+				label: "DELETE LATER",
 				icon: IconRoundArrowUp,
 			},
 			{

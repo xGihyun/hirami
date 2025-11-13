@@ -26,7 +26,7 @@ export function ReturnSuccess(props: Props): JSX.Element {
 						<img
 							src={homeRunIllustration}
 							alt="Home run illustration"
-							className="w-full max-w-xs mx-auto"
+							className="w-full max-w-xs mx-auto aspect-[320/277]"
 						/>
 
 						<H1 className="text-center">
