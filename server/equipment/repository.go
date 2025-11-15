@@ -1140,8 +1140,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction
 		SELECT 
 			borrow_request_id,
 			return_request_id,
-			created_at,
-			reviewed_by
+			created_at
 		FROM return_request
 		WHERE (borrow_request_id, created_at) IN (
 			SELECT borrow_request_id, MAX(created_at)
@@ -1167,16 +1166,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction
 			'avatarUrl', person_borrow_reviewer.avatar_url
 		  ) 
 		END AS borrow_reviewed_by,
-		CASE
-		  WHEN person_return_reviewer.person_id IS NULL THEN NULL
-		  ELSE jsonb_build_object(
-			'id', person_return_reviewer.person_id,
-			'firstName', person_return_reviewer.first_name,
-			'middleName', person_return_reviewer.middle_name,
-			'lastName', person_return_reviewer.last_name,
-			'avatarUrl', person_return_reviewer.avatar_url
-		  )
-		END AS return_confirmed_by,
+		NULL AS return_confirmed_by,
 		jsonb_agg(
 			jsonb_build_object(
 				'equipmentTypeId', equipment_type.equipment_type_id,
@@ -1209,7 +1199,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction
 	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
 	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
-	LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
+	-- LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
 	LEFT JOIN anomaly_result ON anomaly_result.borrow_request_id = borrow_request.borrow_request_id
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
@@ -1225,14 +1215,8 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction
 		person_borrow_reviewer.middle_name,
 		person_borrow_reviewer.last_name,
 		person_borrow_reviewer.avatar_url,
-		person_return_reviewer.person_id,
-		person_return_reviewer.first_name,
-		person_return_reviewer.middle_name,
-		person_return_reviewer.last_name,
-		person_return_reviewer.avatar_url,
 		borrow_request.borrow_request_id,
 		latest_return_data.created_at,
-		latest_return_data.reviewed_by,
 		anomaly_result.anomaly_result_id
 	`
 
@@ -1253,8 +1237,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 		SELECT 
 			borrow_request_id,
 			return_request_id,
-			created_at,
-			reviewed_by
+			created_at
 		FROM return_request
 		WHERE (borrow_request_id, created_at) IN (
 			SELECT borrow_request_id, MAX(created_at)
@@ -1280,16 +1263,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 			'avatarUrl', person_borrow_reviewer.avatar_url
 		  ) 
 		END AS borrow_reviewed_by,
-		CASE
-		  WHEN person_return_reviewer.person_id IS NULL THEN NULL
-		  ELSE jsonb_build_object(
-			'id', person_return_reviewer.person_id,
-			'firstName', person_return_reviewer.first_name,
-			'middleName', person_return_reviewer.middle_name,
-			'lastName', person_return_reviewer.last_name,
-			'avatarUrl', person_return_reviewer.avatar_url
-		  )
-		END AS return_confirmed_by,
+		NULL AS return_confirmed_by,
 		jsonb_agg(
 			jsonb_build_object(
 				'equipmentTypeId', equipment_type.equipment_type_id,
@@ -1322,7 +1296,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
 	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
-	LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
+	-- LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
 	LEFT JOIN anomaly_result ON anomaly_result.borrow_request_id = borrow_request.borrow_request_id
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
@@ -1338,14 +1312,8 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 		person_borrow_reviewer.middle_name,
 		person_borrow_reviewer.last_name,
 		person_borrow_reviewer.avatar_url,
-		person_return_reviewer.person_id,
-		person_return_reviewer.first_name,
-		person_return_reviewer.middle_name,
-		person_return_reviewer.last_name,
-		person_return_reviewer.avatar_url,
 		borrow_request.borrow_request_id,
 		latest_return_data.created_at,
-		latest_return_data.reviewed_by,
 		anomaly_result.anomaly_result_id
 	`
 
@@ -1404,15 +1372,13 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 		return confirmReturnRequest{}, errReturnRequestAlreadyConfirmed
 	}
 
-	updateQuery := `
-	UPDATE return_request
-	SET reviewed_by = $1,
-		remarks = $2
-	WHERE return_request_id = $3
-	RETURNING borrow_request_id
+	borrowRequestQuery := `
+	SELECT borrow_request_id 
+	FROM return_request
+	WHERE return_request_id = $1
 	`
 	var borrowRequestID string
-	if err := tx.QueryRow(ctx, updateQuery, arg.ReviewedBy, arg.Remarks, arg.ReturnRequestID).Scan(&borrowRequestID); err != nil {
+	if err := tx.QueryRow(ctx, borrowRequestQuery, arg.ReturnRequestID).Scan(&borrowRequestID); err != nil {
 		return confirmReturnRequest{}, err
 	}
 
@@ -1717,8 +1683,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		SELECT 
 			borrow_request_id,
 			return_request_id,
-			created_at,
-			reviewed_by
+			created_at
 		FROM return_request
 		WHERE (borrow_request_id, created_at) IN (
 			SELECT borrow_request_id, MAX(created_at)
@@ -1744,16 +1709,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			'avatarUrl', person_borrow_reviewer.avatar_url
 		  ) 
 		END AS borrow_reviewed_by,
-		CASE
-		  WHEN person_return_reviewer.person_id IS NULL THEN NULL
-		  ELSE jsonb_build_object(
-			'id', person_return_reviewer.person_id,
-			'firstName', person_return_reviewer.first_name,
-			'middleName', person_return_reviewer.middle_name,
-			'lastName', person_return_reviewer.last_name,
-			'avatarUrl', person_return_reviewer.avatar_url
-		  )
-		END AS return_confirmed_by,
+		NULL AS return_confirmed_by,
 		jsonb_agg(
 			jsonb_build_object(
 				'equipmentTypeId', equipment_type.equipment_type_id,
@@ -1786,7 +1742,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
 	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
-	LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
+	-- LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
 	LEFT JOIN anomaly_result ON anomaly_result.borrow_request_id = borrow_request.borrow_request_id
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
@@ -1826,14 +1782,8 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		person_borrow_reviewer.middle_name,
 		person_borrow_reviewer.last_name,
 		person_borrow_reviewer.avatar_url,
-		person_return_reviewer.person_id,
-		person_return_reviewer.first_name,
-		person_return_reviewer.middle_name,
-		person_return_reviewer.last_name,
-		person_return_reviewer.avatar_url,
 		borrow_request.borrow_request_id,
 		latest_return_data.created_at,
-		latest_return_data.reviewed_by,
 		anomaly_result.anomaly_result_id
 	`
 
