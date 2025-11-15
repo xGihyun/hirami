@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/xGihyun/hirami/user"
@@ -40,14 +39,20 @@ func main() {
 	}
 	userID, err := repo.Register(ctx, registerReq)
 	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code != "23505" {
-			slog.Error("Failed to register default Equipment Manager.")
-			return
-		}
+		// if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code != "23505" {
+		// 	slog.Error("Failed to register default Equipment Manager.")
+		// }
+		//
+		// if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+		// 	slog.Debug("Equipment Manager already exists.")
+		// }
 
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
-			slog.Debug("Equipment Manager already exists.")
-		}
+		userRes, _ := repo.GetByEmail(ctx, registerReq.Email)
+		// if err != nil {
+		// 	slog.Error(err.Error())
+		// }
+
+		userID = userRes.UserID
 	}
 
 	if userID == "" {
@@ -65,4 +70,6 @@ func main() {
 		slog.Error("Failed to update Equipment Manager role.")
 		return
 	}
+
+	slog.Debug("Successfully setup equipment manager.")
 }
