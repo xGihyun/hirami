@@ -7,7 +7,7 @@ import {
 	IconQrCode,
 	IconRoundArrowDown,
 	IconRoundArrowUp,
-    IconUserRoundCog,
+	IconUserRoundCog,
 } from "@/lib/icons";
 import { LabelSmall } from "./typography";
 import { useAuth } from "@/auth";
@@ -19,14 +19,6 @@ export function Navbar(): JSX.Element {
 	const location = useLocation();
 
 	const getNavOptions = () => {
-		const commonOptions = [
-			{
-				to: "/equipments",
-				label: "Catalog",
-				icon: IconBox,
-			},
-		];
-
 		const profileOption = {
 			to: "/profile",
 			label: "Profile",
@@ -41,24 +33,32 @@ export function Navbar(): JSX.Element {
 
 		if (auth.user?.role === UserRole.Borrower) {
 			return [
-				...commonOptions,
+				{
+					to: "/equipments",
+					label: "Catalog",
+					icon: IconBox,
+				},
 				{
 					to: "/return",
 					label: "Return",
 					icon: IconRoundArrowUp,
 				},
-                {
+				{
 					to: "/borrow-scan",
 					label: "Scan",
 					icon: IconQrCode,
-                },
+				},
 				historyOption,
 				profileOption,
 			];
 		}
 
 		return [
-			...commonOptions,
+			{
+				to: "/equipments",
+				label: "Manage",
+				icon: IconBox,
+			},
 			{
 				to: "/borrow-requests",
 				label: "Requests",

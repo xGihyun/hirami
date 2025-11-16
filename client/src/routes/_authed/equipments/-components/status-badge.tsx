@@ -29,7 +29,7 @@ export function StatusBadge(props: Props): JSX.Element {
 			{capitalizeWords(props.equipment.status)}
 
 			{!props.equipment.borrower ? (
-				<span>{props.equipment.quantity} units</span>
+				<span>({props.equipment.quantity} units)</span>
 			) : (
 				<Avatar className="size-5 text-xs ml-1">
 					<AvatarImage src={toImageUrl(props.equipment.borrower.avatarUrl)} />

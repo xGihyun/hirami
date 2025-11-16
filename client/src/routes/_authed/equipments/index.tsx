@@ -9,7 +9,7 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/lib/api";
 import { useEffect, useState, type JSX } from "react";
@@ -36,6 +36,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { DialogClose } from "@radix-ui/react-dialog";
+import { v4 as uuidv4 } from "uuid";
 
 const searchSchema = z.object({
 	success: z.boolean().optional(),
@@ -169,29 +170,17 @@ function RouteComponent(): JSX.Element {
 			)}
 
 			{auth.user?.role === UserRole.EquipmentManager ? (
-				<Dialog
-					open={isDialogOpen}
-					onOpenChange={(open) => setIsDialogOpen(open)}
+				<Button
+					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow"
+					asChild
 				>
-					<DialogTrigger asChild>
-						<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow">
-							Register New Equipment
-						</Button>
-					</DialogTrigger>
-					<DialogContent className="p-5" showCloseButton={false}>
-						<DialogHeader className="sr-only">
-							<DialogTitle>Register Equipment</DialogTitle>
-						</DialogHeader>
-
-						<RegisterEquipmentForm onSuccess={onSuccess} />
-
-						<DialogClose className="absolute left-1 top-1" asChild>
-							<Button variant="ghost" className="size-15">
-								<IconArrowLeft className="size-8" />
-							</Button>
-						</DialogClose>
-					</DialogContent>
-				</Dialog>
+					<Link
+						to="/equipments/$equipmentId/register/name"
+						params={{ equipmentId: uuidv4() }}
+					>
+						Register New Equipment
+					</Link>
+				</Button>
 			) : selectedEquipments.length > 0 ? (
 				<Button
 					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 !shadow-item"

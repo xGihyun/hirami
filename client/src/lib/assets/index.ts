@@ -12,6 +12,7 @@ import morningWorkoutIllustration from "./undraw_morning-workout.svg";
 import fitnessTrackerIllustration from "./undraw_fitness-tracker.svg";
 import indoorBikeIllustration from "./undraw_indoor-bike.svg";
 import fitnessStatsIllustration from "./undraw_fitness-stats.svg";
+import addFilesIllustration from "./undraw_add-files.svg";
 
 export {
 	hiramiLogo,
@@ -28,4 +29,5 @@ export {
 	fitnessTrackerIllustration,
 	indoorBikeIllustration,
 	fitnessStatsIllustration,
+	addFilesIllustration,
 };
