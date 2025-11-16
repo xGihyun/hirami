@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 ALTER TABLE return_request
-ADD COLUMN remarks NOT NULL;
+ADD COLUMN remarks TEXT NOT NULL;
 -- +goose StatementEnd
 
 -- +goose Down
