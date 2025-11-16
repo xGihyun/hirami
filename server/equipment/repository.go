@@ -15,6 +15,7 @@ import (
 type Repository interface {
 	createEquipment(ctx context.Context, arg createRequest) (createResponse, error)
 	getAll(ctx context.Context, params getEquipmentParams) ([]equipmentWithBorrower, error)
+	getEquipmentTypeByID(ctx context.Context, id string) (updateRequest, error)
 	getEquipmentNames(ctx context.Context) ([]string, error)
 	update(ctx context.Context, arg updateRequest) error
 
@@ -335,6 +336,30 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 	return equipments, nil
 }
 
+func (r *repository) getEquipmentTypeByID(ctx context.Context, id string) (updateRequest, error) {
+	query := `
+	SELECT 
+		equipment_type_id, name, brand, model, image_url
+	FROM equipment_type
+	WHERE equipment_type_id = $1
+	`
+
+	row := r.querier.QueryRow(ctx, query, id)
+
+	var res updateRequest
+	if err := row.Scan(
+		&res.EquipmentTypeID,
+		&res.Name,
+		&res.Brand,
+		&res.Model,
+		&res.ImageURL,
+	); err != nil {
+		return updateRequest{}, err
+	}
+
+	return res, nil
+}
+
 func (r *repository) getEquipmentNames(ctx context.Context) ([]string, error) {
 	query := `
 	SELECT DISTINCT ON(equipment_type.name) equipment_type.name
@@ -374,10 +399,10 @@ type updateRequest struct {
 func (r *repository) update(ctx context.Context, arg updateRequest) error {
 	query := `
 	UPDATE equipment_type
-	SET name = $1,
-		brand = $2,
-		model = $3,
-		image_url = $4
+	SET name = COALESCE($1, name),
+		brand = COALESCE($2, brand),
+		model = COALESCE($3, model),
+		image_url = COALESCE($4, image_url)
 	WHERE equipment_type_id = $5
 	`
 

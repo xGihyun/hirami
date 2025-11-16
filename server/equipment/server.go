@@ -31,6 +31,7 @@ func NewServer(repo Repository, valkeyClient valkey.Client) *Server {
 func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /equipments", api.Handler(s.createEquipment))
 	mux.Handle("GET /equipments", api.Handler(s.getAll))
+	mux.Handle("GET /equipments/{equipmentTypeId}", api.Handler(s.getEquipmentByID))
 	mux.Handle("GET /equipment-names", api.Handler(s.getEquipmentNames))
 	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
 
@@ -208,6 +209,26 @@ func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 	}
 }
 
+func (s *Server) getEquipmentByID(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	equipmentTypeID := r.PathValue("equipmentTypeId")
+	equipment, err := s.repository.getEquipmentTypeByID(ctx, equipmentTypeID)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get equipment: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get equipments.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched equipment.",
+		Data:    equipment,
+	}
+}
+
 func (s *Server) getEquipmentNames(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
@@ -230,18 +251,72 @@ func (s *Server) getEquipmentNames(w http.ResponseWriter, r *http.Request) api.R
 func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	var data updateRequest
-
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&data); err != nil {
+	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		return api.Response{
-			Error:   fmt.Errorf("update equipment: %w", err),
+			Error:   fmt.Errorf("create equipment: %w", err),
 			Code:    http.StatusBadRequest,
-			Message: "Invalid update equipment request.",
+			Message: "Invalid create equipment request.",
 		}
 	}
 
-	data.EquipmentTypeID = r.PathValue("equipmentTypeId")
+	var imageURL *string
+	file, header, err := r.FormFile("image")
+	if err == nil {
+		defer file.Close()
+
+		if header.Size > maxImageSize {
+			return api.Response{
+				Error:   fmt.Errorf("create equipment: image size exceeds 5MB limit"),
+				Code:    http.StatusBadRequest,
+				Message: "Image size must not exceed 5MB.",
+			}
+		}
+
+		contentType := header.Header.Get("Content-Type")
+		if contentType != "image/jpeg" && contentType != "image/jpg" && contentType != "image/png" {
+			return api.Response{
+				Error:   fmt.Errorf("create equipment: invalid image type %s", contentType),
+				Code:    http.StatusBadRequest,
+				Message: "Image must be in JPG or PNG format.",
+			}
+		}
+
+		uploadedURL, err := api.UploadFile(file, header, "equipments")
+		if err != nil {
+			return api.Response{
+				Error:   fmt.Errorf("create equipment: %w", err),
+				Code:    http.StatusInternalServerError,
+				Message: "Failed to upload equipment image.",
+			}
+		}
+		imageURL = &uploadedURL
+	} else if err != http.ErrMissingFile {
+		return api.Response{
+			Error:   fmt.Errorf("create equipment: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid image upload.",
+		}
+	}
+
+	var (
+		brand *string
+		model *string
+	)
+	if brandValue := strings.TrimSpace(r.FormValue("brand")); brandValue != "" {
+		brand = &brandValue
+	}
+	if modelValue := strings.TrimSpace(r.FormValue("model")); modelValue != "" {
+		model = &modelValue
+	}
+
+	data := updateRequest{
+		EquipmentTypeID: r.PathValue("equipmentTypeId"),
+		Name:            strings.TrimSpace(r.FormValue("name")),
+		Brand:           brand,
+		Model:           model,
+		ImageURL:        imageURL,
+	}
+
 	if err := s.repository.update(ctx, data); err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("update equipments: %w", err),
