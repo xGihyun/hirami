@@ -12,6 +12,11 @@ services:
       - "5432:5432"
     volumes:
       - hirami-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hirami"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   valkey:
     image: valkey/valkey-bundle:latest
@@ -32,7 +37,7 @@ services:
       - 1025:1025
 
   server:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     container_name: hirami-server
@@ -41,8 +46,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - postgres
-      - valkey
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
     volumes:
       - .:/app
     command: go run .
