@@ -7,7 +7,6 @@ import {
 import {
 	useMutation,
 	useQueryClient,
-	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type JSX } from "react";
@@ -21,25 +20,18 @@ import {
 	DrawerFooter,
 	DrawerHeader,
 	DrawerTitle,
-	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { BACKEND_URL, toImageUrl, type ApiResponse } from "@/lib/api";
 import { Caption, H2, P } from "@/components/typography";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { useAuth } from "@/auth";
 import type { User } from "@/lib/user";
-import { EmptyState } from "@/components/empty";
 import { EventSource } from "eventsource";
-import { Separator } from "react-aria-components";
 import QrScanner from "qr-scanner";
 import { Input } from "@/components/ui/input";
 
-export const Route = createFileRoute("/_authed/return-requests/")({
+export const Route = createFileRoute("/_authed/return-scan/")({
 	component: RouteComponent,
-	loader: ({ context }) => {
-		return context.queryClient.ensureQueryData(returnRequestsQuery({}));
-	},
 });
 
 async function confirmReturnRequest(
@@ -65,7 +57,6 @@ async function confirmReturnRequest(
 }
 
 function RouteComponent(): JSX.Element {
-	const { data } = useSuspenseQuery(returnRequestsQuery({}));
 	const [selectedRequest, setSelectedRequest] = useState<ReturnRequest | null>(
 		null,
 	);
@@ -77,17 +68,6 @@ function RouteComponent(): JSX.Element {
 
 	const mutation = useMutation({
 		mutationFn: confirmReturnRequest,
-		onMutate: () => {
-			return toast.loading("Confirming return request");
-		},
-		onSuccess: (data, _variables, toastId) => {
-			queryClient.invalidateQueries(returnRequestsQuery({}));
-            setSelectedRequest(null)
-			toast.success(data.message, { id: toastId });
-		},
-		onError: (error, _variables, toastId) => {
-			toast.error(error.message, { id: toastId });
-		},
 	});
 
 	async function handleConfirmation(
@@ -148,6 +128,8 @@ function RouteComponent(): JSX.Element {
 	}
 
 	useEffect(() => {
+		handleScan();
+
 		return () => {
 			if (!scannerRef.current) {
 				return;
@@ -171,50 +153,29 @@ function RouteComponent(): JSX.Element {
 			eventSource.removeEventListener("equipment:create", handleEvent);
 			eventSource.close();
 		};
-	}, [queryClient]);
-
-	if (data.length === 0) {
-		return (
-			<div className="relative space-y-4">
-				<H2>Return Requests</H2>
-
-				<EmptyState>
-					No return requests yet.
-					<br />
-					(´｡• ᵕ •｡`)
-				</EmptyState>
-			</div>
-		);
-	}
+	}, []);
 
 	return (
-		<div className="relative space-y-4 pb-15 !mb-0">
-			<H2>Return Requests</H2>
+		<div className="relative space-y-4 flex w-full items-center justify-center flex-col ">
+			<H2 className="text-center">Scan QR Code</H2>
 
-			<Separator />
+			<div className="relative w-full aspect-square">
+				<div className="relative w-full aspect-square bg-accent rounded-4xl overflow-clip">
+					<video
+						ref={videoRef}
+						className="w-full absolute inset-0 object-cover aspect-square"
+					/>
+				</div>
 
-			<div className="relative h-full w-full aspect-[3/4]">
-				<video
-					ref={videoRef}
-					className="h-full w-full absolute insert-0 object-cover"
-				/>
+				{/* Top-left corner */}
+				<span className="absolute left-0 top-0 size-9 border-l-4 border-t-4 border-secondary rounded-tl-4xl"></span>
+				{/* Top-right corner */}
+				<span className="absolute right-0 top-0 size-9 border-r-4 border-t-4 border-secondary rounded-tr-4xl"></span>
+				{/* Bottom-left corner */}
+				<span className="absolute left-0 bottom-0 size-9 border-l-4 border-b-4 border-secondary rounded-bl-4xl"></span>
+				{/* Bottom-right corner */}
+				<span className="absolute right-0 bottom-0 size-9 border-r-4 border-b-4 border-secondary rounded-br-4xl"></span>
 			</div>
-
-			{!isScanning ? (
-				<Button
-					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50"
-					onClick={handleScan}
-				>
-					Scan
-				</Button>
-			) : (
-				<Button
-					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50"
-					onClick={handleScannerStop}
-				>
-					Stop Scanning
-				</Button>
-			)}
 
 			<Drawer
 				open={selectedRequest !== null}
@@ -224,7 +185,7 @@ function RouteComponent(): JSX.Element {
 					}
 				}}
 			>
-				<DrawerContent className="space-y-4">
+				<DrawerContent className="space-y-4 h-full">
 					<DrawerHeader>
 						<DrawerTitle className="items-center flex flex-col">
 							<Avatar className="size-12">

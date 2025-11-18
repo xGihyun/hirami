@@ -17,7 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/_register'
 import { Route as AuthedUsersIndexRouteImport } from './routes/_authed/users/index'
 import { Route as AuthedReturnIndexRouteImport } from './routes/_authed/return/index'
-import { Route as AuthedReturnRequestsIndexRouteImport } from './routes/_authed/return-requests/index'
+import { Route as AuthedReturnScanIndexRouteImport } from './routes/_authed/return-scan/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedHistoryIndexRouteImport } from './routes/_authed/history/index'
 import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equipments/index'
@@ -77,12 +77,11 @@ const AuthedReturnIndexRoute = AuthedReturnIndexRouteImport.update({
   path: '/return/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedReturnRequestsIndexRoute =
-  AuthedReturnRequestsIndexRouteImport.update({
-    id: '/return-requests/',
-    path: '/return-requests/',
-    getParentRoute: () => AuthedRoute,
-  } as any)
+const AuthedReturnScanIndexRoute = AuthedReturnScanIndexRouteImport.update({
+  id: '/return-scan/',
+  path: '/return-scan/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedProfileIndexRoute = AuthedProfileIndexRouteImport.update({
   id: '/profile/',
   path: '/profile/',
@@ -212,7 +211,7 @@ export interface FileRoutesByFullPath {
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
-  '/return-requests': typeof AuthedReturnRequestsIndexRoute
+  '/return-scan': typeof AuthedReturnScanIndexRoute
   '/return': typeof AuthedReturnIndexRoute
   '/users': typeof AuthedUsersIndexRoute
   '/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdRegisterRouteWithChildren
@@ -239,7 +238,7 @@ export interface FileRoutesByTo {
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
-  '/return-requests': typeof AuthedReturnRequestsIndexRoute
+  '/return-scan': typeof AuthedReturnScanIndexRoute
   '/return': typeof AuthedReturnIndexRoute
   '/users': typeof AuthedUsersIndexRoute
   '/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdIndexRoute
@@ -269,7 +268,7 @@ export interface FileRoutesById {
   '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
   '/_authed/history/': typeof AuthedHistoryIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
-  '/_authed/return-requests/': typeof AuthedReturnRequestsIndexRoute
+  '/_authed/return-scan/': typeof AuthedReturnScanIndexRoute
   '/_authed/return/': typeof AuthedReturnIndexRoute
   '/_authed/users/': typeof AuthedUsersIndexRoute
   '/_authed/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdRouteWithChildren
@@ -299,7 +298,7 @@ export interface FileRouteTypes {
     | '/equipments'
     | '/history'
     | '/profile'
-    | '/return-requests'
+    | '/return-scan'
     | '/return'
     | '/users'
     | '/equipments/$equipmentId'
@@ -326,7 +325,7 @@ export interface FileRouteTypes {
     | '/equipments'
     | '/history'
     | '/profile'
-    | '/return-requests'
+    | '/return-scan'
     | '/return'
     | '/users'
     | '/equipments/$equipmentId'
@@ -355,7 +354,7 @@ export interface FileRouteTypes {
     | '/_authed/equipments/'
     | '/_authed/history/'
     | '/_authed/profile/'
-    | '/_authed/return-requests/'
+    | '/_authed/return-scan/'
     | '/_authed/return/'
     | '/_authed/users/'
     | '/_authed/equipments/$equipmentId'
@@ -430,11 +429,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedReturnIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/return-requests/': {
-      id: '/_authed/return-requests/'
-      path: '/return-requests'
-      fullPath: '/return-requests'
-      preLoaderRoute: typeof AuthedReturnRequestsIndexRouteImport
+    '/_authed/return-scan/': {
+      id: '/_authed/return-scan/'
+      path: '/return-scan'
+      fullPath: '/return-scan'
+      preLoaderRoute: typeof AuthedReturnScanIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/profile/': {
@@ -676,7 +675,7 @@ interface AuthedRouteChildren {
   AuthedEquipmentsIndexRoute: typeof AuthedEquipmentsIndexRoute
   AuthedHistoryIndexRoute: typeof AuthedHistoryIndexRoute
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
-  AuthedReturnRequestsIndexRoute: typeof AuthedReturnRequestsIndexRoute
+  AuthedReturnScanIndexRoute: typeof AuthedReturnScanIndexRoute
   AuthedReturnIndexRoute: typeof AuthedReturnIndexRoute
   AuthedUsersIndexRoute: typeof AuthedUsersIndexRoute
   AuthedEquipmentsEquipmentIdRoute: typeof AuthedEquipmentsEquipmentIdRouteWithChildren
@@ -689,7 +688,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedEquipmentsIndexRoute: AuthedEquipmentsIndexRoute,
   AuthedHistoryIndexRoute: AuthedHistoryIndexRoute,
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
-  AuthedReturnRequestsIndexRoute: AuthedReturnRequestsIndexRoute,
+  AuthedReturnScanIndexRoute: AuthedReturnScanIndexRoute,
   AuthedReturnIndexRoute: AuthedReturnIndexRoute,
   AuthedUsersIndexRoute: AuthedUsersIndexRoute,
   AuthedEquipmentsEquipmentIdRoute:

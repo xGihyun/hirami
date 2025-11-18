@@ -64,18 +64,17 @@ export function Navbar(): JSX.Element {
 				label: "Requests",
 				icon: IconRoundArrowUp,
 			},
-			historyOption,
 			{
-				to: "/return-requests",
-				label: "DELETE LATER",
-				icon: IconRoundArrowUp,
+				to: "/return-scan",
+				label: "Scan",
+				icon: IconQrCode,
 			},
+			historyOption,
 			{
 				to: "/users",
 				label: "Users",
 				icon: IconUserRoundCog,
 			},
-			profileOption,
 		];
 	};
 
