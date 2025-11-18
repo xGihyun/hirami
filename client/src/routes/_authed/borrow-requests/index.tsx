@@ -24,17 +24,23 @@ import {
 	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { BACKEND_URL, toImageUrl, type ApiResponse } from "@/lib/api";
-import { Caption, H2, P } from "@/components/typography";
+import {
+	Caption,
+	H2,
+	LabelLarge,
+	LabelMedium,
+	LabelSmall,
+	TitleSmall,
+} from "@/components/typography";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useAuth } from "@/auth";
 import type { User } from "@/lib/user";
-import { EmptyState } from "@/components/empty";
 import { EventSource } from "eventsource";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 export const Route = createFileRoute("/_authed/borrow-requests/")({
 	component: RouteComponent,
@@ -68,6 +74,7 @@ function RouteComponent(): JSX.Element {
 	const auth = useAuth();
 	const queryClient = useQueryClient();
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+	const [remarks, setRemarks] = useState<string>("");
 
 	const mutation = useMutation({
 		mutationFn: reviewBorrowRequest,
@@ -115,27 +122,9 @@ function RouteComponent(): JSX.Element {
 		};
 	}, [queryClient]);
 
-	// TODO: Implement rejecting requests
-
-	if (data.length === 0) {
-		return (
-			<div className="relative space-y-4">
-				<H2>Borrow Requests</H2>
-
-				<EmptyState>
-					No borrow requests yet.
-					<br />
-					(´｡• ᵕ •｡`)
-				</EmptyState>
-			</div>
-		);
-	}
-
 	return (
 		<div className="relative space-y-4">
-			<H2>Borrow Requests</H2>
-
-			<Separator />
+			<H2 className="text-center">Request List</H2>
 
 			<Drawer
 				open={isDrawerOpen}
@@ -145,18 +134,15 @@ function RouteComponent(): JSX.Element {
 					{data.map((request) => {
 						const borrowerInitials = `${request.borrower.firstName[0]}${request.borrower.lastName[0]}`;
 						const borrowerName = `${request.borrower.lastName}, ${request.borrower.firstName}`;
-						const requestedAt = format(
-							request.borrowedAt,
-							"MMM d, yyyy - hh:mm a",
-						);
+						const requestedAt = `${format(request.borrowedAt, "h:mm a")} at ${format(request.borrowedAt, "MM/dd/yyyy")}`;
 						const anomalyResult = request.anomalyResult;
 						return (
 							<DrawerTrigger asChild key={request.borrowRequestId}>
 								<button
 									onClick={() => setSelectedRequest(request)}
-									className="border rounded p-4 text-start bg-card cursor-pointer hover:bg-card/50 transition-colors flex gap-2 items-center"
+									className="flex items-center gap-2 bg-card rounded-2xl p-4 shadow-item text-start cursor-pointer active:bg-tertiary hover:bg-tertiary transition"
 								>
-									<Avatar className="size-12">
+									<Avatar className="size-16">
 										<AvatarImage src={toImageUrl(request.borrower.avatarUrl)} />
 										<AvatarFallback className="font-montserrat-bold">
 											{borrowerInitials}
@@ -165,7 +151,8 @@ function RouteComponent(): JSX.Element {
 
 									<div className="flex flex-col">
 										<p className="font-montserrat-bold">{borrowerName}</p>
-										<p className="text-sm font-montserrat-medium">
+										<p className="text-sm font-montserrat">
+											<span className="font-montserrat-bold">Requested:</span>{" "}
 											{requestedAt}
 										</p>
 
@@ -184,41 +171,48 @@ function RouteComponent(): JSX.Element {
 					})}
 				</div>
 
-				<DrawerContent className="space-y-4">
-					<DrawerHeader>
-						<DrawerTitle className="items-center flex flex-col">
-							<Avatar className="size-12">
-								<AvatarImage
-									src={toImageUrl(selectedRequest?.borrower.avatarUrl)}
-								/>
-								<AvatarFallback className="font-montserrat-bold">
-									{selectedRequest?.borrower.firstName[0]}
-									{selectedRequest?.borrower.lastName[0]}
-								</AvatarFallback>
-							</Avatar>
+				<DrawerContent className="space-y-4 h-full">
+					<div className="h-full overflow-y-auto">
+						<DrawerHeader>
+							<DrawerTitle className="items-center flex flex-col">
+								<Avatar className="size-16">
+									<AvatarImage
+										src={toImageUrl(selectedRequest?.borrower.avatarUrl)}
+									/>
+									<AvatarFallback className="font-montserrat-bold">
+										{selectedRequest?.borrower.firstName[0]}
+										{selectedRequest?.borrower.lastName[0]}
+									</AvatarFallback>
+								</Avatar>
 
-							<P>
-								{selectedRequest?.borrower.firstName}{" "}
-								{selectedRequest?.borrower.lastName}
-							</P>
-						</DrawerTitle>
-						<DrawerDescription>
-							Requested on{" "}
-							{selectedRequest &&
-								format(selectedRequest.borrowedAt, "MMM d, yyyy - hh:mm a")}
-							<br />
-							Will return on{" "}
-							{selectedRequest &&
-								format(
-									selectedRequest.expectedReturnAt,
-									"MMM d, yyyy - hh:mm a",
-								)}
-						</DrawerDescription>
-					</DrawerHeader>
+								<TitleSmall>
+									{selectedRequest?.borrower.firstName}{" "}
+									{selectedRequest?.borrower.lastName}
+								</TitleSmall>
+							</DrawerTitle>
+							<DrawerDescription>
+								<Caption>
+									Requested on{" "}
+									{selectedRequest &&
+										format(
+											selectedRequest.borrowedAt,
+											"MMMM d, yyyy - hh:mm a",
+										)}
+								</Caption>
 
-					{selectedRequest && (
-						<div className="px-4 py-4 flex-1 overflow-y-auto">
-							<div className="divide-y">
+								<Caption>
+									Will return on{" "}
+									{selectedRequest &&
+										format(
+											selectedRequest.expectedReturnAt,
+											"MMMM d, yyyy - hh:mm a",
+										)}
+								</Caption>
+							</DrawerDescription>
+						</DrawerHeader>
+
+						{selectedRequest && (
+							<div className="p-4 space-y-2.5">
 								{selectedRequest.equipments.map((equipment) => {
 									const equipmentImage = equipment.imageUrl
 										? `${BACKEND_URL}${equipment.imageUrl}`
@@ -227,103 +221,111 @@ function RouteComponent(): JSX.Element {
 									return (
 										<div
 											key={equipment.equipmentTypeId}
-											className="flex items-center gap-2 justify-between py-2"
+											className="flex items-center gap-3 bg-card rounded-2xl p-4 shadow-item text-start"
 										>
-											<div className="flex items-center gap-2 w-full">
-												<img
-													src={equipmentImage}
-													alt={`${equipment.name} ${equipment.brand}`}
-													className="size-20 object-cover"
-												/>
+											<img
+												src={equipmentImage}
+												alt={`${equipment.name} ${equipment.brand}`}
+												className="size-20 object-cover rounded-lg"
+											/>
 
-												<div className="flex flex-col">
-													<p className="font-montserrat-semibold text-base leading-6">
-														{equipment.name}
-													</p>
+											<div className="flex flex-col">
+												<LabelLarge>
+													{equipment.brand}
+													{equipment.model ? " " : null}
+													{equipment.model}
+												</LabelLarge>
 
-													<Caption>
-														{equipment.brand}
-														{equipment.model ? " - " : null}
-														{equipment.model}
-													</Caption>
-												</div>
-											</div>
+												<LabelSmall className="text-muted">
+													{equipment.name}
+												</LabelSmall>
 
-											<div className="flex items-center gap-1">
-												<p className="font-montserrat-bold text-lg">
-													{equipment.quantity}
-												</p>
-												<Caption>pcs.</Caption>
+												<Caption className="font-open-sans-bold">
+													{equipment.quantity} pcs.
+												</Caption>
 											</div>
 										</div>
 									);
 								})}
 							</div>
-						</div>
-					)}
+						)}
 
-					<Separator />
+						<div className="px-4 space-y-4">
+							<div className="space-y-2">
+								<LabelMedium>Location</LabelMedium>
+								<Input value={selectedRequest?.location} readOnly />
+							</div>
 
-					<div className="px-4 space-y-4">
-						<div className="space-y-2">
-							<Label>Location</Label>
-							<Input value={selectedRequest?.location} readOnly />
+							<div className="space-y-2">
+								<LabelMedium>Purpose</LabelMedium>
+								<Input value={selectedRequest?.purpose} readOnly />
+							</div>
+
+							<div className="space-y-2">
+								<LabelMedium>Remarks</LabelMedium>
+								<Textarea
+									className="min-h-24"
+									placeholder="Add your remarks here"
+									onChange={(v) => setRemarks(v.currentTarget.value)}
+									value={remarks}
+								/>
+							</div>
 						</div>
 
-						<div className="space-y-2">
-							<Label>Purpose</Label>
-							<Input value={selectedRequest?.purpose} readOnly />
-						</div>
+						<DrawerFooter className="mt-0">
+							<div className="flex w-full gap-2">
+								<Button
+									className="flex-1"
+									onClick={() => {
+										if (!selectedRequest) {
+											alert("No borrow request selected");
+											return;
+										}
+										if (!auth.user) {
+											alert("Please log in to review borrow request");
+											return;
+										}
+										handleReview(
+											selectedRequest,
+											auth.user,
+											BorrowRequestStatus.Approved,
+										);
+									}}
+								>
+									Accept
+								</Button>
+
+								<Button
+									className="flex-1"
+									onClick={() => {
+										if (!selectedRequest) {
+											alert("No borrow request selected");
+											return;
+										}
+										if (!auth.user) {
+											alert("Please log in to review borrow request");
+											return;
+										}
+										handleReview(
+											selectedRequest,
+											auth.user,
+											BorrowRequestStatus.Rejected,
+											remarks,
+										);
+									}}
+									variant="destructive"
+								>
+									Reject
+								</Button>
+							</div>
+
+							<DrawerClose asChild>
+								<Button variant="secondary" onClick={() => setRemarks("")}>
+									Close
+								</Button>
+							</DrawerClose>
+						</DrawerFooter>
 					</div>
-
-					<DrawerFooter>
-						<Button
-							onClick={() => {
-								if (!selectedRequest) {
-									alert("No borrow request selected");
-									return;
-								}
-								if (!auth.user) {
-									alert("Please log in to review borrow request");
-									return;
-								}
-								handleReview(
-									selectedRequest,
-									auth.user,
-									BorrowRequestStatus.Approved,
-								);
-							}}
-						>
-							Approve
-						</Button>
-
-						<Button
-							onClick={() => {
-								if (!selectedRequest) {
-									alert("No borrow request selected");
-									return;
-								}
-								if (!auth.user) {
-									alert("Please log in to review borrow request");
-									return;
-								}
-								handleReview(
-									selectedRequest,
-									auth.user,
-									BorrowRequestStatus.Rejected,
-								);
-							}}
-							variant="destructive"
-						>
-							Reject
-						</Button>
-
-						<Separator />
-
-						<DrawerClose asChild>
-							<Button variant="outline">Close</Button>
-						</DrawerClose>
-					</DrawerFooter>
 				</DrawerContent>
 			</Drawer>
 		</div>

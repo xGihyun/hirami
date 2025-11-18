@@ -5,7 +5,6 @@ import type { JSX } from "react";
 export const Route = createFileRoute("/_authed")({
 	component: RouteComponent,
 	beforeLoad: ({ context }) => {
-		console.log(context);
 		if (!context.auth.user) {
 			throw redirect({ to: "/onboarding" });
 		}
