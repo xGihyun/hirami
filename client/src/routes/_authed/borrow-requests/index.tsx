@@ -23,7 +23,12 @@ import {
 	DrawerTitle,
 	DrawerTrigger,
 } from "@/components/ui/drawer";
-import { BACKEND_URL, toImageUrl, type ApiResponse } from "@/lib/api";
+import {
+	BACKEND_URL,
+	SHOW_ANOMALY,
+	toImageUrl,
+	type ApiResponse,
+} from "@/lib/api";
 import {
 	Caption,
 	H2,
@@ -170,7 +175,9 @@ function RouteComponent(): JSX.Element {
 											{requestedAt}
 										</p>
 
-										{anomalyResult && anomalyResult.isAnomaly ? (
+										{anomalyResult &&
+										anomalyResult.isAnomaly &&
+										SHOW_ANOMALY ? (
 											<Badge
 												className="mt-1 mx-auto block"
 												variant="destructive"

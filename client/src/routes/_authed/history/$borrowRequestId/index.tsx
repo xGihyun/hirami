@@ -6,7 +6,7 @@ import {
 	type BorrowedEquipment,
 } from "@/lib/equipment/borrow";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { BACKEND_URL, toImageUrl } from "@/lib/api";
+import { BACKEND_URL, SHOW_ANOMALY, toImageUrl } from "@/lib/api";
 import type { Equipment } from "@/lib/equipment";
 import { cn } from "@/lib/utils";
 import { H2, LabelLarge, LabelSmall } from "@/components/typography";
@@ -89,7 +89,7 @@ function RouteComponent(): JSX.Element {
 					) : null}
 				</div>
 
-				{anomalyResult && anomalyResult.isAnomaly ? (
+				{anomalyResult && anomalyResult.isAnomaly && SHOW_ANOMALY ? (
 					<Badge className="mt-1 mx-auto block" variant="destructive">
 						Anomaly
 					</Badge>

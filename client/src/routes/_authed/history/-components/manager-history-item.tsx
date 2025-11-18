@@ -2,7 +2,7 @@ import { useAuth } from "@/auth";
 import { LabelLarge, LabelSmall } from "@/components/typography";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
-import { toImageUrl } from "@/lib/api";
+import { SHOW_ANOMALY, toImageUrl } from "@/lib/api";
 import type { AnomalyResult } from "@/lib/equipment/anomaly";
 import {
 	BorrowRequestStatus,
@@ -107,7 +107,7 @@ export function ManagerHistoryItem(props: Props): JSX.Element {
 							Status: {capitalizeWords(props.transaction.status)}
 						</Badge>
 
-						{anomalyResult && anomalyResult.isAnomaly ? (
+						{anomalyResult && anomalyResult.isAnomaly && SHOW_ANOMALY ? (
 							<Badge className="mt-1" variant="destructive">
 								Anomaly
 							</Badge>

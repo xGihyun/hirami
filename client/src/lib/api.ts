@@ -6,6 +6,7 @@ export type ApiResponse<T = unknown> = {
 
 export const BACKEND_URL: string =
 	import.meta.env.VITE_BACKEND_URL || "http://localhost:3002";
+export const SHOW_ANOMALY: boolean = import.meta.env.VITE_SHOW_ANOMALY === "true" || false;
 
 export const IMAGE_SIZE_LIMIT = 5 * 1024 * 1024; // 5 MB
 export const IMAGE_FORMATS = ["image/jpeg", "image/jpg", "image/png"];
