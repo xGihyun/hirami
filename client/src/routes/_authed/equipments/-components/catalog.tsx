@@ -10,6 +10,7 @@ import type { SelectedEquipment } from "..";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
 
 type Props = {
 	equipments: Equipment[];
@@ -65,8 +66,13 @@ export function Catalog(props: Props): JSX.Element {
 						? `${BACKEND_URL}${equipment.imageUrl}`
 						: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 
-					const CardContent = (
-						<Card className="group space-y-2 border-input has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none">
+					const CardContent = (props: { className?: string }) => (
+						<Card
+							className={cn(
+								"group space-y-2 border-input has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none",
+								props.className,
+							)}
+						>
 							{/* Checkbox for non-managers, invisible to managers */}
 							<Checkbox
 								id={key}
@@ -110,7 +116,7 @@ export function Catalog(props: Props): JSX.Element {
 								to="/equipments/$equipmentId/edit"
 								params={{ equipmentId: equipment.id }}
 							>
-								{CardContent}
+								<CardContent className="hover:bg-tertiary transition active:bg-tertiary" />
 							</Link>
 						);
 					}
@@ -122,7 +128,7 @@ export function Catalog(props: Props): JSX.Element {
 							key={key}
 							className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-md"
 						>
-							{CardContent}
+							<CardContent />
 						</label>
 					);
 				})}
