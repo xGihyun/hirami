@@ -153,6 +153,13 @@ export type ReviewBorrowRequest = {
 	status: BorrowRequestStatus;
 };
 
+export type ReviewBorrowResponse = {
+	id: string;
+	reviewedBy: UserBasicInfo;
+	remarks?: string;
+	status: BorrowRequestStatus;
+};
+
 type GetBorrowedItemParams = {
 	userId?: string;
 	sort?: Sort;

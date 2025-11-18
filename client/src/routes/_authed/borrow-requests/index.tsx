@@ -3,6 +3,7 @@ import {
 	BorrowRequestStatus,
 	type BorrowTransaction,
 	type ReviewBorrowRequest,
+	type ReviewBorrowResponse,
 } from "@/lib/equipment/borrow";
 import {
 	useMutation,
@@ -17,7 +18,6 @@ import {
 	Drawer,
 	DrawerClose,
 	DrawerContent,
-	DrawerDescription,
 	DrawerFooter,
 	DrawerHeader,
 	DrawerTitle,
@@ -40,7 +40,7 @@ import type { User } from "@/lib/user";
 import { EventSource } from "eventsource";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { QRCodeSVG } from "qrcode.react";
 
 export const Route = createFileRoute("/_authed/borrow-requests/")({
 	component: RouteComponent,
@@ -51,7 +51,7 @@ export const Route = createFileRoute("/_authed/borrow-requests/")({
 
 async function reviewBorrowRequest(
 	value: ReviewBorrowRequest,
-): Promise<ApiResponse> {
+): Promise<ApiResponse<ReviewBorrowResponse>> {
 	const response = await fetch(`${BACKEND_URL}/review-borrow-requests`, {
 		method: "PATCH",
 		body: JSON.stringify(value),
@@ -60,7 +60,7 @@ async function reviewBorrowRequest(
 		},
 	});
 
-	const result: ApiResponse = await response.json();
+	const result: ApiResponse<ReviewBorrowResponse> = await response.json();
 	if (!response.ok) {
 		throw new Error(result.message);
 	}
@@ -70,24 +70,22 @@ async function reviewBorrowRequest(
 
 function RouteComponent(): JSX.Element {
 	const { data } = useSuspenseQuery(borrowRequestsQuery);
-	const [selectedRequest, setSelectedRequest] = useState<BorrowTransaction>();
-	const auth = useAuth();
+	const [selectedRequest, setSelectedRequest] = useState<
+		BorrowTransaction | undefined
+	>(undefined);
 	const queryClient = useQueryClient();
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [remarks, setRemarks] = useState<string>("");
+	const [approvedBorrowRequestId, setApprovedBorrowRequestId] = useState<
+		string | null
+	>("11");
 
 	const mutation = useMutation({
 		mutationFn: reviewBorrowRequest,
-		onMutate: () => {
-			return toast.loading("Reviewing borrow request");
-		},
-		onSuccess: (data, _variables, toastId) => {
+		onSuccess: (data) => {
 			queryClient.invalidateQueries(borrowRequestsQuery);
-			setIsDrawerOpen(false);
-			toast.success(data.message, { id: toastId });
-		},
-		onError: (error, _variables, toastId) => {
-			toast.error(error.message, { id: toastId });
+			setApprovedBorrowRequestId(data.data.id);
+			setRemarks("");
 		},
 	});
 
@@ -120,7 +118,14 @@ function RouteComponent(): JSX.Element {
 			eventSource.removeEventListener("equipment:create", handleEvent);
 			eventSource.close();
 		};
-	}, [queryClient]);
+	}, []);
+
+	function handleDrawerClose(): void {
+		setIsDrawerOpen(false);
+		setRemarks("");
+		setApprovedBorrowRequestId(null);
+		setSelectedRequest(undefined);
+	}
 
 	return (
 		<div className="relative space-y-4">
@@ -128,7 +133,13 @@ function RouteComponent(): JSX.Element {
 
 			<Drawer
 				open={isDrawerOpen}
-				onOpenChange={(open) => setIsDrawerOpen(open)}
+				onOpenChange={(open) => {
+					if (!open) {
+						handleDrawerClose();
+					} else {
+						setIsDrawerOpen(open);
+					}
+				}}
 			>
 				<div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
 					{data.map((request) => {
@@ -139,7 +150,10 @@ function RouteComponent(): JSX.Element {
 						return (
 							<DrawerTrigger asChild key={request.borrowRequestId}>
 								<button
-									onClick={() => setSelectedRequest(request)}
+									onClick={() => {
+										setSelectedRequest(request);
+										setApprovedBorrowRequestId(null);
+									}}
 									className="flex items-center gap-2 bg-card rounded-2xl p-4 shadow-item text-start cursor-pointer active:bg-tertiary hover:bg-tertiary transition"
 								>
 									<Avatar className="size-16">
@@ -172,162 +186,200 @@ function RouteComponent(): JSX.Element {
 				</div>
 
 				<DrawerContent className="space-y-4 h-full">
-					<div className="h-full overflow-y-auto">
-						<DrawerHeader>
-							<DrawerTitle className="items-center flex flex-col">
-								<Avatar className="size-16">
-									<AvatarImage
-										src={toImageUrl(selectedRequest?.borrower.avatarUrl)}
-									/>
-									<AvatarFallback className="font-montserrat-bold">
-										{selectedRequest?.borrower.firstName[0]}
-										{selectedRequest?.borrower.lastName[0]}
-									</AvatarFallback>
-								</Avatar>
-
-								<TitleSmall>
-									{selectedRequest?.borrower.firstName}{" "}
-									{selectedRequest?.borrower.lastName}
-								</TitleSmall>
-							</DrawerTitle>
-							<DrawerDescription>
-								<Caption>
-									Requested on{" "}
-									{selectedRequest &&
-										format(
-											selectedRequest.borrowedAt,
-											"MMMM d, yyyy - hh:mm a",
-										)}
-								</Caption>
-
-								<Caption>
-									Will return on{" "}
-									{selectedRequest &&
-										format(
-											selectedRequest.expectedReturnAt,
-											"MMMM d, yyyy - hh:mm a",
-										)}
-								</Caption>
-							</DrawerDescription>
-						</DrawerHeader>
-
-						{selectedRequest && (
-							<div className="p-4 space-y-2.5">
-								{selectedRequest.equipments.map((equipment) => {
-									const equipmentImage = equipment.imageUrl
-										? `${BACKEND_URL}${equipment.imageUrl}`
-										: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
-
-									return (
-										<div
-											key={equipment.equipmentTypeId}
-											className="flex items-center gap-3 bg-card rounded-2xl p-4 shadow-item text-start"
-										>
-											<img
-												src={equipmentImage}
-												alt={`${equipment.name} ${equipment.brand}`}
-												className="size-20 object-cover rounded-lg"
-											/>
-
-											<div className="flex flex-col">
-												<LabelLarge>
-													{equipment.brand}
-													{equipment.model ? " " : null}
-													{equipment.model}
-												</LabelLarge>
-
-												<LabelSmall className="text-muted">
-													{equipment.name}
-												</LabelSmall>
-
-												<Caption className="font-open-sans-bold">
-													{equipment.quantity} pcs.
-												</Caption>
-											</div>
-										</div>
-									);
-								})}
-							</div>
-						)}
-
-						<div className="px-4 space-y-4">
-							<div className="space-y-2">
-								<LabelMedium>Location</LabelMedium>
-								<Input value={selectedRequest?.location} readOnly />
-							</div>
-
-							<div className="space-y-2">
-								<LabelMedium>Purpose</LabelMedium>
-								<Input value={selectedRequest?.purpose} readOnly />
-							</div>
-
-							<div className="space-y-2">
-								<LabelMedium>Remarks</LabelMedium>
-								<Textarea
-									className="min-h-24"
-									placeholder="Add your remarks here"
-									onChange={(v) => setRemarks(v.currentTarget.value)}
-									value={remarks}
-								/>
-							</div>
-						</div>
-
-						<DrawerFooter className="mt-0">
-							<div className="flex w-full gap-2">
-								<Button
-									className="flex-1"
-									onClick={() => {
-										if (!selectedRequest) {
-											alert("No borrow request selected");
-											return;
-										}
-										if (!auth.user) {
-											alert("Please log in to review borrow request");
-											return;
-										}
-										handleReview(
-											selectedRequest,
-											auth.user,
-											BorrowRequestStatus.Approved,
-										);
-									}}
-								>
-									Accept
-								</Button>
-
-								<Button
-									className="flex-1"
-									onClick={() => {
-										if (!selectedRequest) {
-											alert("No borrow request selected");
-											return;
-										}
-										if (!auth.user) {
-											alert("Please log in to review borrow request");
-											return;
-										}
-										handleReview(
-											selectedRequest,
-											auth.user,
-											BorrowRequestStatus.Rejected,
-											remarks,
-										);
-									}}
-									variant="destructive"
-								>
-									Reject
-								</Button>
-							</div>
-
-							<DrawerClose asChild>
-								<Button variant="secondary" onClick={() => setRemarks("")}>
-									Close
-								</Button>
-							</DrawerClose>
-						</DrawerFooter>
-					</div>
+					{approvedBorrowRequestId ? (
+						<ConfirmationQr borrowRequestId={approvedBorrowRequestId} />
+					) : selectedRequest ? (
+						<BorrowRequestReviewContent
+							selectedRequest={selectedRequest}
+							remarks={remarks}
+							setRemarks={setRemarks}
+							handleReview={handleReview}
+							onClose={handleDrawerClose}
+						/>
+					) : (
+						<div className="p-4">No request selected.</div>
+					)}
 				</DrawerContent>
 			</Drawer>
+		</div>
+	);
+}
+
+type ConfirmationQrProps = {
+	borrowRequestId: string;
+};
+
+function ConfirmationQr(props: ConfirmationQrProps): JSX.Element {
+	return (
+		<div className="text-center space-y-4 p-4 h-full flex flex-col justify-center items-center">
+			<DrawerTitle className="items-center flex flex-col">
+				Confirmation QR Code
+			</DrawerTitle>
+			<LabelSmall className="max-w-xs mx-auto">
+				Please have the borrower scan this to complete the equipment borrowing
+				process.
+			</LabelSmall>
+
+			<QRCodeSVG
+				value={props.borrowRequestId}
+				className="size-64"
+				bgColor="transparent"
+			/>
+		</div>
+	);
+}
+
+type BorrowRequestReviewContentProps = {
+	selectedRequest: BorrowTransaction;
+	remarks: string;
+	setRemarks: (remarks: string) => void;
+	handleReview: (
+		request: BorrowTransaction,
+		reviewedBy: User,
+		status: BorrowRequestStatus,
+		remarks?: string,
+	) => Promise<void>;
+	onClose: () => void;
+};
+
+function BorrowRequestReviewContent(
+	props: BorrowRequestReviewContentProps,
+): JSX.Element {
+	const auth = useAuth();
+	const borrowerInitials = `${props.selectedRequest.borrower.firstName[0]}${props.selectedRequest.borrower.lastName[0]}`;
+	const request = props.selectedRequest;
+
+	return (
+		<div className="h-full overflow-y-auto">
+			<DrawerHeader>
+				<DrawerTitle className="items-center flex flex-col">
+					<Avatar className="size-16">
+						<AvatarImage src={toImageUrl(request.borrower.avatarUrl)} />
+						<AvatarFallback className="font-montserrat-bold">
+							{borrowerInitials}
+						</AvatarFallback>
+					</Avatar>
+
+					<TitleSmall>
+						{request?.borrower.firstName} {request?.borrower.lastName}
+					</TitleSmall>
+				</DrawerTitle>
+
+				<div>
+					<Caption>
+						Requested on {format(request.borrowedAt, "MMMM d, yyyy - hh:mm a")}
+					</Caption>
+
+					<Caption>
+						Will return on{" "}
+						{format(request.expectedReturnAt, "MMMM d, yyyy - hh:mm a")}
+					</Caption>
+				</div>
+			</DrawerHeader>
+
+			<div className="px-4 space-y-2.5 mb-4">
+				{request.equipments.map((equipment) => {
+					const equipmentImage = equipment.imageUrl
+						? `${BACKEND_URL}${equipment.imageUrl}`
+						: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
+
+					return (
+						<div
+							key={equipment.equipmentTypeId}
+							className="flex items-center gap-3 bg-card rounded-2xl p-4 shadow-item text-start"
+						>
+							<img
+								src={equipmentImage}
+								alt={`${equipment.name} ${equipment.brand}`}
+								className="size-20 object-cover rounded-lg"
+							/>
+
+							<div className="flex flex-col">
+								<LabelLarge>
+									{equipment.brand}
+									{equipment.model ? " " : null}
+									{equipment.model}
+								</LabelLarge>
+
+								<LabelSmall className="text-muted">{equipment.name}</LabelSmall>
+
+								<Caption className="font-open-sans-bold">
+									{equipment.quantity} pcs.
+								</Caption>
+							</div>
+						</div>
+					);
+				})}
+			</div>
+
+			<div className="px-4 space-y-2.5">
+				<div className="space-y-1">
+					<LabelMedium>Location</LabelMedium>
+					<Input value={request.location} readOnly />
+				</div>
+
+				<div className="space-y-1">
+					<LabelMedium>Purpose</LabelMedium>
+					<Input value={request.purpose} readOnly />
+				</div>
+
+				<div className="space-y-1">
+					<LabelMedium>Remarks</LabelMedium>
+					<Textarea
+						className="min-h-24"
+						placeholder="Add your remarks here"
+						onChange={(v) => props.setRemarks(v.currentTarget.value)}
+						value={props.remarks}
+					/>
+				</div>
+			</div>
+
+			<DrawerFooter className="mt-4">
+				<div className="flex w-full gap-2">
+					<Button
+						className="flex-1"
+						onClick={() => {
+							if (!auth.user) {
+								toast.error("Please log in to review borrow request");
+								return;
+							}
+							props.handleReview(
+								request,
+								auth.user,
+								BorrowRequestStatus.Approved,
+								props.remarks,
+							);
+						}}
+					>
+						Accept
+					</Button>
+
+					<Button
+						className="flex-1"
+						onClick={() => {
+							if (!auth.user) {
+								toast.error("Please log in to review borrow request");
+								return;
+							}
+							props.handleReview(
+								request,
+								auth.user,
+								BorrowRequestStatus.Rejected,
+								props.remarks,
+							);
+						}}
+						variant="destructive"
+					>
+						Reject
+					</Button>
+				</div>
+
+				<DrawerClose asChild>
+					<Button variant="secondary" onClick={props.onClose}>
+						Close
+					</Button>
+				</DrawerClose>
+			</DrawerFooter>
 		</div>
 	);
 }
