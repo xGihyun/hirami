@@ -2,18 +2,18 @@ import { H1 } from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { homeRunIllustration } from "@/lib/assets";
 import { IconArrowLeft } from "@/lib/icons";
-import { Link, type ToPathOption } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import type { JSX } from "react";
 
 type Props = {
 	fn: () => void;
 	header: string;
-    backLink: ToPathOption;
+	backLink: string;
 };
 
 export function Success(props: Props): JSX.Element {
 	return (
-		<div className="px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] h-svh inset-0 fixed bg-background w-full z-50">
+		<div className="px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] h-svh inset-0 fixed bg-background w-full z-50">
 			<Button
 				variant="ghost"
 				size="icon"
@@ -38,7 +38,7 @@ export function Success(props: Props): JSX.Element {
 						<H1 className="text-center">{props.header}</H1>
 					</section>
 
-					<Button asChild>
+					<Button onClick={props.fn} asChild>
 						<Link to={props.backLink}>Continue</Link>
 					</Button>
 				</div>

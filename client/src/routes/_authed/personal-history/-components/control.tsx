@@ -12,8 +12,8 @@ import {
 import { HistorySearch } from "./history-search";
 
 export function Control(): JSX.Element {
-	const navigate = useNavigate({ from: "/history" });
-	const search = useSearch({ from: "/_authed/history/" });
+	const navigate = useNavigate({ from: "/personal-history" });
+	const search = useSearch({ from: "/_authed/personal-history/" });
 
 	type SortField = "borrowedAt" | "returnedAt" | "status";
 

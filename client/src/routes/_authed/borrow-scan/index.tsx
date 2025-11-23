@@ -95,15 +95,8 @@ function RouteComponent(): JSX.Element {
 
 	const mutation = useMutation({
 		mutationFn: updateBorrowRequest,
-		onMutate: () => {
-			return toast.loading("Confirming return request");
-		},
-		onSuccess: (data, _variables, toastId) => {
+		onSuccess: () => {
 			setBorrowRequestId(null);
-			toast.success(data.message, { id: toastId });
-		},
-		onError: (error, _variables, toastId) => {
-			toast.error(error.message, { id: toastId });
 		},
 	});
 

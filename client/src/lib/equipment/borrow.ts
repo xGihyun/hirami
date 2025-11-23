@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import { BACKEND_URL, Sort, type ApiResponse } from "../api";
 import type { UserBasicInfo } from "../user";
 import type { AnomalyResult } from "./anomaly";
@@ -99,6 +99,7 @@ type GetBorrowHistoryParams = {
 	sort?: Sort;
 	sortBy?: string;
 	category?: string;
+    search?: string;
 };
 
 async function getBorrowHistory(
@@ -121,6 +122,9 @@ async function getBorrowHistory(
 	if (params.category) {
 		url.searchParams.append("category", params.category);
 	}
+	if (params.search) {
+		url.searchParams.append("search", params.search);
+	}
 	console.log(url.toString());
 	const response = await fetch(url.toString(), {
 		method: "GET",
@@ -136,14 +140,9 @@ async function getBorrowHistory(
 
 export const borrowHistoryQuery = (params: GetBorrowHistoryParams) =>
 	queryOptions({
-		queryKey: [
-			"borrow-history",
-			params.userId,
-			params.status,
-			params.sort,
-			params.category,
-		],
+		queryKey: ["borrow-history", params],
 		queryFn: () => getBorrowHistory(params),
+		placeholderData: keepPreviousData,
 	});
 
 export type ReviewBorrowRequest = {

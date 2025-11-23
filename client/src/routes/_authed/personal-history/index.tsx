@@ -1,6 +1,6 @@
 import { borrowHistoryQuery } from "@/lib/equipment/borrow";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { createFileRoute, redirect, useSearch } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { H2, LabelMedium } from "@/components/typography";
 import { BACKEND_URL, Sort } from "@/lib/api";
@@ -10,7 +10,6 @@ import { EventSource } from "eventsource";
 import z from "zod";
 import { Control } from "./-components/control";
 import { HistoryList } from "./-components/history-list";
-import { ManagerHistoryList } from "./-components/manager-history-list";
 
 const searchSchema = z.object({
 	category: z.string().optional(),
@@ -19,22 +18,21 @@ const searchSchema = z.object({
 	search: z.string().optional(),
 });
 
-export const Route = createFileRoute("/_authed/history/")({
+export const Route = createFileRoute("/_authed/personal-history/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
-		if (context.auth.user?.role === UserRole.Borrower) {
-			context.queryClient.ensureQueryData(
-				borrowHistoryQuery({ userId: context.auth.user?.id, sort: Sort.Asc }),
-			);
-			return;
+		if (context.auth.user?.role !== UserRole.Borrower) {
+			throw redirect({ to: "/equipments" });
 		}
-		context.queryClient.ensureQueryData(borrowHistoryQuery({}));
+		context.queryClient.ensureQueryData(
+			borrowHistoryQuery({ userId: context.auth.user?.id, sort: Sort.Asc }),
+		);
 	},
 	validateSearch: searchSchema,
 });
 
 function RouteComponent() {
-	const search = useSearch({ from: "/_authed/history/" });
+	const search = useSearch({ from: "/_authed/personal-history/" });
 	const auth = useAuth();
 	const history = useQuery(
 		borrowHistoryQuery({
@@ -84,13 +82,7 @@ function RouteComponent() {
 					Failed to load history
 				</LabelMedium>
 			) : (
-				<>
-					{auth.user?.role === UserRole.Borrower ? (
-						<HistoryList history={history.data} />
-					) : (
-						<ManagerHistoryList history={history.data} />
-					)}
-				</>
+				<HistoryList history={history.data} />
 			)}
 		</div>
 	);

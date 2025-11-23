@@ -438,7 +438,7 @@ func (s *Server) updateBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: "borrow-request:update",
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -774,12 +774,14 @@ func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Re
 	sort := api.Sort(r.URL.Query().Get("sort"))
 	sortBy := r.URL.Query().Get("sortBy")
 	category := r.URL.Query().Get("category")
+	search := r.URL.Query().Get("search")
 	params := borrowHistoryParams{
 		userID:   &userID,
 		status:   &status,
 		sort:     &sort,
 		sortBy:   &sortBy,
 		category: &category,
+		search:   &search,
 	}
 	history, err := s.repository.getBorrowHistory(ctx, params)
 	if err != nil {

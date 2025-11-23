@@ -26,6 +26,7 @@ import {
 	TitleSmall,
 } from "@/components/typography";
 import { PasswordInput } from "@/components/password-input";
+import { FullScreenLoading } from "@/components/loading";
 
 const formSchema = z.object({
 	email: z
@@ -71,23 +72,11 @@ export function LoginForm(): JSX.Element {
 		mode: "onTouched",
 	});
 
-	const [isError, setIsError] = useState(false);
-
 	const mutation = useMutation({
 		mutationFn: login,
-		onMutate: () => {
-			return toast.loading("Logging in");
-		},
 		onSuccess: async (result, _variables, toastId) => {
 			setCookie("session", result.data.token);
 			await navigate({ to: "/equipments" });
-
-			setIsError(false);
-			toast.success("Login successful.", { id: toastId });
-		},
-		onError: (_error, _variables, toastId) => {
-			toast.dismiss(toastId);
-			setIsError(true);
 		},
 	});
 
@@ -95,10 +84,18 @@ export function LoginForm(): JSX.Element {
 		mutation.mutate(value);
 	}
 
-	if (isError) {
+	if (mutation.isError) {
 		return (
-			<Failed onSubmit={form.handleSubmit(onSubmit)} setIsError={setIsError} />
+			<Failed
+				header="Login failed."
+				onSubmit={form.handleSubmit(onSubmit)}
+				reset={mutation.reset}
+			/>
 		);
+	}
+
+	if (mutation.isPending) {
+		return <FullScreenLoading />;
 	}
 
 	return (
@@ -178,7 +175,8 @@ export function LoginForm(): JSX.Element {
 
 type FailedProps = {
 	onSubmit: () => Promise<void>;
-	setIsError: Dispatch<SetStateAction<boolean>>;
+	reset: () => void;
+	header: string;
 };
 
 function Failed(props: FailedProps): JSX.Element {
@@ -192,7 +190,7 @@ function Failed(props: FailedProps): JSX.Element {
 				/>
 
 				<div className="space-y-1.5">
-					<H1 className="text-center">Login failed. Please try again.</H1>
+					<H1 className="text-center">{props.header}</H1>
 					<TitleSmall className="text-center">
 						A temporary issue occured. Please check your network and Try Again
 						in a moment.
@@ -203,10 +201,7 @@ function Failed(props: FailedProps): JSX.Element {
 			<section className="w-full flex flex-col text-center gap-4">
 				<Button onClick={props.onSubmit}>Try Again</Button>
 
-				<button
-					onClick={() => props.setIsError(false)}
-					className="cursor-pointer w-fit mx-auto"
-				>
+				<button onClick={props.reset} className="cursor-pointer w-fit mx-auto">
 					<LabelLarge>or return to Log In page</LabelLarge>
 				</button>
 			</section>

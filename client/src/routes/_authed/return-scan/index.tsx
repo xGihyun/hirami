@@ -4,10 +4,7 @@ import {
 	type ConfirmReturnRequest,
 	type ReturnRequest,
 } from "@/lib/equipment/return";
-import {
-	useMutation,
-	useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type JSX } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,13 +19,23 @@ import {
 	DrawerTitle,
 } from "@/components/ui/drawer";
 import { BACKEND_URL, toImageUrl, type ApiResponse } from "@/lib/api";
-import { Caption, H2, P } from "@/components/typography";
+import {
+	Caption,
+	H2,
+	LabelLarge,
+	LabelMedium,
+	LabelSmall,
+	P,
+} from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth";
 import type { User } from "@/lib/user";
 import { EventSource } from "eventsource";
 import QrScanner from "qr-scanner";
 import { Input } from "@/components/ui/input";
+import { Failed } from "@/components/failed";
+import { Textarea } from "@/components/ui/textarea";
+import { Success } from "@/components/success";
 
 export const Route = createFileRoute("/_authed/return-scan/")({
 	component: RouteComponent,
@@ -61,10 +68,12 @@ function RouteComponent(): JSX.Element {
 		null,
 	);
 	const [isScanning, setIsScanning] = useState(false);
+	const [scanError, setScanError] = useState(false);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const scannerRef = useRef<QrScanner | null>(null);
 	const auth = useAuth();
 	const queryClient = useQueryClient();
+	const [remarks, setRemarks] = useState("");
 
 	const mutation = useMutation({
 		mutationFn: confirmReturnRequest,
@@ -88,15 +97,24 @@ function RouteComponent(): JSX.Element {
 			return;
 		}
 
+		console.log("Scanning...");
+
+		setScanError(false);
 		setIsScanning(true);
 
 		scannerRef.current = new QrScanner(
 			videoRef.current!,
 			async (result) => {
-				const returnRequest = await queryClient.fetchQuery(
-					returnRequestByIdQuery(result.data),
-				);
-				setSelectedRequest(returnRequest);
+				try {
+					const returnRequest = await queryClient.fetchQuery(
+						returnRequestByIdQuery(result.data),
+					);
+					console.log(returnRequest);
+					setSelectedRequest(returnRequest);
+				} catch (error) {
+					console.error(error);
+					setScanError(true);
+				}
 				handleScannerStop();
 			},
 			{
@@ -125,20 +143,18 @@ function RouteComponent(): JSX.Element {
 		scannerRef.current.stop();
 		scannerRef.current.destroy();
 		setIsScanning(false);
+		// setScanError(false);
 	}
 
 	useEffect(() => {
-		handleScan();
+		if (!scanError && selectedRequest === null) {
+			handleScan();
+		}
 
 		return () => {
-			if (!scannerRef.current) {
-				return;
-			}
-
-			scannerRef.current.destroy();
-			scannerRef.current = null;
+			handleScannerStop();
 		};
-	}, []);
+	}, [scanError, selectedRequest, mutation.status]);
 
 	useEffect(() => {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
@@ -154,6 +170,30 @@ function RouteComponent(): JSX.Element {
 			eventSource.close();
 		};
 	}, []);
+
+	if (scanError) {
+		return (
+			<Failed
+				backLink="/return-scan"
+				fn={() => setScanError(false)}
+				header="Failed to scan return request."
+			/>
+		);
+	}
+
+	if (mutation.isSuccess) {
+		return (
+			<Success
+				backLink="/return-scan"
+				header="Return confirmed successfully."
+				fn={() => {
+					mutation.reset();
+					setScanError(false);
+					setSelectedRequest(null);
+				}}
+			/>
+		);
+	}
 
 	return (
 		<div className="relative space-y-4 flex w-full items-center justify-center flex-col ">
@@ -211,8 +251,8 @@ function RouteComponent(): JSX.Element {
 					</DrawerHeader>
 
 					{selectedRequest && (
-						<div className="px-4 py-4 flex-1 overflow-y-auto">
-							<div className="divide-y">
+						<div className="px-4 py-4 overflow-y-auto space-y-4">
+							<div>
 								{selectedRequest.equipments.map((equipment) => {
 									const equipmentImage = equipment.imageUrl
 										? `${BACKEND_URL}${equipment.imageUrl}`
@@ -222,7 +262,7 @@ function RouteComponent(): JSX.Element {
 										<div className="flex flex-col gap-2 w-full">
 											<div
 												key={equipment.id}
-												className="flex items-center gap-2 justify-between py-2"
+												className="flex items-center gap-3 justify-between p-4 bg-card rounded-2xl shadow-item"
 											>
 												<div className="flex items-center gap-2 w-full">
 													<img
@@ -232,35 +272,40 @@ function RouteComponent(): JSX.Element {
 													/>
 
 													<div className="flex flex-col">
-														<p className="font-montserrat-semibold text-base leading-6">
-															{equipment.name}
-														</p>
-
-														<Caption>
+														<LabelLarge>
 															{equipment.brand}
-															{equipment.model ? " - " : null}
+															{equipment.model ? " " : null}
 															{equipment.model}
+														</LabelLarge>
+
+														<LabelSmall className="text-muted">
+															{equipment.name}
+														</LabelSmall>
+
+														<Caption className="font-open-sans-bold">
+															{equipment.quantity} pcs.
 														</Caption>
 													</div>
 												</div>
-
-												<div className="flex items-center gap-1">
-													<p className="font-montserrat-bold text-lg">
-														{equipment.quantity}
-													</p>
-													<Caption>pcs.</Caption>
-												</div>
 											</div>
-
-											<Input placeholder="Add remarks here or something" />
 										</div>
 									);
 								})}
 							</div>
+
+							<div className="space-y-1">
+								<LabelMedium>Remarks</LabelMedium>
+								<Textarea
+									className="min-h-24"
+									placeholder="Add your remarks here"
+									onChange={(v) => setRemarks(v.currentTarget.value)}
+									value={remarks}
+								/>
+							</div>
 						</div>
 					)}
 
-					<DrawerFooter>
+					<DrawerFooter className="mt-0">
 						<Button
 							onClick={() => {
 								if (!selectedRequest) {
@@ -276,8 +321,9 @@ function RouteComponent(): JSX.Element {
 						>
 							Confirm
 						</Button>
+
 						<DrawerClose asChild onClick={() => setSelectedRequest(null)}>
-							<Button variant="outline">Close</Button>
+							<Button variant="secondary">Close</Button>
 						</DrawerClose>
 					</DrawerFooter>
 				</DrawerContent>

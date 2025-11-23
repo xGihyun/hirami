@@ -39,7 +39,7 @@ export const Route = createFileRoute("/_authed/equipments/$equipmentId/edit/")({
 
 const editEquipmentSchema = z.object({
 	id: z.uuidv4(),
-	name: z.string().nonempty(),
+	name: z.string().nonempty({ error: "This field must not be left blank." }),
 	brand: z.string().optional(),
 	model: z.string().optional(),
 	image: z

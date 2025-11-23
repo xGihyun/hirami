@@ -48,7 +48,11 @@ export function Navbar(): JSX.Element {
 					label: "Scan",
 					icon: IconQrCode,
 				},
-				historyOption,
+				{
+					to: "/personal-history",
+					label: "History",
+					icon: IconHistory,
+				},
 				profileOption,
 			];
 		}

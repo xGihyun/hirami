@@ -46,6 +46,8 @@ import { EventSource } from "eventsource";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { QRCodeSVG } from "qrcode.react";
+import { Success } from "@/components/success";
+import { Failed } from "@/components/failed";
 
 export const Route = createFileRoute("/_authed/borrow-requests/")({
 	component: RouteComponent,
@@ -53,6 +55,11 @@ export const Route = createFileRoute("/_authed/borrow-requests/")({
 		context.queryClient.prefetchQuery(borrowRequestsQuery);
 	},
 });
+
+type UpdateBorrowResponse = {
+	id: string;
+	status: BorrowRequestStatus;
+};
 
 async function reviewBorrowRequest(
 	value: ReviewBorrowRequest,
@@ -81,15 +88,15 @@ function RouteComponent(): JSX.Element {
 	const queryClient = useQueryClient();
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 	const [remarks, setRemarks] = useState<string>("");
-	const [approvedBorrowRequestId, setApprovedBorrowRequestId] = useState<
-		string | null
-	>("11");
+	const [reviewedBorrowRequest, setReviewedBorrowRequest] =
+		useState<ReviewBorrowResponse | null>(null);
+	const [isReceived, setIsReceived] = useState(false);
 
 	const mutation = useMutation({
 		mutationFn: reviewBorrowRequest,
 		onSuccess: (data) => {
 			queryClient.invalidateQueries(borrowRequestsQuery);
-			setApprovedBorrowRequestId(data.data.id);
+			setReviewedBorrowRequest(data.data);
 			setRemarks("");
 		},
 	});
@@ -117,10 +124,23 @@ function RouteComponent(): JSX.Element {
 			queryClient.invalidateQueries(borrowRequestsQuery);
 		}
 
+		function handleBorrowRequestEvent(e: MessageEvent): void {
+			const res: UpdateBorrowResponse = JSON.parse(e.data);
+			setIsReceived(res.status === BorrowRequestStatus.Received);
+		}
+
 		eventSource.addEventListener("equipment:create", handleEvent);
+		eventSource.addEventListener(
+			"borrow-request:update",
+			handleBorrowRequestEvent,
+		);
 
 		return () => {
 			eventSource.removeEventListener("equipment:create", handleEvent);
+			eventSource.removeEventListener(
+				"borrow-request:update",
+				handleBorrowRequestEvent,
+			);
 			eventSource.close();
 		};
 	}, []);
@@ -128,8 +148,44 @@ function RouteComponent(): JSX.Element {
 	function handleDrawerClose(): void {
 		setIsDrawerOpen(false);
 		setRemarks("");
-		setApprovedBorrowRequestId(null);
+		setReviewedBorrowRequest(null);
 		setSelectedRequest(undefined);
+		setIsReceived(false);
+	}
+
+	if (isReceived) {
+		return (
+			<Success
+				fn={handleDrawerClose}
+				header="Request approved successfully."
+				backLink="/borrow-requests"
+			/>
+		);
+	}
+
+	if (mutation.isError) {
+		return (
+			<Failed
+				retry={() => console.log("RETRY")}
+				fn={handleDrawerClose}
+				header="Failed to process request."
+				backLink="/borrow-requests"
+				backMessage="or return to Request List"
+			/>
+		);
+	}
+
+	if (
+		mutation.isSuccess &&
+		reviewedBorrowRequest?.status === BorrowRequestStatus.Rejected
+	) {
+		return (
+			<Success
+				fn={handleDrawerClose}
+				header="Request rejected successfully."
+				backLink="/borrow-requests"
+			/>
+		);
 	}
 
 	return (
@@ -157,7 +213,7 @@ function RouteComponent(): JSX.Element {
 								<button
 									onClick={() => {
 										setSelectedRequest(request);
-										setApprovedBorrowRequestId(null);
+										setReviewedBorrowRequest(null);
 									}}
 									className="flex items-center gap-2 bg-card rounded-2xl p-4 shadow-item text-start cursor-pointer active:bg-tertiary hover:bg-tertiary transition"
 								>
@@ -193,8 +249,8 @@ function RouteComponent(): JSX.Element {
 				</div>
 
 				<DrawerContent className="space-y-4 h-full">
-					{approvedBorrowRequestId ? (
-						<ConfirmationQr borrowRequestId={approvedBorrowRequestId} />
+					{reviewedBorrowRequest ? (
+						<ConfirmationQr borrowRequestId={reviewedBorrowRequest.id} />
 					) : selectedRequest ? (
 						<BorrowRequestReviewContent
 							selectedRequest={selectedRequest}

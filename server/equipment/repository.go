@@ -1700,6 +1700,7 @@ type borrowHistoryParams struct {
 	sort     *api.Sort
 	sortBy   *string
 	category *string
+	search   *string
 }
 
 func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error) {
@@ -1795,6 +1796,35 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		argIdx++
 	}
 
+	if params.search != nil && *params.search != "" {
+		searchTerm := "%" + strings.ToLower(*params.search) + "%"
+		query += fmt.Sprintf(` 
+		AND (
+			LOWER(equipment_type.name) LIKE $%d 
+			OR LOWER(equipment_type.brand) LIKE $%d 
+			OR LOWER(equipment_type.model) LIKE $%d
+			OR LOWER(person.first_name) LIKE $%d
+			OR LOWER(person.middle_name) LIKE $%d
+			OR LOWER(person.last_name) LIKE $%d
+			OR LOWER(person_borrow_reviewer.first_name) LIKE $%d
+			OR LOWER(person_borrow_reviewer.middle_name) LIKE $%d
+			OR LOWER(person_borrow_reviewer.last_name) LIKE $%d
+		)
+		`,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+		)
+		args = append(args, searchTerm)
+		argIdx++
+	}
+
 	query += ` 
 	GROUP BY 
 		person.person_id,
@@ -1812,7 +1842,15 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		anomaly_result.anomaly_result_id
 	`
 
-	sortByColumn := "borrow_request.status" // default
+	sortByColumn := `
+	CASE status
+		WHEN 'pending' THEN 1
+		WHEN 'approved' THEN 2
+		WHEN 'received' THEN 3
+		WHEN 'fulfilled' THEN 4
+		ELSE 5
+	END
+	`
 	if params.sortBy != nil {
 		switch *params.sortBy {
 		case "borrowedAt":
@@ -1822,7 +1860,15 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		case "returnedAt":
 			sortByColumn = "latest_return_data.created_at"
 		case "status":
-			sortByColumn = "borrow_request.status"
+			sortByColumn = `
+			CASE status
+				WHEN 'pending' THEN 1
+				WHEN 'approved' THEN 2
+				WHEN 'received' THEN 3
+				WHEN 'fulfilled' THEN 4
+				ELSE 5
+			END
+			`
 		}
 	}
 
