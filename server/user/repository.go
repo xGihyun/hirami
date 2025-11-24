@@ -19,7 +19,7 @@ type Repository interface {
 	createPasswordResetToken(ctx context.Context, email, tokenHash string, expiresAt time.Time) error
 	resetPasswordWithToken(ctx context.Context, tokenHash, newPassword string) error
 
-	getByEmail(ctx context.Context, email string) (user, error)
+	GetByEmail(ctx context.Context, email string) (user, error)
 	invalidateSession(ctx context.Context, token string) error
 	createSession(ctx context.Context, token, userID string) (session, error)
 	validateSessionToken(ctx context.Context, token string) (sessionValidationResponse, error)
@@ -103,7 +103,7 @@ func (r *repository) login(ctx context.Context, arg loginRequest) (signInRespons
 		return signInResponse{}, errInvalidPassword
 	}
 
-	person, err := r.getByEmail(ctx, arg.Email)
+	person, err := r.GetByEmail(ctx, arg.Email)
 	if err != nil {
 		return signInResponse{}, err
 	}
@@ -186,7 +186,7 @@ func (r *repository) get(ctx context.Context, userID string) (user, error) {
 	return person, nil
 }
 
-func (r *repository) getByEmail(ctx context.Context, email string) (user, error) {
+func (r *repository) GetByEmail(ctx context.Context, email string) (user, error) {
 	query := `
 	SELECT 
 		person_id, 

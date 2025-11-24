@@ -6,9 +6,9 @@ import {
 	type BorrowedEquipment,
 } from "@/lib/equipment/borrow";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { BACKEND_URL, toImageUrl } from "@/lib/api";
+import { BACKEND_URL, SHOW_ANOMALY, toImageUrl } from "@/lib/api";
 import type { Equipment } from "@/lib/equipment";
-import { cn } from "@/lib/utils";
+import { capitalizeWords, cn, getBorrowRequestBadgeVariant } from "@/lib/utils";
 import { H2, LabelLarge, LabelSmall } from "@/components/typography";
 import { Badge } from "@/components/ui/badge";
 import type { JSX } from "react";
@@ -46,6 +46,7 @@ function RouteComponent(): JSX.Element {
 	const borrower = borrowRequest.data.borrower;
 	const borrowerInitials = borrower.firstName[0] + borrower.lastName[0];
 	const transaction = borrowRequest.data;
+	const anomalyResult = borrowRequest.data.anomalyResult;
 
 	return (
 		<div className="space-y-4 pb-15 !mb-0">
@@ -55,8 +56,8 @@ function RouteComponent(): JSX.Element {
 				</Link>
 			</Button>
 
-			<section className="w-fit mx-auto">
-				<div>
+			<section className="w-fit mx-auto space-y-2.5">
+				<div className="flex flex-col items-center">
 					<Avatar className="size-30 mx-auto">
 						<AvatarImage src={toImageUrl(borrower.avatarUrl)} />
 						<AvatarFallback className="font-montserrat-bold">
@@ -67,6 +68,13 @@ function RouteComponent(): JSX.Element {
 					<H2 className="text-center">
 						{borrower.firstName} {borrower.lastName}
 					</H2>
+
+					<Badge
+						className="mt-1"
+						variant={getBorrowRequestBadgeVariant(transaction.status)}
+					>
+						Status: {capitalizeWords(transaction.status)}
+					</Badge>
 				</div>
 
 				<div>
@@ -87,6 +95,12 @@ function RouteComponent(): JSX.Element {
 						</LabelSmall>
 					) : null}
 				</div>
+
+				{anomalyResult && anomalyResult.isAnomaly && SHOW_ANOMALY ? (
+					<Badge className="mt-1 mx-auto block" variant="destructive">
+						Anomaly
+					</Badge>
+				) : null}
 			</section>
 
 			<section className="space-y-2 h-full">
@@ -131,7 +145,7 @@ function RouteComponent(): JSX.Element {
 						</DialogHeader>
 
 						<QRCodeSVG
-							value={borrowRequest.data.id}
+							value={borrowRequest.data.borrowRequestId}
 							className="w-full size-60"
 						/>
 					</DialogContent>

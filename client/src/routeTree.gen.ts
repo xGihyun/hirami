@@ -8,6 +8,8 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthRouteImport } from './routes/_auth'
@@ -15,8 +17,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/_register'
 import { Route as AuthedUsersIndexRouteImport } from './routes/_authed/users/index'
 import { Route as AuthedReturnIndexRouteImport } from './routes/_authed/return/index'
-import { Route as AuthedReturnRequestsIndexRouteImport } from './routes/_authed/return-requests/index'
+import { Route as AuthedReturnScanIndexRouteImport } from './routes/_authed/return-scan/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
+import { Route as AuthedPersonalHistoryIndexRouteImport } from './routes/_authed/personal-history/index'
 import { Route as AuthedHistoryIndexRouteImport } from './routes/_authed/history/index'
 import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equipments/index'
 import { Route as AuthedBorrowScanIndexRouteImport } from './routes/_authed/borrow-scan/index'
@@ -25,11 +28,24 @@ import { Route as AuthPasswordResetIndexRouteImport } from './routes/_auth/passw
 import { Route as AuthOnboardingIndexRouteImport } from './routes/_auth/onboarding/index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 import { Route as AuthPasswordResetTokenRouteImport } from './routes/_auth/password-reset/$token'
+import { Route as AuthedPersonalHistoryBorrowRequestItemIdIndexRouteImport } from './routes/_authed/personal-history/$borrowRequestItemId/index'
+import { Route as AuthedHistoryBorrowRequestItemIdIndexRouteImport } from './routes/_authed/history/$borrowRequestItemId/index'
 import { Route as AuthedHistoryBorrowRequestIdIndexRouteImport } from './routes/_authed/history/$borrowRequestId/index'
+import { Route as AuthedEquipmentsEquipmentIdIndexRouteImport } from './routes/_authed/equipments/$equipmentId/index'
 import { Route as AuthRegisterRegisterIndexRouteImport } from './routes/_auth/_register/register/index'
+import { Route as AuthedEquipmentsEquipmentIdRegisterRouteImport } from './routes/_authed/equipments/$equipmentId/_register'
+import { Route as AuthedEquipmentsEquipmentIdEditIndexRouteImport } from './routes/_authed/equipments/$equipmentId/edit/index'
 import { Route as AuthRegisterRegisterPersonalIndexRouteImport } from './routes/_auth/_register/register/personal/index'
 import { Route as AuthRegisterRegisterPasswordIndexRouteImport } from './routes/_auth/_register/register/password/index'
 import { Route as AuthRegisterRegisterEmailIndexRouteImport } from './routes/_auth/_register/register/email/index'
+import { Route as AuthedEquipmentsEquipmentIdRegisterRegisterIndexRouteImport } from './routes/_authed/equipments/$equipmentId/_register/register/index'
+import { Route as AuthedEquipmentsEquipmentIdRegisterRegisterQuantityIndexRouteImport } from './routes/_authed/equipments/$equipmentId/_register/register/quantity/index'
+import { Route as AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRouteImport } from './routes/_authed/equipments/$equipmentId/_register/register/name/index'
+import { Route as AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRouteImport } from './routes/_authed/equipments/$equipmentId/_register/register/image/index'
+
+const AuthedEquipmentsEquipmentIdRouteImport = createFileRoute(
+  '/_authed/equipments/$equipmentId',
+)()
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -48,6 +64,12 @@ const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/_register',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthedEquipmentsEquipmentIdRoute =
+  AuthedEquipmentsEquipmentIdRouteImport.update({
+    id: '/equipments/$equipmentId',
+    path: '/equipments/$equipmentId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedUsersIndexRoute = AuthedUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -58,17 +80,22 @@ const AuthedReturnIndexRoute = AuthedReturnIndexRouteImport.update({
   path: '/return/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedReturnRequestsIndexRoute =
-  AuthedReturnRequestsIndexRouteImport.update({
-    id: '/return-requests/',
-    path: '/return-requests/',
-    getParentRoute: () => AuthedRoute,
-  } as any)
+const AuthedReturnScanIndexRoute = AuthedReturnScanIndexRouteImport.update({
+  id: '/return-scan/',
+  path: '/return-scan/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedProfileIndexRoute = AuthedProfileIndexRouteImport.update({
   id: '/profile/',
   path: '/profile/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedPersonalHistoryIndexRoute =
+  AuthedPersonalHistoryIndexRouteImport.update({
+    id: '/personal-history/',
+    path: '/personal-history/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedHistoryIndexRoute = AuthedHistoryIndexRouteImport.update({
   id: '/history/',
   path: '/history/',
@@ -110,17 +137,46 @@ const AuthPasswordResetTokenRoute = AuthPasswordResetTokenRouteImport.update({
   path: '/password-reset/$token',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthedPersonalHistoryBorrowRequestItemIdIndexRoute =
+  AuthedPersonalHistoryBorrowRequestItemIdIndexRouteImport.update({
+    id: '/personal-history/$borrowRequestItemId/',
+    path: '/personal-history/$borrowRequestItemId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedHistoryBorrowRequestItemIdIndexRoute =
+  AuthedHistoryBorrowRequestItemIdIndexRouteImport.update({
+    id: '/history/$borrowRequestItemId/',
+    path: '/history/$borrowRequestItemId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedHistoryBorrowRequestIdIndexRoute =
   AuthedHistoryBorrowRequestIdIndexRouteImport.update({
     id: '/history/$borrowRequestId/',
     path: '/history/$borrowRequestId/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedEquipmentsEquipmentIdIndexRoute =
+  AuthedEquipmentsEquipmentIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthedEquipmentsEquipmentIdRoute,
+  } as any)
 const AuthRegisterRegisterIndexRoute =
   AuthRegisterRegisterIndexRouteImport.update({
     id: '/register/',
     path: '/register/',
     getParentRoute: () => AuthRegisterRoute,
+  } as any)
+const AuthedEquipmentsEquipmentIdRegisterRoute =
+  AuthedEquipmentsEquipmentIdRegisterRouteImport.update({
+    id: '/_register',
+    getParentRoute: () => AuthedEquipmentsEquipmentIdRoute,
+  } as any)
+const AuthedEquipmentsEquipmentIdEditIndexRoute =
+  AuthedEquipmentsEquipmentIdEditIndexRouteImport.update({
+    id: '/edit/',
+    path: '/edit/',
+    getParentRoute: () => AuthedEquipmentsEquipmentIdRoute,
   } as any)
 const AuthRegisterRegisterPersonalIndexRoute =
   AuthRegisterRegisterPersonalIndexRouteImport.update({
@@ -140,6 +196,30 @@ const AuthRegisterRegisterEmailIndexRoute =
     path: '/register/email/',
     getParentRoute: () => AuthRegisterRoute,
   } as any)
+const AuthedEquipmentsEquipmentIdRegisterRegisterIndexRoute =
+  AuthedEquipmentsEquipmentIdRegisterRegisterIndexRouteImport.update({
+    id: '/register/',
+    path: '/register/',
+    getParentRoute: () => AuthedEquipmentsEquipmentIdRegisterRoute,
+  } as any)
+const AuthedEquipmentsEquipmentIdRegisterRegisterQuantityIndexRoute =
+  AuthedEquipmentsEquipmentIdRegisterRegisterQuantityIndexRouteImport.update({
+    id: '/register/quantity/',
+    path: '/register/quantity/',
+    getParentRoute: () => AuthedEquipmentsEquipmentIdRegisterRoute,
+  } as any)
+const AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRoute =
+  AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRouteImport.update({
+    id: '/register/name/',
+    path: '/register/name/',
+    getParentRoute: () => AuthedEquipmentsEquipmentIdRegisterRoute,
+  } as any)
+const AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute =
+  AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRouteImport.update({
+    id: '/register/image/',
+    path: '/register/image/',
+    getParentRoute: () => AuthedEquipmentsEquipmentIdRegisterRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -151,15 +231,25 @@ export interface FileRoutesByFullPath {
   '/borrow-scan': typeof AuthedBorrowScanIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
+  '/personal-history': typeof AuthedPersonalHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
-  '/return-requests': typeof AuthedReturnRequestsIndexRoute
+  '/return-scan': typeof AuthedReturnScanIndexRoute
   '/return': typeof AuthedReturnIndexRoute
   '/users': typeof AuthedUsersIndexRoute
+  '/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdRegisterRouteWithChildren
   '/register': typeof AuthRegisterRegisterIndexRoute
+  '/equipments/$equipmentId/': typeof AuthedEquipmentsEquipmentIdIndexRoute
   '/history/$borrowRequestId': typeof AuthedHistoryBorrowRequestIdIndexRoute
+  '/history/$borrowRequestItemId': typeof AuthedHistoryBorrowRequestItemIdIndexRoute
+  '/personal-history/$borrowRequestItemId': typeof AuthedPersonalHistoryBorrowRequestItemIdIndexRoute
   '/register/email': typeof AuthRegisterRegisterEmailIndexRoute
   '/register/password': typeof AuthRegisterRegisterPasswordIndexRoute
   '/register/personal': typeof AuthRegisterRegisterPersonalIndexRoute
+  '/equipments/$equipmentId/edit': typeof AuthedEquipmentsEquipmentIdEditIndexRoute
+  '/equipments/$equipmentId/register': typeof AuthedEquipmentsEquipmentIdRegisterRegisterIndexRoute
+  '/equipments/$equipmentId/register/image': typeof AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute
+  '/equipments/$equipmentId/register/name': typeof AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRoute
+  '/equipments/$equipmentId/register/quantity': typeof AuthedEquipmentsEquipmentIdRegisterRegisterQuantityIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -171,15 +261,24 @@ export interface FileRoutesByTo {
   '/borrow-scan': typeof AuthedBorrowScanIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
+  '/personal-history': typeof AuthedPersonalHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
-  '/return-requests': typeof AuthedReturnRequestsIndexRoute
+  '/return-scan': typeof AuthedReturnScanIndexRoute
   '/return': typeof AuthedReturnIndexRoute
   '/users': typeof AuthedUsersIndexRoute
+  '/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdIndexRoute
   '/register': typeof AuthRegisterRegisterIndexRoute
   '/history/$borrowRequestId': typeof AuthedHistoryBorrowRequestIdIndexRoute
+  '/history/$borrowRequestItemId': typeof AuthedHistoryBorrowRequestItemIdIndexRoute
+  '/personal-history/$borrowRequestItemId': typeof AuthedPersonalHistoryBorrowRequestItemIdIndexRoute
   '/register/email': typeof AuthRegisterRegisterEmailIndexRoute
   '/register/password': typeof AuthRegisterRegisterPasswordIndexRoute
   '/register/personal': typeof AuthRegisterRegisterPersonalIndexRoute
+  '/equipments/$equipmentId/edit': typeof AuthedEquipmentsEquipmentIdEditIndexRoute
+  '/equipments/$equipmentId/register': typeof AuthedEquipmentsEquipmentIdRegisterRegisterIndexRoute
+  '/equipments/$equipmentId/register/image': typeof AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute
+  '/equipments/$equipmentId/register/name': typeof AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRoute
+  '/equipments/$equipmentId/register/quantity': typeof AuthedEquipmentsEquipmentIdRegisterRegisterQuantityIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -195,15 +294,26 @@ export interface FileRoutesById {
   '/_authed/borrow-scan/': typeof AuthedBorrowScanIndexRoute
   '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
   '/_authed/history/': typeof AuthedHistoryIndexRoute
+  '/_authed/personal-history/': typeof AuthedPersonalHistoryIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
-  '/_authed/return-requests/': typeof AuthedReturnRequestsIndexRoute
+  '/_authed/return-scan/': typeof AuthedReturnScanIndexRoute
   '/_authed/return/': typeof AuthedReturnIndexRoute
   '/_authed/users/': typeof AuthedUsersIndexRoute
+  '/_authed/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdRouteWithChildren
+  '/_authed/equipments/$equipmentId/_register': typeof AuthedEquipmentsEquipmentIdRegisterRouteWithChildren
   '/_auth/_register/register/': typeof AuthRegisterRegisterIndexRoute
+  '/_authed/equipments/$equipmentId/': typeof AuthedEquipmentsEquipmentIdIndexRoute
   '/_authed/history/$borrowRequestId/': typeof AuthedHistoryBorrowRequestIdIndexRoute
+  '/_authed/history/$borrowRequestItemId/': typeof AuthedHistoryBorrowRequestItemIdIndexRoute
+  '/_authed/personal-history/$borrowRequestItemId/': typeof AuthedPersonalHistoryBorrowRequestItemIdIndexRoute
   '/_auth/_register/register/email/': typeof AuthRegisterRegisterEmailIndexRoute
   '/_auth/_register/register/password/': typeof AuthRegisterRegisterPasswordIndexRoute
   '/_auth/_register/register/personal/': typeof AuthRegisterRegisterPersonalIndexRoute
+  '/_authed/equipments/$equipmentId/edit/': typeof AuthedEquipmentsEquipmentIdEditIndexRoute
+  '/_authed/equipments/$equipmentId/_register/register/': typeof AuthedEquipmentsEquipmentIdRegisterRegisterIndexRoute
+  '/_authed/equipments/$equipmentId/_register/register/image/': typeof AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute
+  '/_authed/equipments/$equipmentId/_register/register/name/': typeof AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRoute
+  '/_authed/equipments/$equipmentId/_register/register/quantity/': typeof AuthedEquipmentsEquipmentIdRegisterRegisterQuantityIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -217,15 +327,25 @@ export interface FileRouteTypes {
     | '/borrow-scan'
     | '/equipments'
     | '/history'
+    | '/personal-history'
     | '/profile'
-    | '/return-requests'
+    | '/return-scan'
     | '/return'
     | '/users'
+    | '/equipments/$equipmentId'
     | '/register'
+    | '/equipments/$equipmentId/'
     | '/history/$borrowRequestId'
+    | '/history/$borrowRequestItemId'
+    | '/personal-history/$borrowRequestItemId'
     | '/register/email'
     | '/register/password'
     | '/register/personal'
+    | '/equipments/$equipmentId/edit'
+    | '/equipments/$equipmentId/register'
+    | '/equipments/$equipmentId/register/image'
+    | '/equipments/$equipmentId/register/name'
+    | '/equipments/$equipmentId/register/quantity'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -237,15 +357,24 @@ export interface FileRouteTypes {
     | '/borrow-scan'
     | '/equipments'
     | '/history'
+    | '/personal-history'
     | '/profile'
-    | '/return-requests'
+    | '/return-scan'
     | '/return'
     | '/users'
+    | '/equipments/$equipmentId'
     | '/register'
     | '/history/$borrowRequestId'
+    | '/history/$borrowRequestItemId'
+    | '/personal-history/$borrowRequestItemId'
     | '/register/email'
     | '/register/password'
     | '/register/personal'
+    | '/equipments/$equipmentId/edit'
+    | '/equipments/$equipmentId/register'
+    | '/equipments/$equipmentId/register/image'
+    | '/equipments/$equipmentId/register/name'
+    | '/equipments/$equipmentId/register/quantity'
   id:
     | '__root__'
     | '/'
@@ -260,15 +389,26 @@ export interface FileRouteTypes {
     | '/_authed/borrow-scan/'
     | '/_authed/equipments/'
     | '/_authed/history/'
+    | '/_authed/personal-history/'
     | '/_authed/profile/'
-    | '/_authed/return-requests/'
+    | '/_authed/return-scan/'
     | '/_authed/return/'
     | '/_authed/users/'
+    | '/_authed/equipments/$equipmentId'
+    | '/_authed/equipments/$equipmentId/_register'
     | '/_auth/_register/register/'
+    | '/_authed/equipments/$equipmentId/'
     | '/_authed/history/$borrowRequestId/'
+    | '/_authed/history/$borrowRequestItemId/'
+    | '/_authed/personal-history/$borrowRequestItemId/'
     | '/_auth/_register/register/email/'
     | '/_auth/_register/register/password/'
     | '/_auth/_register/register/personal/'
+    | '/_authed/equipments/$equipmentId/edit/'
+    | '/_authed/equipments/$equipmentId/_register/register/'
+    | '/_authed/equipments/$equipmentId/_register/register/image/'
+    | '/_authed/equipments/$equipmentId/_register/register/name/'
+    | '/_authed/equipments/$equipmentId/_register/register/quantity/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -307,6 +447,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRegisterRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_authed/equipments/$equipmentId': {
+      id: '/_authed/equipments/$equipmentId'
+      path: '/equipments/$equipmentId'
+      fullPath: '/equipments/$equipmentId'
+      preLoaderRoute: typeof AuthedEquipmentsEquipmentIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/users/': {
       id: '/_authed/users/'
       path: '/users'
@@ -321,11 +468,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedReturnIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/return-requests/': {
-      id: '/_authed/return-requests/'
-      path: '/return-requests'
-      fullPath: '/return-requests'
-      preLoaderRoute: typeof AuthedReturnRequestsIndexRouteImport
+    '/_authed/return-scan/': {
+      id: '/_authed/return-scan/'
+      path: '/return-scan'
+      fullPath: '/return-scan'
+      preLoaderRoute: typeof AuthedReturnScanIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/profile/': {
@@ -333,6 +480,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AuthedProfileIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/personal-history/': {
+      id: '/_authed/personal-history/'
+      path: '/personal-history'
+      fullPath: '/personal-history'
+      preLoaderRoute: typeof AuthedPersonalHistoryIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/history/': {
@@ -391,6 +545,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthPasswordResetTokenRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_authed/personal-history/$borrowRequestItemId/': {
+      id: '/_authed/personal-history/$borrowRequestItemId/'
+      path: '/personal-history/$borrowRequestItemId'
+      fullPath: '/personal-history/$borrowRequestItemId'
+      preLoaderRoute: typeof AuthedPersonalHistoryBorrowRequestItemIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/history/$borrowRequestItemId/': {
+      id: '/_authed/history/$borrowRequestItemId/'
+      path: '/history/$borrowRequestItemId'
+      fullPath: '/history/$borrowRequestItemId'
+      preLoaderRoute: typeof AuthedHistoryBorrowRequestItemIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/history/$borrowRequestId/': {
       id: '/_authed/history/$borrowRequestId/'
       path: '/history/$borrowRequestId'
@@ -398,12 +566,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedHistoryBorrowRequestIdIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/equipments/$equipmentId/': {
+      id: '/_authed/equipments/$equipmentId/'
+      path: '/'
+      fullPath: '/equipments/$equipmentId/'
+      preLoaderRoute: typeof AuthedEquipmentsEquipmentIdIndexRouteImport
+      parentRoute: typeof AuthedEquipmentsEquipmentIdRoute
+    }
     '/_auth/_register/register/': {
       id: '/_auth/_register/register/'
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof AuthRegisterRegisterIndexRouteImport
       parentRoute: typeof AuthRegisterRoute
+    }
+    '/_authed/equipments/$equipmentId/_register': {
+      id: '/_authed/equipments/$equipmentId/_register'
+      path: '/equipments/$equipmentId'
+      fullPath: '/equipments/$equipmentId'
+      preLoaderRoute: typeof AuthedEquipmentsEquipmentIdRegisterRouteImport
+      parentRoute: typeof AuthedEquipmentsEquipmentIdRoute
+    }
+    '/_authed/equipments/$equipmentId/edit/': {
+      id: '/_authed/equipments/$equipmentId/edit/'
+      path: '/edit'
+      fullPath: '/equipments/$equipmentId/edit'
+      preLoaderRoute: typeof AuthedEquipmentsEquipmentIdEditIndexRouteImport
+      parentRoute: typeof AuthedEquipmentsEquipmentIdRoute
     }
     '/_auth/_register/register/personal/': {
       id: '/_auth/_register/register/personal/'
@@ -425,6 +614,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/register/email'
       preLoaderRoute: typeof AuthRegisterRegisterEmailIndexRouteImport
       parentRoute: typeof AuthRegisterRoute
+    }
+    '/_authed/equipments/$equipmentId/_register/register/': {
+      id: '/_authed/equipments/$equipmentId/_register/register/'
+      path: '/register'
+      fullPath: '/equipments/$equipmentId/register'
+      preLoaderRoute: typeof AuthedEquipmentsEquipmentIdRegisterRegisterIndexRouteImport
+      parentRoute: typeof AuthedEquipmentsEquipmentIdRegisterRoute
+    }
+    '/_authed/equipments/$equipmentId/_register/register/quantity/': {
+      id: '/_authed/equipments/$equipmentId/_register/register/quantity/'
+      path: '/register/quantity'
+      fullPath: '/equipments/$equipmentId/register/quantity'
+      preLoaderRoute: typeof AuthedEquipmentsEquipmentIdRegisterRegisterQuantityIndexRouteImport
+      parentRoute: typeof AuthedEquipmentsEquipmentIdRegisterRoute
+    }
+    '/_authed/equipments/$equipmentId/_register/register/name/': {
+      id: '/_authed/equipments/$equipmentId/_register/register/name/'
+      path: '/register/name'
+      fullPath: '/equipments/$equipmentId/register/name'
+      preLoaderRoute: typeof AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRouteImport
+      parentRoute: typeof AuthedEquipmentsEquipmentIdRegisterRoute
+    }
+    '/_authed/equipments/$equipmentId/_register/register/image/': {
+      id: '/_authed/equipments/$equipmentId/_register/register/image/'
+      path: '/register/image'
+      fullPath: '/equipments/$equipmentId/register/image'
+      preLoaderRoute: typeof AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRouteImport
+      parentRoute: typeof AuthedEquipmentsEquipmentIdRegisterRoute
     }
   }
 }
@@ -467,16 +684,65 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface AuthedEquipmentsEquipmentIdRegisterRouteChildren {
+  AuthedEquipmentsEquipmentIdRegisterRegisterIndexRoute: typeof AuthedEquipmentsEquipmentIdRegisterRegisterIndexRoute
+  AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute: typeof AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute
+  AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRoute: typeof AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRoute
+  AuthedEquipmentsEquipmentIdRegisterRegisterQuantityIndexRoute: typeof AuthedEquipmentsEquipmentIdRegisterRegisterQuantityIndexRoute
+}
+
+const AuthedEquipmentsEquipmentIdRegisterRouteChildren: AuthedEquipmentsEquipmentIdRegisterRouteChildren =
+  {
+    AuthedEquipmentsEquipmentIdRegisterRegisterIndexRoute:
+      AuthedEquipmentsEquipmentIdRegisterRegisterIndexRoute,
+    AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute:
+      AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute,
+    AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRoute:
+      AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRoute,
+    AuthedEquipmentsEquipmentIdRegisterRegisterQuantityIndexRoute:
+      AuthedEquipmentsEquipmentIdRegisterRegisterQuantityIndexRoute,
+  }
+
+const AuthedEquipmentsEquipmentIdRegisterRouteWithChildren =
+  AuthedEquipmentsEquipmentIdRegisterRoute._addFileChildren(
+    AuthedEquipmentsEquipmentIdRegisterRouteChildren,
+  )
+
+interface AuthedEquipmentsEquipmentIdRouteChildren {
+  AuthedEquipmentsEquipmentIdRegisterRoute: typeof AuthedEquipmentsEquipmentIdRegisterRouteWithChildren
+  AuthedEquipmentsEquipmentIdIndexRoute: typeof AuthedEquipmentsEquipmentIdIndexRoute
+  AuthedEquipmentsEquipmentIdEditIndexRoute: typeof AuthedEquipmentsEquipmentIdEditIndexRoute
+}
+
+const AuthedEquipmentsEquipmentIdRouteChildren: AuthedEquipmentsEquipmentIdRouteChildren =
+  {
+    AuthedEquipmentsEquipmentIdRegisterRoute:
+      AuthedEquipmentsEquipmentIdRegisterRouteWithChildren,
+    AuthedEquipmentsEquipmentIdIndexRoute:
+      AuthedEquipmentsEquipmentIdIndexRoute,
+    AuthedEquipmentsEquipmentIdEditIndexRoute:
+      AuthedEquipmentsEquipmentIdEditIndexRoute,
+  }
+
+const AuthedEquipmentsEquipmentIdRouteWithChildren =
+  AuthedEquipmentsEquipmentIdRoute._addFileChildren(
+    AuthedEquipmentsEquipmentIdRouteChildren,
+  )
+
 interface AuthedRouteChildren {
   AuthedBorrowRequestsIndexRoute: typeof AuthedBorrowRequestsIndexRoute
   AuthedBorrowScanIndexRoute: typeof AuthedBorrowScanIndexRoute
   AuthedEquipmentsIndexRoute: typeof AuthedEquipmentsIndexRoute
   AuthedHistoryIndexRoute: typeof AuthedHistoryIndexRoute
+  AuthedPersonalHistoryIndexRoute: typeof AuthedPersonalHistoryIndexRoute
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
-  AuthedReturnRequestsIndexRoute: typeof AuthedReturnRequestsIndexRoute
+  AuthedReturnScanIndexRoute: typeof AuthedReturnScanIndexRoute
   AuthedReturnIndexRoute: typeof AuthedReturnIndexRoute
   AuthedUsersIndexRoute: typeof AuthedUsersIndexRoute
+  AuthedEquipmentsEquipmentIdRoute: typeof AuthedEquipmentsEquipmentIdRouteWithChildren
   AuthedHistoryBorrowRequestIdIndexRoute: typeof AuthedHistoryBorrowRequestIdIndexRoute
+  AuthedHistoryBorrowRequestItemIdIndexRoute: typeof AuthedHistoryBorrowRequestItemIdIndexRoute
+  AuthedPersonalHistoryBorrowRequestItemIdIndexRoute: typeof AuthedPersonalHistoryBorrowRequestItemIdIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -484,12 +750,19 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedBorrowScanIndexRoute: AuthedBorrowScanIndexRoute,
   AuthedEquipmentsIndexRoute: AuthedEquipmentsIndexRoute,
   AuthedHistoryIndexRoute: AuthedHistoryIndexRoute,
+  AuthedPersonalHistoryIndexRoute: AuthedPersonalHistoryIndexRoute,
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
-  AuthedReturnRequestsIndexRoute: AuthedReturnRequestsIndexRoute,
+  AuthedReturnScanIndexRoute: AuthedReturnScanIndexRoute,
   AuthedReturnIndexRoute: AuthedReturnIndexRoute,
   AuthedUsersIndexRoute: AuthedUsersIndexRoute,
+  AuthedEquipmentsEquipmentIdRoute:
+    AuthedEquipmentsEquipmentIdRouteWithChildren,
   AuthedHistoryBorrowRequestIdIndexRoute:
     AuthedHistoryBorrowRequestIdIndexRoute,
+  AuthedHistoryBorrowRequestItemIdIndexRoute:
+    AuthedHistoryBorrowRequestItemIdIndexRoute,
+  AuthedPersonalHistoryBorrowRequestItemIdIndexRoute:
+    AuthedPersonalHistoryBorrowRequestItemIdIndexRoute,
 }
 
 const AuthedRouteWithChildren =

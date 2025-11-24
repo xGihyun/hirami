@@ -1,0 +1,46 @@
+meta {
+  name: anomaly
+  type: http
+  seq: 19
+}
+
+post {
+  url: http://localhost:8000/anomalies
+  body: json
+  auth: inherit
+}
+
+body:json {
+  [
+    {
+      "borrowRequestId": "daed350d-96ad-4cfa-a31b-21449deb05c2",
+      "createdAt": "2025-11-13T06:00:00",
+      "expectedReturnAt": "2025-11-13T18:00:00",
+      "borrower": {
+        "id": "949a47dd-59ec-4a97-aebf-703ae3b61058",
+        "firstName": "Foo",
+        "middleName": null,
+        "lastName": "Bar",
+        "avatarUrl": "/uploads/users/kazusa-band-icon.jpg"
+      },
+      "equipments": [
+        {
+          "borrowRequestItemId": "191cf31b-d4e3-4d5e-9cd1-c23aada5e87f",
+          "equipmentTypeId": "f0b8ca34-b851-4557-b7b5-848d814ae912",
+          "name": "Volleyball",
+          "brand": "Mikasa",
+          "model": "V200W",
+          "imageUrl": "/uploads/equipments/mikasa-v200w.png",
+          "quantity": 2
+        }
+      ],
+      "location": "a",
+      "purpose": "a"
+    }
+  ]
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

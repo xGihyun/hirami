@@ -1,6 +1,7 @@
-import { queryOptions } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import { BACKEND_URL, Sort, type ApiResponse } from "../api";
 import type { UserBasicInfo } from "../user";
+import type { AnomalyResult } from "./anomaly";
 
 export type Borrower = {
 	id: string;
@@ -31,12 +32,12 @@ export type BorrowRequest = {
 	status: BorrowRequestStatus;
 };
 
-async function getBorrowRequests(): Promise<BorrowRequest[]> {
+async function getBorrowRequests(): Promise<BorrowTransaction[]> {
 	const response = await fetch(`${BACKEND_URL}/borrow-requests`, {
 		method: "GET",
 	});
 
-	const result: ApiResponse<BorrowRequest[]> = await response.json();
+	const result: ApiResponse<BorrowTransaction[]> = await response.json();
 	if (!response.ok) {
 		throw new Error(result.message);
 	}
@@ -89,6 +90,7 @@ export type BorrowTransaction = {
 	borrowReviewedBy?: UserBasicInfo;
 	returnConfirmedBy?: UserBasicInfo;
 	remarks?: string;
+	anomalyResult?: AnomalyResult;
 };
 
 type GetBorrowHistoryParams = {
@@ -97,6 +99,7 @@ type GetBorrowHistoryParams = {
 	sort?: Sort;
 	sortBy?: string;
 	category?: string;
+    search?: string;
 };
 
 async function getBorrowHistory(
@@ -119,6 +122,9 @@ async function getBorrowHistory(
 	if (params.category) {
 		url.searchParams.append("category", params.category);
 	}
+	if (params.search) {
+		url.searchParams.append("search", params.search);
+	}
 	console.log(url.toString());
 	const response = await fetch(url.toString(), {
 		method: "GET",
@@ -134,19 +140,21 @@ async function getBorrowHistory(
 
 export const borrowHistoryQuery = (params: GetBorrowHistoryParams) =>
 	queryOptions({
-		queryKey: [
-			"borrow-history",
-			params.userId,
-			params.status,
-			params.sort,
-			params.category,
-		],
+		queryKey: ["borrow-history", params],
 		queryFn: () => getBorrowHistory(params),
+		placeholderData: keepPreviousData,
 	});
 
 export type ReviewBorrowRequest = {
 	id: string;
 	reviewedBy: string;
+	remarks?: string;
+	status: BorrowRequestStatus;
+};
+
+export type ReviewBorrowResponse = {
+	id: string;
+	reviewedBy: UserBasicInfo;
 	remarks?: string;
 	status: BorrowRequestStatus;
 };

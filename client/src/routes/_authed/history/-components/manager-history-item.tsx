@@ -2,7 +2,8 @@ import { useAuth } from "@/auth";
 import { LabelLarge, LabelSmall } from "@/components/typography";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
-import { toImageUrl } from "@/lib/api";
+import { SHOW_ANOMALY, toImageUrl } from "@/lib/api";
+import type { AnomalyResult } from "@/lib/equipment/anomaly";
 import {
 	BorrowRequestStatus,
 	type BorrowTransaction,
@@ -30,6 +31,8 @@ export function ManagerHistoryItem(props: Props): JSX.Element {
 				return "success";
 			case BorrowRequestStatus.Rejected:
 				return "destructive";
+			case BorrowRequestStatus.Received:
+				return "secondary";
 		}
 
 		return "default";
@@ -41,6 +44,7 @@ export function ManagerHistoryItem(props: Props): JSX.Element {
 		(prev, acc) => prev + acc.quantity,
 		0,
 	);
+	const anomalyResult = props.transaction.anomalyResult;
 
 	return (
 		<div
@@ -95,12 +99,20 @@ export function ManagerHistoryItem(props: Props): JSX.Element {
 						</LabelSmall>
 					) : null}
 
-					<Badge
-						className="mt-1"
-						variant={getBadgeVariant(props.transaction.status)}
-					>
-						Status: {capitalizeWords(props.transaction.status)}
-					</Badge>
+					<div className="space-x-1">
+						<Badge
+							className="mt-1"
+							variant={getBadgeVariant(props.transaction.status)}
+						>
+							Status: {capitalizeWords(props.transaction.status)}
+						</Badge>
+
+						{anomalyResult && anomalyResult.isAnomaly && SHOW_ANOMALY ? (
+							<Badge className="mt-1" variant="destructive">
+								Anomaly
+							</Badge>
+						) : null}
+					</div>
 				</div>
 			</div>
 		</div>

@@ -16,6 +16,7 @@ const searchSchema = z.object({
 	category: z.string().optional(),
 	sort: z.enum(Sort).default(Sort.Asc),
 	sortBy: z.string().optional(),
+	search: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_authed/history/")({
@@ -41,21 +42,8 @@ function RouteComponent() {
 			sort: search.sort,
 			sortBy: search.sortBy,
 			category: search.category,
+			search: search.search,
 		}),
-	);
-	const historyAllCategory = useQuery(
-		borrowHistoryQuery({
-			userId: auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
-			sort: search.sort,
-			sortBy: search.sortBy,
-		}),
-	);
-	const historyEquipmentNames = Array.from(
-		new Set(
-			historyAllCategory.data?.flatMap((history) =>
-				history.equipments.map((eq) => eq.name),
-			),
-		),
 	);
 
 	const queryClient = useQueryClient();
@@ -66,33 +54,34 @@ function RouteComponent() {
 		function handleEvent(_: MessageEvent): void {
 			queryClient.invalidateQueries(
 				borrowHistoryQuery({
-					userId:
-						auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
-					sort: search.sort,
-					sortBy: search.sortBy,
-					category: search.category,
+					// userId:
+					// 	auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
+					// sort: search.sort,
+					// sortBy: search.sortBy,
+					// category: search.category,
 				}),
 			);
 		}
 
 		eventSource.addEventListener("equipment:create", handleEvent);
+		eventSource.addEventListener("equipment:anomaly", handleEvent);
 
 		return () => {
 			eventSource.removeEventListener("equipment:create", handleEvent);
 			eventSource.close();
 		};
-	}, [queryClient]);
+	}, []);
 
 	return (
 		<div className="relative space-y-4">
 			<header className="flex flex-col w-full items-center justify-between gap-4">
 				<H2>History</H2>
-				<Control equipmentNames={historyEquipmentNames || []} />
+				<Control />
 			</header>
 
 			{history.isError || history.data === undefined ? (
 				<LabelMedium className="text-muted text-center mt-10">
-					Failed to load equipment catalog
+					Failed to load history
 				</LabelMedium>
 			) : (
 				<>

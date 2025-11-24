@@ -9,6 +9,14 @@ export enum EquipmentStatus {
 	Borrowed = "borrowed",
 }
 
+export type EquipmentType = {
+	id: string;
+	name: string;
+	brand?: string;
+	model?: string;
+	imageUrl?: string;
+};
+
 export type Equipment = {
 	id: string;
 	name: string;
@@ -50,6 +58,27 @@ export const equipmentsQuery = (params: GetEquipmentParams) =>
 	queryOptions({
 		queryKey: ["equipments", params],
 		queryFn: () => getEquipments(params),
+		placeholderData: keepPreviousData,
+	});
+
+async function getEquipmentType(id: string): Promise<EquipmentType> {
+	const url = new URL(`${BACKEND_URL}/equipments/${id}`);
+	const response = await fetch(url.toString(), {
+		method: "GET",
+	});
+
+	const result: ApiResponse<EquipmentType> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result.data;
+}
+
+export const equipmentTypeQuery = (id: string) =>
+	queryOptions({
+		queryKey: ["equipments", id],
+		queryFn: () => getEquipmentType(id),
 		placeholderData: keepPreviousData,
 	});
 

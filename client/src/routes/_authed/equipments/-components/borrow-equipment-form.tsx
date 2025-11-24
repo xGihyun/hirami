@@ -58,14 +58,13 @@ export function BorrowEquipmentForm(
 ): JSX.Element {
 	const auth = useAuth();
 	const [openCalendar, setOpenCalendar] = useState(false);
-	const tomorrow = new Date();
-	tomorrow.setDate(tomorrow.getDate() + 1);
+	const now = new Date();
 
 	const form = useForm<BorrowRequestSchema>({
 		resolver: zodResolver(borrowRequestSchema),
 		defaultValues: {
 			equipments: [],
-			expectedReturnAt: tomorrow,
+			expectedReturnAt: now,
 			location: "",
 			purpose: "",
 			requestedBy: auth.user?.id,

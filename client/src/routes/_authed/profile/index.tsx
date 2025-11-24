@@ -26,6 +26,8 @@ import { useRef, useState } from "react";
 import { IconEdit, IconUserPen } from "@/lib/icons";
 import { Separator } from "@/components/ui/separator";
 import { H2 } from "@/components/typography";
+import { Success } from "@/components/success";
+import { Failed } from "@/components/failed";
 
 export const Route = createFileRoute("/_authed/profile/")({
 	component: RouteComponent,
@@ -34,18 +36,22 @@ export const Route = createFileRoute("/_authed/profile/")({
 const formSchema = z.object({
 	userId: z.uuidv4(),
 	email: z.email().optional(),
-	firstName: z.string().optional(),
+	firstName: z
+		.string()
+		.nonempty({ error: "This field must not be left blank." }),
 	middleName: z.string().optional(),
-	lastName: z.string().optional(),
+	lastName: z
+		.string()
+		.nonempty({ error: "This field must not be left blank." }),
 	avatar: z
 		.instanceof(File)
 		.refine(
 			(file) => file.size <= IMAGE_SIZE_LIMIT,
-			"Image must be less than 5MB",
+			"Invalid file: Must be PNG or JPG, under 5MB.",
 		)
 		.refine(
 			(file) => IMAGE_FORMATS.includes(file.type),
-			"Only .jpg, .jpeg, and .png formats are supported",
+			"Invalid file: Must be PNG or JPG, under 5MB.",
 		)
 		.optional(),
 });
@@ -89,19 +95,11 @@ function RouteComponent() {
 			lastName: auth.user?.lastName,
 			userId: auth.user?.id || "",
 		},
+		mode: "onTouched",
 	});
 
 	const mutation = useMutation({
 		mutationFn: editProfile,
-		onMutate: () => {
-			return toast.loading("Updating profile");
-		},
-		onSuccess: (data, _variables, toastId) => {
-			toast.success(data.message, { id: toastId });
-		},
-		onError: (error, _variables, toastId) => {
-			toast.error(error.message, { id: toastId });
-		},
 	});
 
 	async function onSubmit(value: z.infer<typeof formSchema>): Promise<void> {
@@ -123,63 +121,106 @@ function RouteComponent() {
 		? `${BACKEND_URL}/${auth.user.avatarUrl}`
 		: undefined;
 
+
+	if (mutation.isError) {
+		return (
+			<Failed
+				backLink="/profile"
+				header="Profile update failed."
+				fn={() => console.log("xD")}
+				backMessage="or return to Request List"
+				retry={form.handleSubmit(onSubmit)}
+			/>
+		);
+	}
+
+	if (mutation.isSuccess) {
+		return (
+			<Success
+				backLink="/profile"
+				header="Profile updated successfully."
+				fn={() => {
+					console.log("Updated profile xD");
+					mutation.reset();
+				}}
+			/>
+		);
+	}
+
+
 	return (
 		<div className="flex flex-col justify-between gap-4">
 			<div className="space-y-6">
-				<section className="flex flex-col items-center justify-center">
-					<H2>Profile</H2>
-
-					<div className="relative group mb-2.5">
-						<div className="relative">
-							<Avatar className="size-50">
-								<AvatarImage src={previewUrl || avatarUrl} />
-								<AvatarFallback className="text-3xl font-montserrat-semibold">
-									{auth.user?.firstName[0]}
-									{auth.user?.lastName[0]}
-								</AvatarFallback>
-							</Avatar>
-
-							<div className="size-12 flex justify-center items-center absolute right-0 bottom-0 rounded-full bg-card z-10">
-								<IconUserPen className="size-6 text-primary" />
-							</div>
-						</div>
-
-						<button
-							type="button"
-							onClick={() => fileInputRef.current?.click()}
-							className="absolute inset-0 opacity-0 flex items-center justify-center cursor-pointer z-50"
-						>
-							<IconEdit className="size-6 text-white" />
-						</button>
-
-						<input
-							ref={fileInputRef}
-							type="file"
-							accept="image/jpeg,image/jpg,image/png"
-							className="hidden"
-							onChange={(e) => {
-								const file = e.target.files?.[0];
-								if (file) {
-									form.setValue("avatar", file);
-									const reader = new FileReader();
-									reader.onloadend = () => {
-										setPreviewUrl(reader.result as string);
-									};
-									reader.readAsDataURL(file);
-								}
-							}}
-						/>
-					</div>
-
-					<H2>
-						{auth.user?.firstName} {auth.user?.lastName}
-					</H2>
-				</section>
-
-				<Separator />
+				<H2 className="text-center">Profile</H2>
 
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+						<FormField
+							control={form.control}
+							name="avatar"
+							render={({
+								field: { value, onChange, ...fieldProps },
+								fieldState,
+							}) => (
+								<FormItem>
+									<FormControl>
+										<div>
+											<div className="relative content-center w-fit mx-auto">
+												<div className="relative">
+													<Avatar className="size-50 bg-gradient-to-b from-accent to-muted">
+														<AvatarImage
+															src={previewUrl || ""}
+															className="object-cover"
+														/>
+													</Avatar>
+
+													<div className="size-16 flex justify-center items-center absolute right-0 bottom-0 rounded-full bg-card z-10">
+														<IconUserPen className="size-10 text-primary" />
+													</div>
+												</div>
+
+												<button
+													type="button"
+													onClick={() => fileInputRef.current?.click()}
+													className="absolute inset-0 opacity-0 cursor-pointer z-50"
+												></button>
+
+												<input
+													{...fieldProps}
+													ref={fileInputRef}
+													type="file"
+													accept="image/jpeg,image/jpg,image/png"
+													className="hidden"
+													onChange={(e) => {
+														const file = e.target.files?.[0];
+														if (file) {
+															form.setValue("avatar", file, {
+																shouldValidate: true,
+															});
+															const reader = new FileReader();
+															reader.onloadend = () => {
+																setPreviewUrl(reader.result as string);
+															};
+															reader.readAsDataURL(file);
+															onChange(file);
+														}
+													}}
+												/>
+											</div>
+										</div>
+									</FormControl>
+
+									{fieldState.error ? (
+										<FormMessage className="text-center mt-1" />
+									) : value ? null : null}
+
+									<H2 className="text-center">
+										{auth.user?.firstName} {auth.user?.lastName}
+									</H2>
+								</FormItem>
+							)}
+						/>
+
 						<FormField
 							control={form.control}
 							name="email"
