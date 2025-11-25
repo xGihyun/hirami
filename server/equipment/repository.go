@@ -590,15 +590,33 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 	return res, nil
 }
 
-type borrowRequestStatus string
+type borrowRequestStatus int
 
 const (
-	pending   borrowRequestStatus = "pending"
-	approved  borrowRequestStatus = "approved"
-	rejected  borrowRequestStatus = "rejected"
-	received  borrowRequestStatus = "received"
-	fulfilled borrowRequestStatus = "fulfilled"
+	pending borrowRequestStatus = iota + 1
+	approved
+	claimed
+	returned
+	unclaimed
+	rejected
 )
+
+var borrowRequestStatusCodeToID = map[string]borrowRequestStatus{
+	"pending":   pending,
+	"approved":  approved,
+	"claimed":   claimed,
+	"returned":  returned,
+	"unclaimed": unclaimed,
+	"rejected":  rejected,
+}
+
+func getBorrowRequestStatusID(code string) (borrowRequestStatus, error) {
+	id, ok := borrowRequestStatusCodeToID[code]
+	if !ok {
+		return 0, fmt.Errorf("invalid status code: %s", code)
+	}
+	return id, nil
+}
 
 type updateBorrowRequest struct {
 	BorrowRequestID string              `json:"id"`
@@ -641,7 +659,7 @@ func (r *repository) updateBorrowRequest(ctx context.Context, arg updateBorrowRe
 	}
 
 	// Create borrow transactions when the items are received
-	if arg.Status == received {
+	if arg.Status == claimed {
 		itemsQuery := `
 		SELECT borrow_request_item_id, equipment_type_id, quantity
 		FROM borrow_request_item
@@ -985,7 +1003,7 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 		if err := statusRows.Scan(&id, &status); err != nil {
 			return createReturnResponse{}, err
 		}
-		if status != received {
+		if status != claimed {
 			return createReturnResponse{}, errInvalidBorrowRequestStatus
 		}
 	}
@@ -1514,7 +1532,7 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 		SET status = $1
 		WHERE borrow_request_id = $2
 		`
-		if _, err := tx.Exec(ctx, updateStatusQuery, fulfilled, borrowRequestID); err != nil {
+		if _, err := tx.Exec(ctx, updateStatusQuery, returned, borrowRequestID); err != nil {
 			return confirmReturnRequest{}, err
 		}
 	}
@@ -1712,7 +1730,7 @@ type borrowTransaction struct {
 
 type borrowHistoryParams struct {
 	userID   *string
-	status   *borrowRequestStatus
+	status   *string
 	sort     *api.Sort
 	sortBy   *string
 	category *string
@@ -1923,7 +1941,7 @@ type borrowedItem struct {
 
 type borrowedItemParams struct {
 	userID   *string
-	status   *borrowRequestStatus
+	status   *string
 	sort     *api.Sort
 	category *string
 }

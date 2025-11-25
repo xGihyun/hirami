@@ -75,14 +75,15 @@ func (r *repository) processExpiredRequests(ctx context.Context) error {
         SELECT borrow_request.borrow_request_id
         FROM borrow_request
         JOIN borrow_request_otp USING (borrow_request_id)
-        WHERE borrow_request.status = 'approved' AND borrow_request_otp.expires_at < NOW()
+        WHERE borrow_request_status_id = $1
+			AND borrow_request_otp.expires_at < NOW()
     )
     UPDATE borrow_request
-    SET status = 'fulfilled'
+    SET status = $2
     WHERE borrow_request_id IN (SELECT borrow_request_id FROM expired_ids)
     `
 
-	if _, err := tx.Exec(ctx, updateQuery); err != nil {
+	if _, err := tx.Exec(ctx, updateQuery, approved, returned); err != nil {
 		return err
 	}
 

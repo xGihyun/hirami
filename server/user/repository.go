@@ -144,12 +144,17 @@ type BasicInfo struct {
 	AvatarURL  *string `json:"avatarUrl"`
 }
 
-type Role string
+type Role int
 
 const (
-	Borrower         Role = "borrower"
-	EquipmentManager Role = "equipment_manager"
+	Borrower Role = iota + 1
+	EquipmentManager
 )
+
+var roleToID = map[string]Role{
+	"borrower":          Borrower,
+	"equipment_manager": EquipmentManager,
+}
 
 func (r *repository) get(ctx context.Context, userID string) (user, error) {
 	query := `
