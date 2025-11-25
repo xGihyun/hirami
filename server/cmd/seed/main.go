@@ -63,7 +63,7 @@ func main() {
 	role := user.EquipmentManager
 	updateReq := user.UpdateRequest{
 		PersonID: userID,
-		Role:     &role,
+		RoleID:     &role,
 	}
 
 	if err := repo.Update(ctx, updateReq); err != nil {

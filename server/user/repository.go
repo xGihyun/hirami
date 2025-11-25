@@ -51,7 +51,7 @@ func (r *repository) Register(ctx context.Context, arg RegisterRequest) (string,
 	}
 
 	query := `
-	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, role, avatar_url)
+	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, person_role_id, avatar_url)
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	RETURNING person_id
 	`
@@ -142,18 +142,6 @@ type BasicInfo struct {
 	MiddleName *string `json:"middleName"`
 	LastName   string  `json:"lastName"`
 	AvatarURL  *string `json:"avatarUrl"`
-}
-
-type Role int
-
-const (
-	Borrower Role = iota + 1
-	EquipmentManager
-)
-
-var roleToID = map[string]Role{
-	"borrower":          Borrower,
-	"equipment_manager": EquipmentManager,
 }
 
 func (r *repository) get(ctx context.Context, userID string) (user, error) {
@@ -272,13 +260,13 @@ func (r *repository) create(ctx context.Context, arg createRequest) error {
 }
 
 type UpdateRequest struct {
-	PersonID   string  `json:"id"`
-	Email      *string `json:"email"`
-	FirstName  *string `json:"firstName"`
-	MiddleName *string `json:"middleName"`
-	LastName   *string `json:"lastName"`
-	Role       *Role   `json:"role"`
-	AvatarURL  *string `json:"avatarUrl"`
+	PersonID   string
+	Email      *string
+	FirstName  *string
+	MiddleName *string
+	LastName   *string
+	Role       *Role
+	AvatarURL  *string
 }
 
 func (r *repository) Update(ctx context.Context, arg UpdateRequest) error {
@@ -288,7 +276,7 @@ func (r *repository) Update(ctx context.Context, arg UpdateRequest) error {
 		first_name = COALESCE($2, first_name),
 		middle_name = COALESCE($3, middle_name),
 		last_name = COALESCE($4, last_name),
-		role = COALESCE($5, role),
+		person_role_id = COALESCE($5, person_role_id),
 		avatar_url = COALESCE($6, avatar_url)
 	WHERE person_id = $7
 	`

@@ -291,8 +291,18 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 
 	var role *Role
 	if roleStr := r.FormValue("role"); roleStr != "" {
-		v := Role(roleStr)
-		role = &v
+		roleStr = strings.TrimSpace(strings.ToLower(roleStr))
+
+		r, ok := stringToRole[roleStr]
+		if !ok {
+			return api.Response{
+				Error:   fmt.Errorf("update user: invalid role %s", roleStr),
+				Code:    http.StatusBadRequest,
+				Message: "Invalid role. Must be 'borrower' or 'equipment_manager'.",
+			}
+		}
+
+		role = &r
 	}
 
 	data := UpdateRequest{
