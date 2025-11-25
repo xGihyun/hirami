@@ -34,6 +34,8 @@ type Repository interface {
 	getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]borrowedItem, error)
 
 	createAnomalyResult(ctx context.Context, arg anomalyResult) error
+
+	processExpiredRequests(ctx context.Context) error
 }
 
 type repository struct {

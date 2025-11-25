@@ -101,6 +101,8 @@ func main() {
 	app.user.SetupRoutes(router)
 	app.equipment.SetupRoutes(router)
 
+	app.equipment.StartExpirationWorker(ctx)
+
 	host, ok := os.LookupEnv("HOST")
 	if !ok {
 		panic("HOST not found.")

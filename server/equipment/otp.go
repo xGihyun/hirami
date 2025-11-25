@@ -3,6 +3,7 @@ package equipment
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"time"
 
@@ -48,4 +49,62 @@ func (r *repository) createRequestWithOTP(ctx context.Context, borrowRequestID s
 	}
 
 	return fmt.Errorf("failed to generate unique OTP after retries")
+}
+
+func (s *Server) StartExpirationWorker(ctx context.Context) {
+	ticker := time.NewTicker(1 * time.Minute)
+	go func() {
+		for range ticker.C {
+			if err := s.repository.processExpiredRequests(ctx); err != nil {
+				slog.Error(err.Error())
+			}
+		}
+	}()
+	slog.Info("Started expiration worker.")
+}
+
+func (r *repository) processExpiredRequests(ctx context.Context) error {
+	tx, err := r.querier.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	updateQuery := `
+    WITH expired_ids AS (
+        SELECT borrow_request.borrow_request_id
+        FROM borrow_request
+        JOIN borrow_request_otp USING (borrow_request_id)
+        WHERE borrow_request.status = 'approved' AND borrow_request_otp.expires_at < NOW()
+    )
+    UPDATE borrow_request
+    SET status = 'fulfilled'
+    WHERE borrow_request_id IN (SELECT borrow_request_id FROM expired_ids)
+    `
+
+	if _, err := tx.Exec(ctx, updateQuery); err != nil {
+		return err
+	}
+
+	deleteOTPQuery := `
+    DELETE FROM borrow_request_otp
+    WHERE EXISTS (
+        SELECT 1
+        FROM borrow_request
+        WHERE borrow_request.borrow_request_id = borrow_request_otp.borrow_request_id
+			AND borrow_request_otp.expires_at < NOW()
+    )
+    `
+
+	if _, err := tx.Exec(ctx, deleteOTPQuery); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+
+	slog.Debug("PROCESSED EXPIRED REQUESTS")
+
+	return nil
 }
