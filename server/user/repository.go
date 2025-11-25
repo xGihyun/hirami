@@ -125,15 +125,15 @@ func (r *repository) login(ctx context.Context, arg loginRequest) (signInRespons
 }
 
 type user struct {
-	UserID     string    `json:"id"`
-	CreatedAt  time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
-	Email      string    `json:"email"`
-	FirstName  string    `json:"firstName"`
-	MiddleName *string   `json:"middleName"`
-	LastName   string    `json:"lastName"`
-	AvatarURL  *string   `json:"avatarUrl"`
-	Role       Role      `json:"role"`
+	UserID     string     `json:"id"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	UpdatedAt  time.Time  `json:"updatedAt"`
+	Email      string     `json:"email"`
+	FirstName  string     `json:"firstName"`
+	MiddleName *string    `json:"middleName"`
+	LastName   string     `json:"lastName"`
+	AvatarURL  *string    `json:"avatarUrl"`
+	Role       RoleDetail `json:"role"`
 }
 
 type BasicInfo struct {
@@ -147,16 +147,21 @@ type BasicInfo struct {
 func (r *repository) get(ctx context.Context, userID string) (user, error) {
 	query := `
 	SELECT 
-		person_id, 
-		created_at, 
-		updated_at,
-		email, 
-		first_name,
-		middle_name,
-		last_name,
-		avatar_url,
-		role
+		person.person_id, 
+		person.created_at, 
+		person.updated_at,
+		person.email, 
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		jsonb_build_object(
+			'id', person_role.person_role_id,
+			'code', person_role.code,
+			'label', person_role.label
+		) AS role
 	FROM person
+	JOIN person_role USING (person_role_id)
 	WHERE person_id = ($1)
 	`
 	row := r.querier.QueryRow(ctx, query, userID)
@@ -182,16 +187,21 @@ func (r *repository) get(ctx context.Context, userID string) (user, error) {
 func (r *repository) GetByEmail(ctx context.Context, email string) (user, error) {
 	query := `
 	SELECT 
-		person_id, 
-		created_at, 
-		updated_at,
-		email, 
-		first_name,
-		middle_name,
-		last_name,
-		avatar_url,
-		role
+		person.person_id, 
+		person.created_at, 
+		person.updated_at,
+		person.email, 
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		jsonb_build_object(
+			'id', person_role.person_role_id,
+			'code', person_role.code,
+			'label', person_role.label
+		) AS role
 	FROM person
+	JOIN person_role USING (person_role_id)
 	WHERE email = TRIM($1)
 	`
 	row := r.querier.QueryRow(ctx, query, email)
@@ -235,7 +245,7 @@ func (r *repository) create(ctx context.Context, arg createRequest) error {
 	}
 
 	query := `
-	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, role)
+	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, person_role_id)
 	VALUES ($1, $2, $3, $4, $5, $6)
 	RETURNING person_id
 	`

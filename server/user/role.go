@@ -12,6 +12,12 @@ const (
 	EquipmentManager
 )
 
+type RoleDetail struct {
+	ID    int    `json:"id"`
+	Code  string `json:"code"`
+	Label string `json:"label"`
+}
+
 var stringToRole = map[string]Role{
 	"borrower":          Borrower,
 	"equipment_manager": EquipmentManager,
