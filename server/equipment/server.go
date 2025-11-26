@@ -186,7 +186,7 @@ func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
 	name := r.URL.Query().Get("name")
-	status := equipmentStatus(r.URL.Query().Get("status"))
+	status := r.URL.Query().Get("status")
 	search := r.URL.Query().Get("search")
 	params := getEquipmentParams{
 		name:   &name,
@@ -770,7 +770,7 @@ func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Re
 	ctx := r.Context()
 
 	userID := r.URL.Query().Get("userId")
-	status := borrowRequestStatus(r.URL.Query().Get("status"))
+	status := r.URL.Query().Get("status")
 	sort := api.Sort(r.URL.Query().Get("sort"))
 	sortBy := r.URL.Query().Get("sortBy")
 	category := r.URL.Query().Get("category")
@@ -803,7 +803,7 @@ func (s *Server) getBorrowedItems(w http.ResponseWriter, r *http.Request) api.Re
 	ctx := r.Context()
 
 	userID := r.URL.Query().Get("userId")
-	status := borrowRequestStatus(r.URL.Query().Get("status"))
+	status := r.URL.Query().Get("status")
 	sort := api.Sort(r.URL.Query().Get("sort"))
 	category := r.URL.Query().Get("category")
 	params := borrowedItemParams{
