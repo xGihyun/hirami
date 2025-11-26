@@ -23,6 +23,10 @@ type UserRepoTestSuite struct {
 	httpServer  *httptest.Server
 }
 
+func TestUserRepoTestSuite(t *testing.T) {
+	suite.Run(t, new(UserRepoTestSuite))
+}
+
 func (suite *UserRepoTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	pgContainer, err := testhelpers.CreatePostgresContainer(suite.ctx)
@@ -138,10 +142,6 @@ func (suite *UserRepoTestSuite) TestLoginInvalidCredentials() {
 	suite.Equal("Invalid credentials.", result.Message)
 }
 
-func TestUserRepoTestSuite(t *testing.T) {
-	suite.Run(t, new(UserRepoTestSuite))
-}
-
 func RegisterTestUser(serverURL string, data RegisterRequest) error {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -157,5 +157,5 @@ func RegisterTestUser(serverURL string, data RegisterRequest) error {
 	}
 	defer resp.Body.Close()
 
-	return err
+	return nil
 }
