@@ -48,14 +48,6 @@ func NewRepository(querier *pgxpool.Pool) Repository {
 	}
 }
 
-type equipmentStatus string
-
-const (
-	available equipmentStatus = "available"
-	reserved  equipmentStatus = "reserved"
-	borrowed  equipmentStatus = "borrowed"
-)
-
 type createRequest struct {
 	Name            string    `json:"name"`
 	Brand           *string   `json:"brand"`
@@ -105,15 +97,16 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) (cr
 	equipment.AcquisitionDate = arg.AcquisitionDate
 
 	query = `
-	INSERT INTO equipment (equipment_type_id, acquired_at)
-	SELECT $1, $2
-	FROM generate_series(1, $3)
+	INSERT INTO equipment (equipment_type_id, acquired_at, equipment_status_id)
+	SELECT $1, $2, $3
+	FROM generate_series(1, $4)
 	`
 	if _, err := r.querier.Exec(
 		ctx,
 		query,
 		equipment.EquipmentTypeID,
 		arg.AcquisitionDate,
+		available,
 		arg.Quantity,
 	); err != nil {
 		return createResponse{}, err
@@ -140,7 +133,7 @@ type equipmentWithBorrower struct {
 
 type getEquipmentParams struct {
 	name   *string
-	status *equipmentStatus
+	status *string
 	search *string
 }
 
@@ -588,34 +581,6 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		return createBorrowResponse{}, err
 	}
 	return res, nil
-}
-
-type borrowRequestStatus int
-
-const (
-	pending borrowRequestStatus = iota + 1
-	approved
-	claimed
-	returned
-	unclaimed
-	rejected
-)
-
-var borrowRequestStatusCodeToID = map[string]borrowRequestStatus{
-	"pending":   pending,
-	"approved":  approved,
-	"claimed":   claimed,
-	"returned":  returned,
-	"unclaimed": unclaimed,
-	"rejected":  rejected,
-}
-
-func getBorrowRequestStatusID(code string) (borrowRequestStatus, error) {
-	id, ok := borrowRequestStatusCodeToID[code]
-	if !ok {
-		return 0, fmt.Errorf("invalid status code: %s", code)
-	}
-	return id, nil
 }
 
 type updateBorrowRequest struct {
