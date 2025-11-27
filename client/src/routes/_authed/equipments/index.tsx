@@ -14,10 +14,8 @@ import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/lib/api";
 import { useEffect, useState, type JSX } from "react";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
-import { IconArrowLeft, IconPlus } from "@/lib/icons";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
-import { RegisterEquipmentForm } from "./-components/register-equipment-form";
 import { EventSource } from "eventsource";
 import { CatalogHeader } from "./-components/catalog-header";
 import { CatalogSearch } from "./-components/catalog-search";
@@ -28,14 +26,6 @@ import { Catalog } from "./-components/catalog";
 import { LabelMedium } from "@/components/typography";
 import { FullScreenLoading } from "@/components/loading";
 import { CatalogCategories } from "./-components/catalog-categories";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
-import { DialogClose } from "@radix-ui/react-dialog";
 import { v4 as uuidv4 } from "uuid";
 
 const searchSchema = z.object({
@@ -169,7 +159,7 @@ function RouteComponent(): JSX.Element {
 				/>
 			)}
 
-			{auth.user?.role === UserRole.EquipmentManager ? (
+			{auth.user?.role.code === UserRole.EquipmentManager ? (
 				<Button
 					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow"
 					asChild
