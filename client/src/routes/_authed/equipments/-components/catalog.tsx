@@ -3,13 +3,13 @@ import { EquipmentStatus, type Equipment } from "@/lib/equipment";
 import type { Dispatch, JSX, SetStateAction } from "react";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { BACKEND_URL } from "@/lib/api";
+import { toImageUrl } from "@/lib/api";
 import { StatusBadge } from "./status-badge";
 import type { CheckedState } from "@radix-ui/react-checkbox";
 import type { SelectedEquipment } from "..";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -20,7 +20,6 @@ type Props = {
 
 export function Catalog(props: Props): JSX.Element {
 	const auth = useAuth();
-	const navigate = useNavigate({ from: "/equipments" });
 
 	function handleSelect(
 		equipment: Equipment,
@@ -47,7 +46,7 @@ export function Catalog(props: Props): JSX.Element {
 		);
 	}
 
-	const isEquipmentManager = auth.user?.role === UserRole.EquipmentManager;
+	const isEquipmentManager = auth.user?.role.code === UserRole.EquipmentManager;
 
 	if (props.equipments.length === 0) {
 		return (
@@ -63,7 +62,7 @@ export function Catalog(props: Props): JSX.Element {
 				{props.equipments.map((equipment) => {
 					const key = `${equipment.id}-${equipment.status}`;
 					const equipmentImage = equipment.imageUrl
-						? `${BACKEND_URL}${equipment.imageUrl}`
+						? toImageUrl(equipment.imageUrl)
 						: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 
 					const CardContent = (props: { className?: string }) => (
@@ -73,7 +72,6 @@ export function Catalog(props: Props): JSX.Element {
 								props.className,
 							)}
 						>
-							{/* Checkbox for non-managers, invisible to managers */}
 							<Checkbox
 								id={key}
 								checked={isChecked(equipment)}
@@ -82,7 +80,7 @@ export function Catalog(props: Props): JSX.Element {
 								onCheckedChange={(checked) =>
 									handleSelect(equipment, 1, checked)
 								}
-								disabled={equipment.status !== EquipmentStatus.Available}
+								disabled={equipment.status.code !== EquipmentStatus.Available}
 							/>
 
 							<div className="space-y-1">
@@ -108,7 +106,6 @@ export function Catalog(props: Props): JSX.Element {
 						</Card>
 					);
 
-					// Manager sees a Link for editing
 					if (isEquipmentManager) {
 						return (
 							<Link
@@ -121,7 +118,6 @@ export function Catalog(props: Props): JSX.Element {
 						);
 					}
 
-					// Other users see a selectable label
 					return (
 						<label
 							htmlFor={key}

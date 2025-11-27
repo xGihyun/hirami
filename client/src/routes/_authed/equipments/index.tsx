@@ -4,7 +4,6 @@ import {
 	type Equipment,
 } from "@/lib/equipment";
 import {
-	useMutationState,
 	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
@@ -20,16 +19,12 @@ import { EventSource } from "eventsource";
 import { CatalogHeader } from "./-components/catalog-header";
 import { CatalogSearch } from "./-components/catalog-search";
 import z from "zod";
-import { BorrowSuccess } from "./-components/borrow-success";
-import { BorrowFailed } from "./-components/borrow-failed";
 import { Catalog } from "./-components/catalog";
 import { LabelMedium } from "@/components/typography";
-import { FullScreenLoading } from "@/components/loading";
 import { CatalogCategories } from "./-components/catalog-categories";
 import { v4 as uuidv4 } from "uuid";
 
 const searchSchema = z.object({
-	success: z.boolean().optional(),
 	categories: z.array(z.string()).optional().default([]),
 	search: z.string().optional(),
 });
@@ -64,14 +59,6 @@ function RouteComponent(): JSX.Element {
 	const [selectedEquipments, setSelectedEquipments] = useState<
 		SelectedEquipment[]
 	>([]);
-	const [isDialogOpen, setIsDialogOpen] = useState(false);
-	const mutationState = useMutationState({
-		filters: {
-			mutationKey: ["submit-borrow-request"],
-		},
-		select: (mutation) => mutation.state.status,
-	});
-	const mutationStatus = mutationState[0];
 
 	function handleUpdateQuantity(
 		equipment: Equipment,
@@ -88,7 +75,6 @@ function RouteComponent(): JSX.Element {
 
 	function onSuccess(): void {
 		setIsBorrowing(false);
-		setIsDialogOpen(false);
 		setSelectedEquipments([]);
 	}
 
@@ -115,20 +101,6 @@ function RouteComponent(): JSX.Element {
 			eventSource.close();
 		};
 	}, []);
-
-	if (mutationStatus === "pending") {
-		return <FullScreenLoading />;
-	}
-
-	if (search.success === true) {
-		return <BorrowSuccess />;
-	}
-
-	if (search.success === false) {
-		return (
-			<BorrowFailed setIsBorrowing={setIsBorrowing} onSuccess={onSuccess} />
-		);
-	}
 
 	if (isBorrowing) {
 		return (

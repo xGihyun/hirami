@@ -22,7 +22,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { BACKEND_URL } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
-import { toast } from "sonner";
 import type { SelectedEquipment } from "..";
 import { useAuth } from "@/auth";
 import { H1, LabelLarge, LabelSmall } from "@/components/typography";
@@ -38,13 +37,15 @@ import { ChevronDownIcon } from "lucide-react";
 import { useState } from "react";
 import { IconArrowLeft } from "@/lib/icons";
 import { NumberInput } from "@/components/number-input";
-import { useNavigate } from "@tanstack/react-router";
 import {
 	borrow,
 	borrowRequestSchema,
 	type BorrowRequestSchema,
 } from "../-function";
 import { DialogClose } from "@radix-ui/react-dialog";
+import { Success } from "@/components/success";
+import { FullScreenLoading } from "@/components/loading";
+import { Failed } from "@/components/failed";
 
 type BorrowEquipmentFormProps = {
 	selectedEquipments: SelectedEquipment[];
@@ -72,17 +73,11 @@ export function BorrowEquipmentForm(
 		mode: "onTouched",
 	});
 
-	const navigate = useNavigate({ from: "/equipments" });
-
 	const mutation = useMutation({
 		mutationKey: ["submit-borrow-request"],
 		mutationFn: borrow,
 		onSuccess: async (_data, _variables) => {
-			await navigate({ search: { success: true } });
 			props.onSuccess();
-		},
-		onError: async (_error, _variables) => {
-			await navigate({ search: { success: false } });
 		},
 	});
 
@@ -100,6 +95,31 @@ export function BorrowEquipmentForm(
 		(total, cur) => total + cur.quantity,
 		0,
 	);
+
+	if (mutation.isPending) {
+		return <FullScreenLoading />;
+	}
+
+	if (mutation.isSuccess) {
+		return (
+			<Success
+				header="Borrow request submitted successfully"
+				backLink="/equipments"
+			/>
+		);
+	}
+
+	if (mutation.isError) {
+		return (
+			<Failed
+				header="Borrow request failed."
+				backLink="/equipments"
+				backMessage="or return to Catalog"
+				fn={mutation.reset}
+				retry={form.handleSubmit(onSubmit)}
+			/>
+		);
+	}
 
 	return (
 		<div className="h-full w-full">
@@ -285,8 +305,8 @@ export function BorrowEquipmentForm(
 											Confirm Equipment Borrow
 										</DialogTitle>
 										<DialogDescription className="text-start">
-											You are about to borrow {totalQuantity}{" "}
-											items. Do you wish to proceed?
+											You are about to borrow {totalQuantity} items. Do you wish
+											to proceed?
 										</DialogDescription>
 									</DialogHeader>
 
