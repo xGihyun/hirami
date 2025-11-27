@@ -33,25 +33,13 @@ func main() {
 
 	registerReq := user.RegisterRequest{
 		Email:     "manager@test.com",
-		Password:  "password",
+		Password:  "Password123!",
 		FirstName: "Equipment",
 		LastName:  "Manager",
 	}
 	userID, err := repo.Register(ctx, registerReq)
 	if err != nil {
-		// if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code != "23505" {
-		// 	slog.Error("Failed to register default Equipment Manager.")
-		// }
-		//
-		// if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
-		// 	slog.Debug("Equipment Manager already exists.")
-		// }
-
 		userRes, _ := repo.GetByEmail(ctx, registerReq.Email)
-		// if err != nil {
-		// 	slog.Error(err.Error())
-		// }
-
 		userID = userRes.UserID
 	}
 
@@ -63,7 +51,7 @@ func main() {
 	role := user.EquipmentManager
 	updateReq := user.UpdateRequest{
 		PersonID: userID,
-		RoleID:     &role,
+		Role:     &role,
 	}
 
 	if err := repo.Update(ctx, updateReq); err != nil {
