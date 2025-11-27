@@ -79,7 +79,7 @@ func (r *repository) processExpiredRequests(ctx context.Context) error {
 			AND borrow_request_otp.expires_at < NOW()
     )
     UPDATE borrow_request
-    SET status = $2
+    SET borrow_request_status_id = $2
     WHERE borrow_request_id IN (SELECT borrow_request_id FROM expired_ids)
     `
 
