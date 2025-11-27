@@ -83,7 +83,7 @@ func (r *repository) processExpiredRequests(ctx context.Context) error {
     WHERE borrow_request_id IN (SELECT borrow_request_id FROM expired_ids)
     `
 
-	if _, err := tx.Exec(ctx, updateQuery, approved, returned); err != nil {
+	if _, err := tx.Exec(ctx, updateQuery, approved, unclaimed); err != nil {
 		return err
 	}
 
