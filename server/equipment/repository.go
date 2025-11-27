@@ -259,7 +259,7 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 	WHERE TRUE
 	`
 
-	var args []any = []any{available}
+	var args []any = []any{approved}
 	argIdx := 2
 
 	if params.name != nil && *params.name != "" {
