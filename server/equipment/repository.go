@@ -1134,7 +1134,11 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction
 		borrow_request.purpose,
 		borrow_request.expected_return_at,
 		latest_return_data.created_at AS actual_return_at,
-		borrow_request.status,
+		jsonb_build_object(
+			'id', borrow_request_status.borrow_request_status_id,
+			'code', borrow_request_status.code,
+			'label', borrow_request_status.label
+		) AS status,
 		borrow_request.remarks,
 		CASE 
 			WHEN anomaly_result.anomaly_result_id IS NULL THEN NULL
@@ -1153,6 +1157,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction
 			)
 		END AS otp
 	FROM borrow_request
+	JOIN borrow_request_status USING (borrow_request_status_id)
 	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
 	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
@@ -1161,7 +1166,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction
 	LEFT JOIN borrow_request_otp ON borrow_request_otp.borrow_request_id = borrow_request.borrow_request_id
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
-	WHERE borrow_request.status = 'pending'
+	WHERE borrow_request.borrow_request_status_id = $1
 	GROUP BY 
 		person.person_id,
 		person.first_name,
@@ -1174,12 +1179,13 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction
 		person_borrow_reviewer.last_name,
 		person_borrow_reviewer.avatar_url,
 		borrow_request.borrow_request_id,
+		borrow_request_status.borrow_request_status_id,
 		latest_return_data.created_at,
 		anomaly_result.anomaly_result_id,
 		borrow_request_otp.borrow_request_otp_id
 	`
 
-	rows, err := r.querier.Query(ctx, query)
+	rows, err := r.querier.Query(ctx, query, pending)
 	if err != nil {
 		return nil, err
 	}
@@ -1749,8 +1755,9 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	}
 
 	if params.status != nil && *params.status != "" {
-		query += fmt.Sprintf(" AND borrow_request.status = $%d", argIdx)
-		args = append(args, *params.status)
+		status := stringToBorrowRequestStatus[*params.status]
+		query += fmt.Sprintf(" AND borrow_request.borrow_request_status_id = $%d", argIdx)
+		args = append(args, status)
 		argIdx++
 	}
 
@@ -1939,8 +1946,9 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 	}
 
 	if params.status != nil && *params.status != "" {
-		query += fmt.Sprintf(" AND borrow_request.status = $%d", argIdx)
-		args = append(args, *params.status)
+		status := stringToBorrowRequestStatus[*params.status]
+		query += fmt.Sprintf(" AND borrow_request.borrow_request_status_id = $%d", argIdx)
+		args = append(args, status)
 		argIdx++
 	}
 
@@ -1962,7 +1970,8 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 		person_borrow_reviewer.middle_name,
 		person_borrow_reviewer.last_name,
 		person_borrow_reviewer.avatar_url,
-		borrow_request.borrow_request_id
+		borrow_request.borrow_request_id,
+		borrow_request_status.borrow_request_status_id
 	`
 
 	if params.sort != nil && *params.sort != "" {
