@@ -1704,7 +1704,11 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		borrow_request.purpose,
 		borrow_request.expected_return_at,
 		latest_return_data.created_at AS actual_return_at,
-		borrow_request.status,
+		jsonb_build_object(
+			'id', borrow_request_status.borrow_request_status_id,
+			'code', borrow_request_status.code,
+			'label', borrow_request_status.label
+		) AS status,
 		borrow_request.remarks,
 		CASE 
 			WHEN anomaly_result.anomaly_result_id IS NULL THEN NULL
@@ -1723,6 +1727,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			)
 		END AS otp
 	FROM borrow_request
+	JOIN borrow_request_status USING (borrow_request_status_id)
 	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
 	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
@@ -1797,6 +1802,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		person_borrow_reviewer.last_name,
 		person_borrow_reviewer.avatar_url,
 		borrow_request.borrow_request_id,
+		borrow_request_status.borrow_request_status_id,
 		latest_return_data.created_at,
 		anomaly_result.anomaly_result_id,
 		borrow_request_otp.borrow_request_otp_id
@@ -1812,15 +1818,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		case "returnedAt":
 			sortByColumn = "latest_return_data.created_at"
 		case "status":
-			sortByColumn = `
-			CASE status
-				WHEN 'pending' THEN 1
-				WHEN 'approved' THEN 2
-				WHEN 'received' THEN 3
-				WHEN 'fulfilled' THEN 4
-				ELSE 5
-			END
-			`
+			sortByColumn = "borrow_request.borrow_request_status_id"
 		}
 	}
 
@@ -1916,18 +1914,23 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 		borrow_request.location,
 		borrow_request.purpose,
 		borrow_request.expected_return_at,
-		borrow_request.status,
+		jsonb_build_object(
+			'id', borrow_request_status.borrow_request_status_id,
+			'code', borrow_request_status.code,
+			'label', borrow_request_status.label
+		) AS status,
 		borrow_request.remarks
 	FROM borrow_request
+	JOIN borrow_request_status USING (borrow_request_status_id)
 	JOIN person ON person.person_id = borrow_request.requested_by
 	JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
 	JOIN pending_items ON pending_items.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = pending_items.equipment_type_id
-	WHERE borrow_request.status = 'received'
+	WHERE borrow_request.borrow_request_status_id = $1
 	`
 
-	var args []any
-	argIdx := 1
+	var args []any = []any{claimed}
+	argIdx := 2
 
 	if params.userID != nil && *params.userID != "" {
 		query += fmt.Sprintf(" AND borrow_request.requested_by = $%d", argIdx)
