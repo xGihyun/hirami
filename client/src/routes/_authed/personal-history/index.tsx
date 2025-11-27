@@ -21,7 +21,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authed/personal-history/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
-		if (context.auth.user?.role !== UserRole.Borrower) {
+		if (context.auth.user?.role.code !== UserRole.Borrower) {
 			throw redirect({ to: "/equipments" });
 		}
 		context.queryClient.ensureQueryData(
@@ -36,7 +36,7 @@ function RouteComponent() {
 	const auth = useAuth();
 	const history = useQuery(
 		borrowHistoryQuery({
-			userId: auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
+			userId: auth.user?.role.code === UserRole.Borrower ? auth.user.id : undefined,
 			sort: search.sort,
 			sortBy: search.sortBy,
 			category: search.category,
