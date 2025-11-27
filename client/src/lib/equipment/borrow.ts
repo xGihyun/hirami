@@ -72,10 +72,17 @@ export const borrowRequestByIdQuery = (id: string) =>
 export enum BorrowRequestStatus {
 	Pending = "pending",
 	Approved = "approved",
+	Claimed = "claimed",
+	Returned = "returned",
+	Unclaimed = "unclaimed",
 	Rejected = "rejected",
-	Received = "received",
-	Fulfilled = "fulfilled",
 }
+
+export type BorrowRequestStatusDetail = {
+	id: number;
+	code: BorrowRequestStatus;
+	label: string;
+};
 
 export type BorrowTransaction = {
 	borrowRequestId: string;
@@ -86,7 +93,7 @@ export type BorrowTransaction = {
 	purpose: string;
 	expectedReturnAt: string;
 	actualReturnAt?: string;
-	status: BorrowRequestStatus;
+	status: BorrowRequestStatusDetail;
 	borrowReviewedBy?: UserBasicInfo;
 	returnConfirmedBy?: UserBasicInfo;
 	remarks?: string;
@@ -99,7 +106,7 @@ type GetBorrowHistoryParams = {
 	sort?: Sort;
 	sortBy?: string;
 	category?: string;
-    search?: string;
+	search?: string;
 };
 
 async function getBorrowHistory(

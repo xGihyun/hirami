@@ -126,7 +126,7 @@ function RouteComponent(): JSX.Element {
 
 		function handleBorrowRequestEvent(e: MessageEvent): void {
 			const res: UpdateBorrowResponse = JSON.parse(e.data);
-			setIsReceived(res.status === BorrowRequestStatus.Received);
+			setIsReceived(res.status === BorrowRequestStatus.Claimed);
 		}
 
 		eventSource.addEventListener("equipment:create", handleEvent);
@@ -166,7 +166,7 @@ function RouteComponent(): JSX.Element {
 	if (mutation.isError) {
 		return (
 			<Failed
-				retry={() => console.log("RETRY")}
+				retry={() => mutation.mutate(mutation.variables)}
 				fn={handleDrawerClose}
 				header="Failed to process request."
 				backLink="/borrow-requests"
@@ -205,7 +205,7 @@ function RouteComponent(): JSX.Element {
 				<div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
 					{data.map((request) => {
 						const borrowerInitials = `${request.borrower.firstName[0]}${request.borrower.lastName[0]}`;
-						const borrowerName = `${request.borrower.lastName}, ${request.borrower.firstName}`;
+						const borrowerName = `${request.borrower.firstName} ${request.borrower.lastName}`;
 						const requestedAt = `${format(request.borrowedAt, "h:mm a")} at ${format(request.borrowedAt, "MM/dd/yyyy")}`;
 						const anomalyResult = request.anomalyResult;
 						return (
@@ -328,7 +328,7 @@ function BorrowRequestReviewContent(
 					</TitleSmall>
 				</DrawerTitle>
 
-				<div>
+				<div className="text-muted">
 					<Caption>
 						Requested on {format(request.borrowedAt, "MMMM d, yyyy - hh:mm a")}
 					</Caption>

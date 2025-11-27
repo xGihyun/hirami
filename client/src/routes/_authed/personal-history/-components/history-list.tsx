@@ -11,6 +11,7 @@ import { IconArrowLeft } from "@/lib/icons";
 import { toImageUrl } from "@/lib/api";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
+import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment";
 
 type Props = {
 	history: BorrowTransaction[];
@@ -45,7 +46,7 @@ export function HistoryList(props: Props): JSX.Element {
 
 				<section className="space-y-2">
 					<img
-						src={toImageUrl(selectedItem.equipment.imageUrl)}
+						src={toImageUrl(selectedItem.equipment.imageUrl) || DEFAULT_EQUIPMENT_IMAGE}
 						alt={`${selectedItem.equipment.name} ${selectedItem.equipment.brand}`}
 						className="size-16 object-cover rounded-2xl mx-auto"
 					/>

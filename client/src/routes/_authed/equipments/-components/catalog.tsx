@@ -60,7 +60,7 @@ export function Catalog(props: Props): JSX.Element {
 		<section className="pb-15 !mb-0">
 			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 				{props.equipments.map((equipment) => {
-					const key = `${equipment.id}-${equipment.status}`;
+					const key = `${equipment.id}-${equipment.status.code}`;
 					const equipmentImage = equipment.imageUrl
 						? toImageUrl(equipment.imageUrl)
 						: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";

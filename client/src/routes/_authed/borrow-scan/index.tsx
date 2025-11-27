@@ -103,7 +103,7 @@ function RouteComponent(): JSX.Element {
 	function handleConfirmation(id: string): void {
 		mutation.mutate({
 			id: id,
-			status: BorrowRequestStatus.Received,
+			status: BorrowRequestStatus.Claimed,
 		});
 	}
 
