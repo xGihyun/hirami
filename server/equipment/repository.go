@@ -1652,12 +1652,12 @@ type borrowTransaction struct {
 	Location        string              `json:"location"`
 	Purpose         string              `json:"purpose"`
 
-	ExpectedReturnAt  time.Time           `json:"expectedReturnAt"`
-	ActualReturnAt    *time.Time          `json:"actualReturnAt"`
-	Status            borrowRequestStatus `json:"status"`
-	BorrowReviewedBy  *user.BasicInfo     `json:"borrowReviewedBy"`
-	ReturnConfirmedBy *user.BasicInfo     `json:"returnConfirmedBy"`
-	Remarks           *string             `json:"remarks"`
+	ExpectedReturnAt  time.Time                 `json:"expectedReturnAt"`
+	ActualReturnAt    *time.Time                `json:"actualReturnAt"`
+	Status            borrowRequestStatusDetail `json:"status"`
+	BorrowReviewedBy  *user.BasicInfo           `json:"borrowReviewedBy"`
+	ReturnConfirmedBy *user.BasicInfo           `json:"returnConfirmedBy"`
+	Remarks           *string                   `json:"remarks"`
 
 	OTP *OTP `json:"otp"`
 
