@@ -788,6 +788,12 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 		LIMIT $3
 		`
 
+		reserveEquipmentQuery := `
+		UPDATE equipment
+		SET equipment_status_id = $1
+		WHERE equipment_id = $2
+		`
+
 		for _, item := range items {
 			quantity := int(item.quantity)
 
@@ -803,10 +809,17 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 					return reviewBorrowResponse{}, err
 				}
 				equipmentIDs = append(equipmentIDs, equipmentID)
+
 			}
 
 			if len(equipmentIDs) < quantity {
 				return reviewBorrowResponse{}, errInsufficientEquipmentQuantity
+			}
+
+			for _, id := range equipmentIDs {
+				if _, err := tx.Exec(ctx, reserveEquipmentQuery, reserved, id); err != nil {
+					return reviewBorrowResponse{}, err
+				}
 			}
 		}
 
