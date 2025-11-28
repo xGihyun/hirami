@@ -153,10 +153,15 @@ function RouteComponent(): JSX.Element {
 		setIsReceived(false);
 	}
 
+	function reset(): void {
+		handleDrawerClose();
+		mutation.reset();
+	}
+
 	if (isReceived) {
 		return (
 			<Success
-				fn={handleDrawerClose}
+				fn={reset}
 				header="Request approved successfully."
 				backLink="/borrow-requests"
 			/>
@@ -167,7 +172,7 @@ function RouteComponent(): JSX.Element {
 		return (
 			<Failed
 				retry={() => mutation.mutate(mutation.variables)}
-				fn={handleDrawerClose}
+				fn={reset}
 				header="Failed to process request."
 				backLink="/borrow-requests"
 				backMessage="or return to Request List"
@@ -177,7 +182,7 @@ function RouteComponent(): JSX.Element {
 
 	if (
 		mutation.isSuccess &&
-		reviewedBorrowRequest?.status === BorrowRequestStatus.Rejected
+		reviewedBorrowRequest?.status.code === BorrowRequestStatus.Rejected
 	) {
 		return (
 			<Success
@@ -249,9 +254,7 @@ function RouteComponent(): JSX.Element {
 				</div>
 
 				<DrawerContent className="space-y-4 h-full">
-					{reviewedBorrowRequest ? (
-						<ConfirmationQr borrowRequestId={reviewedBorrowRequest.id} />
-					) : selectedRequest ? (
+					{selectedRequest ? (
 						<BorrowRequestReviewContent
 							selectedRequest={selectedRequest}
 							remarks={remarks}

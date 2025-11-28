@@ -50,7 +50,7 @@ import { Failed } from "@/components/failed";
 type BorrowEquipmentFormProps = {
 	selectedEquipments: SelectedEquipment[];
 	handleUpdateQuantity: (equipment: Equipment, newQuantity: number) => void;
-	onSuccess: () => void;
+	reset: () => void;
 	setIsBorrowing: Dispatch<SetStateAction<boolean>>;
 };
 
@@ -76,9 +76,6 @@ export function BorrowEquipmentForm(
 	const mutation = useMutation({
 		mutationKey: ["submit-borrow-request"],
 		mutationFn: borrow,
-		onSuccess: async (_data, _variables) => {
-			props.onSuccess();
-		},
 	});
 
 	async function onSubmit(value: BorrowRequestSchema): Promise<void> {
@@ -96,6 +93,11 @@ export function BorrowEquipmentForm(
 		0,
 	);
 
+	function reset(): void {
+		mutation.reset();
+		props.reset();
+	}
+
 	if (mutation.isPending) {
 		return <FullScreenLoading />;
 	}
@@ -105,6 +107,7 @@ export function BorrowEquipmentForm(
 			<Success
 				header="Borrow request submitted successfully"
 				backLink="/equipments"
+				fn={reset}
 			/>
 		);
 	}
@@ -115,7 +118,7 @@ export function BorrowEquipmentForm(
 				header="Borrow request failed."
 				backLink="/equipments"
 				backMessage="or return to Catalog"
-				fn={mutation.reset}
+				fn={reset}
 				retry={form.handleSubmit(onSubmit)}
 			/>
 		);

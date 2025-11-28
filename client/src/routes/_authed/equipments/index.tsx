@@ -106,7 +106,7 @@ function RouteComponent(): JSX.Element {
 		return (
 			<BorrowEquipmentForm
 				handleUpdateQuantity={handleUpdateQuantity}
-				onSuccess={onSuccess}
+				reset={onSuccess}
 				selectedEquipments={selectedEquipments}
 				setIsBorrowing={setIsBorrowing}
 			/>
