@@ -31,6 +31,8 @@ import {
 import { FullScreenLoading } from "@/components/loading.tsx";
 import { ReturnSuccess } from "./return-success.tsx";
 import { ReturnFailed } from "./return-failed.tsx";
+import { Success } from "@/components/success.tsx";
+import { Failed } from "@/components/failed.tsx";
 
 const returnEquipmentItemSchema = z.object({
 	borrowRequestItemId: z.string().nonempty(),
@@ -138,7 +140,6 @@ export function ReturnEquipmentForm(
 
 		resetState();
 		mutation.reset();
-		console.log("Full reset");
 	}
 
 	async function onSubmit(value: ReturnEquipmentSchema): Promise<void> {
@@ -162,12 +163,24 @@ export function ReturnEquipmentForm(
 
 	if (mutation.isError) {
 		return (
-			<ReturnFailed reset={reset} retry={() => onSubmit(mutation.variables)} />
+			<Failed
+				header="Return request failed."
+				fn={reset}
+				retry={form.handleSubmit(onSubmit)}
+				backLink="/return"
+				backMessage="or return to Return Page"
+			/>
 		);
 	}
 
 	if (mutation.isSuccess) {
-		return <ReturnSuccess reset={reset} />;
+		return (
+			<Success
+				header="Return request submitted successfully"
+				fn={reset}
+				backLink="/return"
+			/>
+		);
 	}
 
 	return (
