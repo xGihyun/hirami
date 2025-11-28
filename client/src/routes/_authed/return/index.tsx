@@ -105,7 +105,7 @@ function RouteComponent(): JSX.Element {
 			eventSource.removeEventListener("equipment:create", handleEvent);
 			eventSource.close();
 		};
-	}, [queryClient]);
+	}, []);
 
 	return (
 		<main className="space-y-4 pb-15 !mb-0">
