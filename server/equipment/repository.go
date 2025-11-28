@@ -1577,6 +1577,21 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 		if _, err := tx.Exec(ctx, transactionQuery, item.returnRequestItemID, item.borrowRequestItemID, item.quantity); err != nil {
 			return confirmReturnRequest{}, err
 		}
+
+		updateEquipmentQuery := `
+        UPDATE equipment
+        SET equipment_status_id = $1
+        WHERE equipment_id IN (
+            SELECT bt.equipment_id
+            FROM borrow_transaction bt
+            JOIN return_transaction rt ON bt.borrow_transaction_id = rt.borrow_transaction_id
+            WHERE rt.return_request_item_id = $2
+        )
+        `
+
+		if _, err := tx.Exec(ctx, updateEquipmentQuery, available, item.returnRequestItemID); err != nil {
+			return confirmReturnRequest{}, err
+		}
 	}
 
 	// Check if all items in the borrow_request are fully returned
@@ -1603,7 +1618,7 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 	if isAllReturned {
 		updateStatusQuery := `
 		UPDATE borrow_request
-		SET status = $1
+		SET borrow_request_status_id = $1
 		WHERE borrow_request_id = $2
 		`
 		if _, err := tx.Exec(ctx, updateStatusQuery, returned, borrowRequestID); err != nil {
@@ -2006,10 +2021,10 @@ type borrowedItem struct {
 	Location        string              `json:"location"`
 	Purpose         string              `json:"purpose"`
 
-	ExpectedReturnAt time.Time           `json:"expectedReturnAt"`
-	Status           borrowRequestStatus `json:"status"`
-	BorrowReviewedBy user.BasicInfo      `json:"borrowReviewedBy"`
-	Remarks          *string             `json:"remarks"`
+	ExpectedReturnAt time.Time                 `json:"expectedReturnAt"`
+	Status           borrowRequestStatusDetail `json:"status"`
+	BorrowReviewedBy user.BasicInfo            `json:"borrowReviewedBy"`
+	Remarks          *string                   `json:"remarks"`
 }
 
 type borrowedItemParams struct {
