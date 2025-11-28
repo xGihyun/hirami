@@ -1,7 +1,10 @@
 import { H2 } from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL, type ApiResponse } from "@/lib/api";
-import { BorrowRequestStatus } from "@/lib/equipment/borrow";
+import {
+	BorrowRequestStatus,
+	type UpdateBorrowRequest,
+} from "@/lib/equipment/borrow";
 import { createFileRoute } from "@tanstack/react-router";
 import QrScanner from "qr-scanner";
 import { useEffect, useRef, useState, type JSX } from "react";
@@ -15,12 +18,6 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { useMutation } from "@tanstack/react-query";
-import { toast } from "sonner";
-
-type UpdateBorrowRequest = {
-	id: string;
-	status: BorrowRequestStatus;
-};
 
 async function updateBorrowRequest(
 	value: UpdateBorrowRequest,
