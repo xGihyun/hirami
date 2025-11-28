@@ -919,7 +919,7 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	}
 
 	statusQuery := `
-	SELECT borrow_request_id, status
+	SELECT borrow_request_id, borrow_request_status_id
 	FROM borrow_request
 	WHERE borrow_request_id = ANY($1)
 	`
@@ -931,8 +931,10 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	defer statusRows.Close()
 
 	for statusRows.Next() {
-		var id string
-		var status borrowRequestStatus
+		var (
+			id     string
+			status borrowRequestStatus
+		)
 		if err := statusRows.Scan(&id, &status); err != nil {
 			return createReturnResponse{}, err
 		}
@@ -940,6 +942,7 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 			return createReturnResponse{}, errInvalidBorrowRequestStatus
 		}
 	}
+
 	if err = statusRows.Err(); err != nil {
 		return createReturnResponse{}, err
 	}
