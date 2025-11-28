@@ -36,7 +36,8 @@ type Repository interface {
 
 	createAnomalyResult(ctx context.Context, arg anomalyResult) error
 
-	processExpiredRequests(ctx context.Context) error
+	processExpiredBorrowRequests(ctx context.Context) error
+	renewExpiredReturnRequests(ctx context.Context) error
 }
 
 type repository struct {
@@ -826,7 +827,7 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 			}
 		}
 
-		if err := r.createRequestWithOTP(ctx, res.BorrowRequestID); err != nil {
+		if err := r.createBorrowRequestWithOTP(ctx, res.BorrowRequestID); err != nil {
 			return reviewBorrowResponse{}, err
 		}
 	}

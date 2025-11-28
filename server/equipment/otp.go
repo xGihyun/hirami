@@ -20,7 +20,25 @@ func generateRandomOTP(length int) string {
 	return string(b)
 }
 
-func (r *repository) createRequestWithOTP(ctx context.Context, borrowRequestID string) error {
+func (s *Server) StartExpirationWorker(ctx context.Context) {
+	ticker := time.NewTicker(1 * time.Minute)
+	go func() {
+		for range ticker.C {
+			if err := s.repository.processExpiredBorrowRequests(ctx); err != nil {
+				slog.Error("Error processing expired borrow requests: " + err.Error())
+			}
+
+			if err := s.repository.renewExpiredReturnRequests(ctx); err != nil {
+				slog.Error("Error renewing expired return requests: " + err.Error())
+			}
+		}
+	}()
+	slog.Info("Started expiration worker.")
+}
+
+// OTP for Borrow Requests
+
+func (r *repository) createBorrowRequestWithOTP(ctx context.Context, borrowRequestID string) error {
 	maxRetries := 5
 
 	query := `
@@ -40,6 +58,7 @@ func (r *repository) createRequestWithOTP(ctx context.Context, borrowRequestID s
 		)
 		if err != nil {
 			if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+				slog.Debug("Borrow OTP collision detected, retrying generation.")
 				continue
 			}
 			return err
@@ -51,19 +70,7 @@ func (r *repository) createRequestWithOTP(ctx context.Context, borrowRequestID s
 	return fmt.Errorf("failed to generate unique OTP after retries")
 }
 
-func (s *Server) StartExpirationWorker(ctx context.Context) {
-	ticker := time.NewTicker(1 * time.Minute)
-	go func() {
-		for range ticker.C {
-			if err := s.repository.processExpiredRequests(ctx); err != nil {
-				slog.Error(err.Error())
-			}
-		}
-	}()
-	slog.Info("Started expiration worker.")
-}
-
-func (r *repository) processExpiredRequests(ctx context.Context) error {
+func (r *repository) processExpiredBorrowRequests(ctx context.Context) error {
 	tx, err := r.querier.Begin(ctx)
 	if err != nil {
 		return err
@@ -156,5 +163,113 @@ func (r *repository) processExpiredRequests(ctx context.Context) error {
 
 	slog.Debug("Processed expired requests and released reserved equipments.")
 
+	return nil
+}
+
+// OTP for Return Requests
+
+func (r *repository) createReturnRequestWithOTP(ctx context.Context, returnRequestID string) error {
+	maxRetries := 5
+
+	query := `
+	INSERT INTO return_request_otp (return_request_id, code, expires_at)
+	VALUES ($1, $2, $3)
+	`
+
+	for range maxRetries {
+		otp := generateRandomOTP(6)
+
+		_, err := r.querier.Exec(
+			ctx,
+			query,
+			returnRequestID,
+			otp,
+			time.Now().Add(30*time.Minute),
+		)
+		if err != nil {
+			if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+				slog.Debug("Return OTP collision detected, retrying generation.")
+				continue
+			}
+			return err
+		}
+
+		return nil
+	}
+
+	return fmt.Errorf("failed to generate unique OTP after retries")
+}
+
+func (r *repository) renewExpiredReturnRequests(ctx context.Context) error {
+	tx, err := r.querier.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	selectExpiredQuery := `
+    SELECT return_request_id
+    FROM return_request_otp
+    WHERE expires_at < NOW()
+    `
+
+	rows, err := tx.Query(ctx, selectExpiredQuery)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var expiredReturnRequestIDs []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return err
+		}
+		expiredReturnRequestIDs = append(expiredReturnRequestIDs, id)
+	}
+	rows.Close()
+
+	if len(expiredReturnRequestIDs) == 0 {
+		return tx.Commit(ctx)
+	}
+
+	updateQuery := `
+    UPDATE return_request_otp 
+    SET code = $1, expires_at = $2
+    WHERE return_request_id = $3
+    `
+
+	maxRetries := 5
+	for _, id := range expiredReturnRequestIDs {
+		for range maxRetries {
+			otp := generateRandomOTP(6)
+			newExpiry := time.Now().Add(30 * time.Minute)
+
+			_, err := tx.Exec(
+				ctx,
+				updateQuery,
+				otp,
+				newExpiry,
+				id,
+			)
+
+			if err == nil {
+				break
+			}
+
+			if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+				slog.Debug("Return OTP collision detected during renewal, retrying generation.")
+				continue
+			}
+
+			return err
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+
+	slog.Debug(fmt.Sprintf("Processed and renewed %d expired return request OTPs.", len(expiredReturnRequestIDs)))
 	return nil
 }
