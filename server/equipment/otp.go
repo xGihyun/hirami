@@ -70,34 +70,83 @@ func (r *repository) processExpiredRequests(ctx context.Context) error {
 	}
 	defer tx.Rollback(ctx)
 
-	updateQuery := `
+	// We sum up the quantity for each equipment type belonging to all currently expired requests.
+	itemsToReleaseQuery := `
+    SELECT bri.equipment_type_id, SUM(bri.quantity)
+    FROM borrow_request_item bri
+    JOIN borrow_request br ON bri.borrow_request_id = br.borrow_request_id
+    JOIN borrow_request_otp otp ON br.borrow_request_id = otp.borrow_request_id
+    WHERE br.borrow_request_status_id = $1 AND otp.expires_at < NOW()
+    GROUP BY bri.equipment_type_id
+    `
+
+	rows, err := tx.Query(ctx, itemsToReleaseQuery, approved)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	type releaseItem struct {
+		equipmentTypeID string
+		quantity        int
+	}
+
+	var items []releaseItem
+	for rows.Next() {
+		var item releaseItem
+		if err := rows.Scan(&item.equipmentTypeID, &item.quantity); err != nil {
+			return err
+		}
+		items = append(items, item)
+	}
+	rows.Close()
+
+	releaseEquipmentQuery := `
+    UPDATE equipment
+    SET equipment_status_id = $1
+    WHERE equipment_id IN (
+        SELECT equipment_id
+        FROM equipment
+        WHERE equipment_type_id = $2 AND equipment_status_id = $3
+        ORDER BY equipment_id
+        LIMIT $4
+    )
+    `
+
+	for _, item := range items {
+		_, err := tx.Exec(ctx, releaseEquipmentQuery, available, item.equipmentTypeID, reserved, item.quantity)
+		if err != nil {
+			return err
+		}
+	}
+
+	updateRequestQuery := `
     WITH expired_ids AS (
         SELECT borrow_request.borrow_request_id
         FROM borrow_request
         JOIN borrow_request_otp USING (borrow_request_id)
-        WHERE borrow_request_status_id = $1
-			AND borrow_request_otp.expires_at < NOW()
+        WHERE borrow_request_status_id = $1 AND borrow_request_otp.expires_at < NOW()
     )
     UPDATE borrow_request
     SET borrow_request_status_id = $2
     WHERE borrow_request_id IN (SELECT borrow_request_id FROM expired_ids)
     `
 
-	if _, err := tx.Exec(ctx, updateQuery, approved, unclaimed); err != nil {
+	if _, err := tx.Exec(ctx, updateRequestQuery, approved, unclaimed); err != nil {
 		return err
 	}
 
 	deleteOTPQuery := `
     DELETE FROM borrow_request_otp
-    WHERE EXISTS (
-        SELECT 1
-        FROM borrow_request
-        WHERE borrow_request.borrow_request_id = borrow_request_otp.borrow_request_id
-			AND borrow_request_otp.expires_at < NOW()
-    )
+    WHERE expires_at < NOW()
+      AND borrow_request_id IN (
+          SELECT borrow_request_id 
+          FROM borrow_request 
+          WHERE borrow_request_status_id = $1
+      )
     `
 
-	if _, err := tx.Exec(ctx, deleteOTPQuery); err != nil {
+	if _, err := tx.Exec(ctx, deleteOTPQuery, unclaimed); err != nil {
 		return err
 	}
 
@@ -105,7 +154,7 @@ func (r *repository) processExpiredRequests(ctx context.Context) error {
 		return err
 	}
 
-	slog.Debug("PROCESSED EXPIRED REQUESTS")
+	slog.Debug("Processed expired requests and released reserved equipments.")
 
 	return nil
 }
