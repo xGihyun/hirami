@@ -1,5 +1,4 @@
 import {
-	returnRequestByIdQuery,
 	returnRequestsQuery,
 	type ConfirmReturnRequest,
 	type ReturnRequest,
@@ -32,41 +31,43 @@ import { useAuth } from "@/auth";
 import type { User } from "@/lib/user";
 import { EventSource } from "eventsource";
 import QrScanner from "qr-scanner";
-import { Input } from "@/components/ui/input";
 import { Failed } from "@/components/failed";
 import { Textarea } from "@/components/ui/textarea";
 import { Success } from "@/components/success";
+import {
+	borrowRequestByOtpQuery,
+	BorrowRequestStatus,
+	updateBorrowRequest,
+	type BorrowTransaction,
+} from "@/lib/equipment/borrow";
 
 export const Route = createFileRoute("/_authed/return-scan/")({
 	component: RouteComponent,
 });
 
-async function confirmReturnRequest(
-	value: ConfirmReturnRequest,
-): Promise<ApiResponse> {
-	const response = await fetch(
-		`${BACKEND_URL}/return-requests/${value.returnRequestId}`,
-		{
-			method: "PATCH",
-			body: JSON.stringify(value),
-			headers: {
-				"Content-Type": "application/json",
-			},
-		},
-	);
-
-	const result: ApiResponse = await response.json();
-	if (!response.ok) {
-		throw new Error(result.message);
-	}
-
-	return result;
-}
+// async function confirmReturnRequest(value: UpdateBorr): Promise<ApiResponse> {
+// 	const response = await fetch(
+// 		`${BACKEND_URL}/return-requests/${value.returnRequestId}`,
+// 		{
+// 			method: "PATCH",
+// 			body: JSON.stringify(value),
+// 			headers: {
+// 				"Content-Type": "application/json",
+// 			},
+// 		},
+// 	);
+//
+// 	const result: ApiResponse = await response.json();
+// 	if (!response.ok) {
+// 		throw new Error(result.message);
+// 	}
+//
+// 	return result;
+// }
 
 function RouteComponent(): JSX.Element {
-	const [selectedRequest, setSelectedRequest] = useState<ReturnRequest | null>(
-		null,
-	);
+	const [selectedRequest, setSelectedRequest] =
+		useState<BorrowTransaction | null>(null);
 	const [isScanning, setIsScanning] = useState(false);
 	const [scanError, setScanError] = useState(false);
 	const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -76,19 +77,14 @@ function RouteComponent(): JSX.Element {
 	const [remarks, setRemarks] = useState("");
 
 	const mutation = useMutation({
-		mutationFn: confirmReturnRequest,
+		mutationFn: updateBorrowRequest,
 	});
 
-	async function handleConfirmation(
-		request: ReturnRequest,
-		reviewedBy: User,
-	): Promise<void> {
-		const payload: ConfirmReturnRequest = {
-			returnRequestId: request.id,
-			reviewedBy: reviewedBy.id,
-		};
-
-		mutation.mutate(payload);
+	async function handleConfirmation(request: BorrowTransaction): Promise<void> {
+		mutation.mutate({
+			id: request.borrowRequestId,
+			status: BorrowRequestStatus.Claimed,
+		});
 	}
 
 	async function handleScan() {
@@ -106,11 +102,11 @@ function RouteComponent(): JSX.Element {
 			videoRef.current!,
 			async (result) => {
 				try {
-					const returnRequest = await queryClient.fetchQuery(
-						returnRequestByIdQuery(result.data),
+					const request = await queryClient.fetchQuery(
+						borrowRequestByOtpQuery(result.data),
 					);
-					console.log(returnRequest);
-					setSelectedRequest(returnRequest);
+					console.log(request);
+					setSelectedRequest(request);
 				} catch (error) {
 					console.error(error);
 					setScanError(true);
@@ -181,11 +177,25 @@ function RouteComponent(): JSX.Element {
 		);
 	}
 
+	if (mutation.isError) {
+		return (
+			<Failed
+				backLink="/return-scan"
+				header="Failed to retrieve borrow request."
+				fn={() => {
+					mutation.reset();
+					setScanError(false);
+					setSelectedRequest(null);
+				}}
+			/>
+		);
+	}
+
 	if (mutation.isSuccess) {
 		return (
 			<Success
 				backLink="/return-scan"
-				header="Return confirmed successfully."
+				header="Successfully claimed equipments."
 				fn={() => {
 					mutation.reset();
 					setScanError(false);
@@ -246,7 +256,7 @@ function RouteComponent(): JSX.Element {
 						<DrawerDescription>
 							Requested on{" "}
 							{selectedRequest &&
-								format(selectedRequest.createdAt, "MMM d, yyyy - hh:mm a")}
+								format(selectedRequest.borrowedAt, "MMM d, yyyy - hh:mm a")}
 						</DrawerDescription>
 					</DrawerHeader>
 
@@ -261,7 +271,7 @@ function RouteComponent(): JSX.Element {
 									return (
 										<div className="flex flex-col gap-2 w-full">
 											<div
-												key={equipment.id}
+												key={equipment.borrowRequestItemId}
 												className="flex items-center gap-3 justify-between p-4 bg-card rounded-2xl shadow-item"
 											>
 												<div className="flex items-center gap-2 w-full">
@@ -316,7 +326,7 @@ function RouteComponent(): JSX.Element {
 									alert("Please log in to confirm return request");
 									return;
 								}
-								handleConfirmation(selectedRequest, auth.user);
+								handleConfirmation(selectedRequest);
 							}}
 						>
 							Confirm

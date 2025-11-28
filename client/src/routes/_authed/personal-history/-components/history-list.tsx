@@ -4,7 +4,7 @@ import type {
 } from "@/lib/equipment/borrow";
 import { useState, type JSX } from "react";
 import { HistoryItem } from "./history-item";
-import { Caption, LabelMedium, TitleSmall } from "@/components/typography";
+import { Caption, H2, LabelMedium, TitleSmall } from "@/components/typography";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft } from "@/lib/icons";
@@ -12,6 +12,7 @@ import { toImageUrl } from "@/lib/api";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment";
+import { QRCodeSVG } from "qrcode.react";
 
 type Props = {
 	history: BorrowTransaction[];
@@ -34,7 +35,7 @@ export function HistoryList(props: Props): JSX.Element {
 
 	if (selectedItem !== null) {
 		return (
-			<div className="px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] h-svh inset-0 fixed bg-background w-full z-50">
+			<div className="px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] h-svh inset-0 fixed bg-background w-full z-50 space-y-4">
 				<Button
 					variant="ghost"
 					size="icon"
@@ -46,7 +47,10 @@ export function HistoryList(props: Props): JSX.Element {
 
 				<section className="space-y-2">
 					<img
-						src={toImageUrl(selectedItem.equipment.imageUrl) || DEFAULT_EQUIPMENT_IMAGE}
+						src={
+							toImageUrl(selectedItem.equipment.imageUrl) ||
+							DEFAULT_EQUIPMENT_IMAGE
+						}
 						alt={`${selectedItem.equipment.name} ${selectedItem.equipment.brand}`}
 						className="size-16 object-cover rounded-2xl mx-auto"
 					/>
@@ -90,6 +94,18 @@ export function HistoryList(props: Props): JSX.Element {
 						/>
 					</div>
 				</section>
+
+				{selectedItem.transaction.otp ? (
+					<section className="space-y-2">
+						<QRCodeSVG
+							value={selectedItem.transaction.otp.code}
+							className="size-64 mx-auto"
+							bgColor="transparent"
+						/>
+
+						<H2 className="text-center">{selectedItem.transaction.otp.code}</H2>
+					</section>
+				) : null}
 			</div>
 		);
 	}
