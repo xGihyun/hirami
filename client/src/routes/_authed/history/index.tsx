@@ -4,12 +4,10 @@ import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { H2, LabelMedium } from "@/components/typography";
 import { BACKEND_URL, Sort } from "@/lib/api";
-import { UserRole } from "@/lib/user";
 import { useAuth } from "@/auth";
 import { EventSource } from "eventsource";
 import z from "zod";
 import { Control } from "./-components/control";
-import { HistoryList } from "./-components/history-list";
 import { ManagerHistoryList } from "./-components/manager-history-list";
 
 const searchSchema = z.object({
@@ -22,12 +20,6 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authed/history/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
-		if (context.auth.user?.role === UserRole.Borrower) {
-			context.queryClient.ensureQueryData(
-				borrowHistoryQuery({ userId: context.auth.user?.id, sort: Sort.Asc }),
-			);
-			return;
-		}
 		context.queryClient.ensureQueryData(borrowHistoryQuery({}));
 	},
 	validateSearch: searchSchema,
@@ -38,7 +30,6 @@ function RouteComponent() {
 	const auth = useAuth();
 	const history = useQuery(
 		borrowHistoryQuery({
-			userId: auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
 			sort: search.sort,
 			sortBy: search.sortBy,
 			category: search.category,
@@ -84,13 +75,7 @@ function RouteComponent() {
 					Failed to load history
 				</LabelMedium>
 			) : (
-				<>
-					{auth.user?.role === UserRole.Borrower ? (
-						<HistoryList history={history.data} />
-					) : (
-						<ManagerHistoryList history={history.data} />
-					)}
-				</>
+				<ManagerHistoryList history={history.data} />
 			)}
 		</div>
 	);
