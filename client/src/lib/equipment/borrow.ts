@@ -105,6 +105,7 @@ export type BorrowRequestStatusDetail = {
 
 type OTP = {
 	code: string;
+	createdAt: string;
 	expiresAt: string;
 };
 
