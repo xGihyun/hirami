@@ -158,15 +158,15 @@ function RouteComponent(): JSX.Element {
 		mutation.reset();
 	}
 
-	if (isReceived) {
-		return (
-			<Success
-				fn={reset}
-				header="Request approved successfully."
-				backLink="/borrow-requests"
-			/>
-		);
-	}
+	// if (isReceived) {
+	// 	return (
+	// 		<Success
+	// 			fn={reset}
+	// 			header="Request approved successfully."
+	// 			backLink="/borrow-requests"
+	// 		/>
+	// 	);
+	// }
 
 	if (mutation.isError) {
 		return (
@@ -186,8 +186,18 @@ function RouteComponent(): JSX.Element {
 	) {
 		return (
 			<Success
-				fn={handleDrawerClose}
+				fn={reset}
 				header="Request rejected successfully."
+				backLink="/borrow-requests"
+			/>
+		);
+	}
+
+	if (mutation.isSuccess) {
+		return (
+			<Success
+				fn={reset}
+				header="Request approved successfully."
 				backLink="/borrow-requests"
 			/>
 		);
