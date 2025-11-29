@@ -16,7 +16,7 @@ export function CatalogSearch(props: Props): JSX.Element {
 	);
 
 	const headerText =
-		props.user.role === UserRole.Borrower
+		props.user.role.code === UserRole.Borrower
 			? "Explore our Catalog"
 			: "Manage Inventory";
 

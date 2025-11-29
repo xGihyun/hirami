@@ -40,6 +40,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("PATCH /review-borrow-requests", api.Handler(s.reviewBorrowRequest))
 	mux.Handle("GET /borrow-requests", api.Handler(s.getBorrowRequests))
 	mux.Handle("GET /borrow-requests/{id}", api.Handler(s.getBorrowRequestByID))
+	mux.Handle("GET /borrow-requests/otp/{code}", api.Handler(s.getBorrowRequestByOTP))
 
 	mux.Handle("POST /return-requests", api.Handler(s.createReturnRequest))
 	mux.Handle("PATCH /return-requests/{id}", api.Handler(s.confirmReturnRequest))
@@ -186,7 +187,7 @@ func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
 	name := r.URL.Query().Get("name")
-	status := equipmentStatus(r.URL.Query().Get("status"))
+	status := r.URL.Query().Get("status")
 	search := r.URL.Query().Get("search")
 	params := getEquipmentParams{
 		name:   &name,
@@ -507,7 +508,7 @@ func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: "borrow-request:review",
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -650,6 +651,26 @@ func (s *Server) getBorrowRequestByID(w http.ResponseWriter, r *http.Request) ap
 	}
 }
 
+func (s *Server) getBorrowRequestByOTP(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	code := r.PathValue("code")
+	req, err := s.repository.getBorrowRequestByOTP(ctx, code)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get borrow request by OTP: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get borrow request by OTP.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched borrow request.",
+		Data:    req,
+	}
+}
+
 func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
@@ -770,7 +791,7 @@ func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Re
 	ctx := r.Context()
 
 	userID := r.URL.Query().Get("userId")
-	status := borrowRequestStatus(r.URL.Query().Get("status"))
+	status := r.URL.Query().Get("status")
 	sort := api.Sort(r.URL.Query().Get("sort"))
 	sortBy := r.URL.Query().Get("sortBy")
 	category := r.URL.Query().Get("category")
@@ -803,7 +824,7 @@ func (s *Server) getBorrowedItems(w http.ResponseWriter, r *http.Request) api.Re
 	ctx := r.Context()
 
 	userID := r.URL.Query().Get("userId")
-	status := borrowRequestStatus(r.URL.Query().Get("status"))
+	status := r.URL.Query().Get("status")
 	sort := api.Sort(r.URL.Query().Get("sort"))
 	category := r.URL.Query().Get("category")
 	params := borrowedItemParams{

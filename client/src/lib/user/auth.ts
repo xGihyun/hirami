@@ -28,7 +28,7 @@ export async function getAuthSession(
 
 		return result;
 	} catch (error) {
-		console.error(error);
+		// console.error(error);
 		return result;
 	}
 }

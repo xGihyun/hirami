@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	borrowRequestByIdQuery,
-	BorrowRequestStatus,
 	type BorrowedEquipment,
 } from "@/lib/equipment/borrow";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -17,15 +16,6 @@ import { IconArrowLeft } from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogDescription,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
-import { QRCodeSVG } from "qrcode.react";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/_authed/history/$borrowRequestId/")({
@@ -71,9 +61,9 @@ function RouteComponent(): JSX.Element {
 
 					<Badge
 						className="mt-1"
-						variant={getBorrowRequestBadgeVariant(transaction.status)}
+						variant={getBorrowRequestBadgeVariant(transaction.status.code)}
 					>
-						Status: {capitalizeWords(transaction.status)}
+						Status: {capitalizeWords(transaction.status.code)}
 					</Badge>
 				</div>
 
@@ -127,30 +117,6 @@ function RouteComponent(): JSX.Element {
 					<Input value={borrowRequest.data.purpose} readOnly />
 				</div>
 			</section>
-
-			{borrowRequest.data.status === BorrowRequestStatus.Approved ? (
-				<Dialog>
-					<DialogTrigger asChild>
-						<Button className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 !shadow-item">
-							Show QR Code
-						</Button>
-					</DialogTrigger>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Scan QR Code</DialogTitle>
-							<DialogDescription>
-								Have the borrower scan this code to confirm they received the
-								equipment.
-							</DialogDescription>
-						</DialogHeader>
-
-						<QRCodeSVG
-							value={borrowRequest.data.borrowRequestId}
-							className="w-full size-60"
-						/>
-					</DialogContent>
-				</Dialog>
-			) : null}
 		</div>
 	);
 }

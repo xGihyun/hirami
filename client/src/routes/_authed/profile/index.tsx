@@ -8,6 +8,7 @@ import {
 	BACKEND_URL,
 	IMAGE_FORMATS,
 	IMAGE_SIZE_LIMIT,
+	toImageUrl,
 	type ApiResponse,
 } from "@/lib/api";
 import { useForm } from "react-hook-form";
@@ -84,7 +85,7 @@ function RouteComponent() {
 	const auth = useAuth();
 	const navigate = Route.useNavigate();
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+	const [previewUrl, setPreviewUrl] = useState<string | null>(toImageUrl(auth.user?.avatarUrl) || null);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),

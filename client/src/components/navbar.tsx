@@ -5,7 +5,6 @@ import {
 	IconHistory,
 	IconProfile,
 	IconQrCode,
-	IconRoundArrowDown,
 	IconRoundArrowUp,
 	IconUserRoundCog,
 } from "@/lib/icons";
@@ -31,7 +30,7 @@ export function Navbar(): JSX.Element {
 			icon: IconHistory,
 		};
 
-		if (auth.user?.role === UserRole.Borrower) {
+		if (auth.user?.role.code === UserRole.Borrower) {
 			return [
 				{
 					to: "/equipments",
@@ -42,11 +41,6 @@ export function Navbar(): JSX.Element {
 					to: "/return",
 					label: "Return",
 					icon: IconRoundArrowUp,
-				},
-				{
-					to: "/borrow-scan",
-					label: "Scan",
-					icon: IconQrCode,
 				},
 				{
 					to: "/personal-history",

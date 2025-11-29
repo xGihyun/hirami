@@ -3,6 +3,12 @@ export enum UserRole {
 	EquipmentManager = "equipment_manager",
 }
 
+export type UserRoleDetail = {
+	id: number;
+	code: UserRole;
+	label: string;
+};
+
 export type User = {
 	id: string;
 	createdAt: string;
@@ -12,7 +18,7 @@ export type User = {
 	middleName?: string;
 	lastName: string;
 	avatarUrl: string;
-	role: UserRole;
+	role: UserRoleDetail;
 };
 
 export type UserBasicInfo = {

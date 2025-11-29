@@ -4,7 +4,6 @@ import {
 	type Equipment,
 } from "@/lib/equipment";
 import {
-	useMutationState,
 	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
@@ -14,32 +13,18 @@ import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/lib/api";
 import { useEffect, useState, type JSX } from "react";
 import { BorrowEquipmentForm } from "./-components/borrow-equipment-form";
-import { IconArrowLeft, IconPlus } from "@/lib/icons";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
-import { RegisterEquipmentForm } from "./-components/register-equipment-form";
 import { EventSource } from "eventsource";
 import { CatalogHeader } from "./-components/catalog-header";
 import { CatalogSearch } from "./-components/catalog-search";
 import z from "zod";
-import { BorrowSuccess } from "./-components/borrow-success";
-import { BorrowFailed } from "./-components/borrow-failed";
 import { Catalog } from "./-components/catalog";
 import { LabelMedium } from "@/components/typography";
-import { FullScreenLoading } from "@/components/loading";
 import { CatalogCategories } from "./-components/catalog-categories";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
-import { DialogClose } from "@radix-ui/react-dialog";
 import { v4 as uuidv4 } from "uuid";
 
 const searchSchema = z.object({
-	success: z.boolean().optional(),
 	categories: z.array(z.string()).optional().default([]),
 	search: z.string().optional(),
 });
@@ -74,14 +59,6 @@ function RouteComponent(): JSX.Element {
 	const [selectedEquipments, setSelectedEquipments] = useState<
 		SelectedEquipment[]
 	>([]);
-	const [isDialogOpen, setIsDialogOpen] = useState(false);
-	const mutationState = useMutationState({
-		filters: {
-			mutationKey: ["submit-borrow-request"],
-		},
-		select: (mutation) => mutation.state.status,
-	});
-	const mutationStatus = mutationState[0];
 
 	function handleUpdateQuantity(
 		equipment: Equipment,
@@ -98,7 +75,6 @@ function RouteComponent(): JSX.Element {
 
 	function onSuccess(): void {
 		setIsBorrowing(false);
-		setIsDialogOpen(false);
 		setSelectedEquipments([]);
 	}
 
@@ -126,25 +102,11 @@ function RouteComponent(): JSX.Element {
 		};
 	}, []);
 
-	if (mutationStatus === "pending") {
-		return <FullScreenLoading />;
-	}
-
-	if (search.success === true) {
-		return <BorrowSuccess />;
-	}
-
-	if (search.success === false) {
-		return (
-			<BorrowFailed setIsBorrowing={setIsBorrowing} onSuccess={onSuccess} />
-		);
-	}
-
 	if (isBorrowing) {
 		return (
 			<BorrowEquipmentForm
 				handleUpdateQuantity={handleUpdateQuantity}
-				onSuccess={onSuccess}
+				reset={onSuccess}
 				selectedEquipments={selectedEquipments}
 				setIsBorrowing={setIsBorrowing}
 			/>
@@ -169,7 +131,7 @@ function RouteComponent(): JSX.Element {
 				/>
 			)}
 
-			{auth.user?.role === UserRole.EquipmentManager ? (
+			{auth.user?.role.code === UserRole.EquipmentManager ? (
 				<Button
 					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow"
 					asChild

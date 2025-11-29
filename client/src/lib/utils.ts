@@ -15,11 +15,11 @@ export function getBorrowRequestBadgeVariant(status: BorrowRequestStatus): Badge
 	switch (status) {
 		case BorrowRequestStatus.Approved:
 			return "warning";
-		case BorrowRequestStatus.Fulfilled:
+		case BorrowRequestStatus.Returned:
 			return "success";
 		case BorrowRequestStatus.Rejected:
 			return "destructive";
-		case BorrowRequestStatus.Received:
+		case BorrowRequestStatus.Claimed:
 			return "secondary";
 	}
 

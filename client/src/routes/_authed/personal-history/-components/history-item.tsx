@@ -28,11 +28,11 @@ export function HistoryItem(props: Props): JSX.Element {
 		switch (status) {
 			case BorrowRequestStatus.Approved:
 				return "warning";
-			case BorrowRequestStatus.Fulfilled:
+			case BorrowRequestStatus.Returned:
 				return "success";
 			case BorrowRequestStatus.Rejected:
 				return "destructive";
-			case BorrowRequestStatus.Received:
+			case BorrowRequestStatus.Claimed:
 				return "secondary";
 		}
 
@@ -93,7 +93,7 @@ export function HistoryItem(props: Props): JSX.Element {
 						</LabelSmall>
 					) : null}
 
-					{auth.user?.role === UserRole.EquipmentManager ? (
+					{auth.user?.role.code === UserRole.EquipmentManager ? (
 						<LabelSmall>
 							<span className="font-montserrat-bold">Borrower:</span>{" "}
 							{props.transaction.borrower.firstName}{" "}
@@ -111,9 +111,9 @@ export function HistoryItem(props: Props): JSX.Element {
 
 					<Badge
 						className="mt-1"
-						variant={getBadgeVariant(props.transaction.status)}
+						variant={getBadgeVariant(props.transaction.status.code)}
 					>
-						Status: {capitalizeWords(props.transaction.status)}
+						Status: {capitalizeWords(props.transaction.status.code)}
 					</Badge>
 				</div>
 			</div>

@@ -69,13 +69,44 @@ export const borrowRequestByIdQuery = (id: string) =>
 		queryFn: () => getBorrowRequestById(id),
 	});
 
+async function getBorrowRequestByOtp(otp: string): Promise<BorrowTransaction> {
+	const response = await fetch(`${BACKEND_URL}/borrow-requests/otp/${otp}`, {
+		method: "GET",
+	});
+
+	const result: ApiResponse<BorrowTransaction> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result.data;
+}
+
+export const borrowRequestByOtpQuery = (otp: string) =>
+	queryOptions({
+		queryKey: ["borrow-requests", otp],
+		queryFn: () => getBorrowRequestByOtp(otp),
+	});
+
 export enum BorrowRequestStatus {
 	Pending = "pending",
 	Approved = "approved",
+	Claimed = "claimed",
+	Returned = "returned",
+	Unclaimed = "unclaimed",
 	Rejected = "rejected",
-	Received = "received",
-	Fulfilled = "fulfilled",
 }
+
+export type BorrowRequestStatusDetail = {
+	id: number;
+	code: BorrowRequestStatus;
+	label: string;
+};
+
+type OTP = {
+	code: string;
+	expiresAt: string;
+};
 
 export type BorrowTransaction = {
 	borrowRequestId: string;
@@ -86,11 +117,12 @@ export type BorrowTransaction = {
 	purpose: string;
 	expectedReturnAt: string;
 	actualReturnAt?: string;
-	status: BorrowRequestStatus;
+	status: BorrowRequestStatusDetail;
 	borrowReviewedBy?: UserBasicInfo;
 	returnConfirmedBy?: UserBasicInfo;
 	remarks?: string;
 	anomalyResult?: AnomalyResult;
+	otp?: OTP;
 };
 
 type GetBorrowHistoryParams = {
@@ -99,7 +131,7 @@ type GetBorrowHistoryParams = {
 	sort?: Sort;
 	sortBy?: string;
 	category?: string;
-    search?: string;
+	search?: string;
 };
 
 async function getBorrowHistory(
@@ -156,7 +188,7 @@ export type ReviewBorrowResponse = {
 	id: string;
 	reviewedBy: UserBasicInfo;
 	remarks?: string;
-	status: BorrowRequestStatus;
+	status: BorrowRequestStatusDetail;
 };
 
 type GetBorrowedItemParams = {
@@ -197,3 +229,27 @@ export const borrowedItemsQuery = (params: GetBorrowedItemParams) =>
 		queryKey: ["borrowed-items", params],
 		queryFn: () => getBorrowedItems(params),
 	});
+
+export type UpdateBorrowRequest = {
+	id: string;
+	status: BorrowRequestStatus;
+};
+
+export async function updateBorrowRequest(
+	value: UpdateBorrowRequest,
+): Promise<ApiResponse<UpdateBorrowRequest>> {
+	const response = await fetch(`${BACKEND_URL}/borrow-requests/${value.id}`, {
+		method: "PATCH",
+		body: JSON.stringify(value),
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	const result: ApiResponse<UpdateBorrowRequest> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result;
+}

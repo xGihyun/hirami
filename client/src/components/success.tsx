@@ -6,7 +6,7 @@ import { Link } from "@tanstack/react-router";
 import type { JSX } from "react";
 
 type Props = {
-	fn: () => void;
+	fn?: () => void;
 	header: string;
 	backLink: string;
 };

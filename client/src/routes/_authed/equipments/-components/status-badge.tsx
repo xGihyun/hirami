@@ -24,9 +24,9 @@ export function StatusBadge(props: Props): JSX.Element {
 	return (
 		<Badge
 			className="absolute top-1 right-1 h-7.5"
-			variant={getBadgeVariant(props.equipment.status)}
+			variant={getBadgeVariant(props.equipment.status.code)}
 		>
-			{capitalizeWords(props.equipment.status)}
+			{capitalizeWords(props.equipment.status.code)}
 
 			{!props.equipment.borrower ? (
 				<span>({props.equipment.quantity} units)</span>

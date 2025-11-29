@@ -6,7 +6,7 @@ import { Link } from "@tanstack/react-router";
 import type { JSX } from "react";
 
 type Props = {
-	fn: () => void;
+	fn?: () => void;
 	retry?: () => void;
 	header: string;
 	backLink: string;
@@ -47,7 +47,7 @@ export function Failed(props: Props): JSX.Element {
 						</div>
 					</section>
 
-					<section className="w-full flex flex-col text-center gap-4">
+					<section className="w-full flex flex-col text-center gap-2">
 						<Button onClick={props.retry}>Try Again</Button>
 
 						{props.backMessage ? (

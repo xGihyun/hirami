@@ -13,7 +13,7 @@ import { HistoryList } from "./-components/history-list";
 
 const searchSchema = z.object({
 	category: z.string().optional(),
-	sort: z.enum(Sort).default(Sort.Asc),
+	sort: z.enum(Sort).optional(),
 	sortBy: z.string().optional(),
 	search: z.string().optional(),
 });
@@ -21,11 +21,11 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/_authed/personal-history/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
-		if (context.auth.user?.role !== UserRole.Borrower) {
+		if (context.auth.user?.role.code !== UserRole.Borrower) {
 			throw redirect({ to: "/equipments" });
 		}
 		context.queryClient.ensureQueryData(
-			borrowHistoryQuery({ userId: context.auth.user?.id, sort: Sort.Asc }),
+			borrowHistoryQuery({ userId: context.auth.user?.id }),
 		);
 	},
 	validateSearch: searchSchema,
@@ -36,7 +36,7 @@ function RouteComponent() {
 	const auth = useAuth();
 	const history = useQuery(
 		borrowHistoryQuery({
-			userId: auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
+			userId: auth.user?.role.code === UserRole.Borrower ? auth.user.id : undefined,
 			sort: search.sort,
 			sortBy: search.sortBy,
 			category: search.category,
@@ -50,15 +50,7 @@ function RouteComponent() {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
 
 		function handleEvent(_: MessageEvent): void {
-			queryClient.invalidateQueries(
-				borrowHistoryQuery({
-					// userId:
-					// 	auth.user?.role === UserRole.Borrower ? auth.user.id : undefined,
-					// sort: search.sort,
-					// sortBy: search.sortBy,
-					// category: search.category,
-				}),
-			);
+			queryClient.invalidateQueries(borrowHistoryQuery({}));
 		}
 
 		eventSource.addEventListener("equipment:create", handleEvent);

@@ -18,20 +18,15 @@ type Props = {
 };
 
 export function ManagerHistoryItem(props: Props): JSX.Element {
-	const auth = useAuth();
-	// const equipmentImage = props.equipment.imageUrl
-	// 	? `${BACKEND_URL}${props.equipment.imageUrl}`
-	// 	: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
-
 	function getBadgeVariant(status: BorrowRequestStatus): BadgeVariant {
 		switch (status) {
 			case BorrowRequestStatus.Approved:
 				return "warning";
-			case BorrowRequestStatus.Fulfilled:
+			case BorrowRequestStatus.Returned:
 				return "success";
 			case BorrowRequestStatus.Rejected:
 				return "destructive";
-			case BorrowRequestStatus.Received:
+			case BorrowRequestStatus.Claimed:
 				return "secondary";
 		}
 
@@ -102,9 +97,9 @@ export function ManagerHistoryItem(props: Props): JSX.Element {
 					<div className="space-x-1">
 						<Badge
 							className="mt-1"
-							variant={getBadgeVariant(props.transaction.status)}
+							variant={getBadgeVariant(props.transaction.status.code)}
 						>
-							Status: {capitalizeWords(props.transaction.status)}
+							Status: {capitalizeWords(props.transaction.status.code)}
 						</Badge>
 
 						{anomalyResult && anomalyResult.isAnomaly && SHOW_ANOMALY ? (

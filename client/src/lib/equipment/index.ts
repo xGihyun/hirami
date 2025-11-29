@@ -1,13 +1,25 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import { BACKEND_URL, type ApiResponse } from "../api";
 import type { Borrower } from "./borrow";
-// import { fetch } from '@tauri-apps/plugin-http';
+
+export const DEFAULT_EQUIPMENT_IMAGE =
+	"https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 
 export enum EquipmentStatus {
 	Available = "available",
 	Reserved = "reserved",
 	Borrowed = "borrowed",
+	Damaged = "damaged",
+	Lost = "lost",
+	Maintenance = "maintenance",
+	Disposed = "disposed",
 }
+
+export type EquipmentStatusDetail = {
+	id: number;
+	code: EquipmentStatus;
+	label: string;
+};
 
 export type EquipmentType = {
 	id: string;
@@ -24,7 +36,7 @@ export type Equipment = {
 	model?: string;
 	imageUrl?: string;
 	quantity: number;
-	status: EquipmentStatus;
+	status: EquipmentStatusDetail;
 	borrower?: Borrower;
 };
 

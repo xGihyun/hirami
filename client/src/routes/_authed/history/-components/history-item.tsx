@@ -28,11 +28,11 @@ export function HistoryItem(props: Props): JSX.Element {
 		switch (status) {
 			case BorrowRequestStatus.Approved:
 				return "warning";
-			case BorrowRequestStatus.Fulfilled:
+			case BorrowRequestStatus.Returned:
 				return "success";
 			case BorrowRequestStatus.Rejected:
 				return "destructive";
-			case BorrowRequestStatus.Received:
+			case BorrowRequestStatus.Claimed:
 				return "secondary";
 		}
 
