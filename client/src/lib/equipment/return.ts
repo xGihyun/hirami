@@ -97,3 +97,19 @@ export type ConfirmReturnRequest = {
 	reviewedBy: string;
 	remarks?: string;
 };
+
+export async function confirmReturnRequest(
+	value: ConfirmReturnRequest,
+): Promise<ApiResponse> {
+	const response = await fetch(
+		`${BACKEND_URL}/return-requests/${value.returnRequestId}`,
+		{
+			method: "PATCH",
+			body: JSON.stringify(value),
+			headers: { "Content-Type": "application/json" },
+		},
+	);
+	const result: ApiResponse = await response.json();
+	if (!response.ok) throw new Error(result.message);
+	return result;
+}

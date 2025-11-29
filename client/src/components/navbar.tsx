@@ -63,7 +63,7 @@ export function Navbar(): JSX.Element {
 				icon: IconRoundArrowUp,
 			},
 			{
-				to: "/borrow-scan",
+				to: "/scan",
 				label: "Scan",
 				icon: IconQrCode,
 			},

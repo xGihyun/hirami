@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedScanRouteImport } from './routes/_authed/_scan'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/_register'
 import { Route as AuthedUsersIndexRouteImport } from './routes/_authed/users/index'
+import { Route as AuthedScanIndexRouteImport } from './routes/_authed/scan/index'
 import { Route as AuthedReturnIndexRouteImport } from './routes/_authed/return/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedPersonalHistoryIndexRouteImport } from './routes/_authed/personal-history/index'
@@ -78,6 +79,11 @@ const AuthedEquipmentsEquipmentIdRoute =
 const AuthedUsersIndexRoute = AuthedUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedScanIndexRoute = AuthedScanIndexRouteImport.update({
+  id: '/scan/',
+  path: '/scan/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedReturnIndexRoute = AuthedReturnIndexRouteImport.update({
@@ -240,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/personal-history': typeof AuthedPersonalHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
   '/return': typeof AuthedReturnIndexRoute
+  '/scan': typeof AuthedScanIndexRoute
   '/users': typeof AuthedUsersIndexRoute
   '/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdRegisterRouteWithChildren
   '/register': typeof AuthRegisterRegisterIndexRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/personal-history': typeof AuthedPersonalHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
   '/return': typeof AuthedReturnIndexRoute
+  '/scan': typeof AuthedScanIndexRoute
   '/users': typeof AuthedUsersIndexRoute
   '/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdIndexRoute
   '/register': typeof AuthRegisterRegisterIndexRoute
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   '/_authed/personal-history/': typeof AuthedPersonalHistoryIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
   '/_authed/return/': typeof AuthedReturnIndexRoute
+  '/_authed/scan/': typeof AuthedScanIndexRoute
   '/_authed/users/': typeof AuthedUsersIndexRoute
   '/_authed/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdRouteWithChildren
   '/_authed/equipments/$equipmentId/_register': typeof AuthedEquipmentsEquipmentIdRegisterRouteWithChildren
@@ -337,6 +346,7 @@ export interface FileRouteTypes {
     | '/personal-history'
     | '/profile'
     | '/return'
+    | '/scan'
     | '/users'
     | '/equipments/$equipmentId'
     | '/register'
@@ -367,6 +377,7 @@ export interface FileRouteTypes {
     | '/personal-history'
     | '/profile'
     | '/return'
+    | '/scan'
     | '/users'
     | '/equipments/$equipmentId'
     | '/register'
@@ -400,6 +411,7 @@ export interface FileRouteTypes {
     | '/_authed/personal-history/'
     | '/_authed/profile/'
     | '/_authed/return/'
+    | '/_authed/scan/'
     | '/_authed/users/'
     | '/_authed/equipments/$equipmentId'
     | '/_authed/equipments/$equipmentId/_register'
@@ -475,6 +487,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof AuthedUsersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/scan/': {
+      id: '/_authed/scan/'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof AuthedScanIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/return/': {
@@ -767,6 +786,7 @@ interface AuthedRouteChildren {
   AuthedPersonalHistoryIndexRoute: typeof AuthedPersonalHistoryIndexRoute
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
   AuthedReturnIndexRoute: typeof AuthedReturnIndexRoute
+  AuthedScanIndexRoute: typeof AuthedScanIndexRoute
   AuthedUsersIndexRoute: typeof AuthedUsersIndexRoute
   AuthedEquipmentsEquipmentIdRoute: typeof AuthedEquipmentsEquipmentIdRouteWithChildren
   AuthedHistoryBorrowRequestIdIndexRoute: typeof AuthedHistoryBorrowRequestIdIndexRoute
@@ -782,6 +802,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedPersonalHistoryIndexRoute: AuthedPersonalHistoryIndexRoute,
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
   AuthedReturnIndexRoute: AuthedReturnIndexRoute,
+  AuthedScanIndexRoute: AuthedScanIndexRoute,
   AuthedUsersIndexRoute: AuthedUsersIndexRoute,
   AuthedEquipmentsEquipmentIdRoute:
     AuthedEquipmentsEquipmentIdRouteWithChildren,
