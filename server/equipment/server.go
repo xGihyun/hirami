@@ -46,6 +46,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("PATCH /return-requests/{id}", api.Handler(s.confirmReturnRequest))
 	mux.Handle("GET /return-requests", api.Handler(s.getReturnRequests))
 	mux.Handle("GET /return-requests/{id}", api.Handler(s.getReturnRequestByID))
+	mux.Handle("GET /return-requests/otp/{code}", api.Handler(s.getReturnRequestByOTP))
 
 	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
 	mux.Handle("GET /borrowed-items", api.Handler(s.getBorrowedItems))
@@ -784,6 +785,26 @@ func (s *Server) getReturnRequestByID(w http.ResponseWriter, r *http.Request) ap
 		Code:    http.StatusOK,
 		Message: "Successfully fetched return request.",
 		Data:    returnRequest,
+	}
+}
+
+func (s *Server) getReturnRequestByOTP(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	code := r.PathValue("code")
+	req, err := s.repository.getReturnRequestByOTP(ctx, code)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get return request by OTP: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get return request by OTP.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched return request.",
+		Data:    req,
 	}
 }
 
