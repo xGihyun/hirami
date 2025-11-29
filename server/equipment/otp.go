@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -168,7 +169,7 @@ func (r *repository) processExpiredBorrowRequests(ctx context.Context) error {
 
 // OTP for Return Requests
 
-func (r *repository) createReturnRequestWithOTP(ctx context.Context, returnRequestID string) error {
+func (r *repository) createReturnRequestWithOTP(ctx context.Context, returnRequestID string, tx pgx.Tx) error {
 	maxRetries := 5
 
 	query := `
@@ -179,7 +180,7 @@ func (r *repository) createReturnRequestWithOTP(ctx context.Context, returnReque
 	for range maxRetries {
 		otp := generateRandomOTP(6)
 
-		_, err := r.querier.Exec(
+		_, err := tx.Exec(
 			ctx,
 			query,
 			returnRequestID,

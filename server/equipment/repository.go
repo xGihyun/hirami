@@ -1065,8 +1065,10 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	`
 
 	for borrowRequestID, items := range itemsByBorrowRequest {
+		row := tx.QueryRow(ctx, insertRequestQuery, borrowRequestID)
+
 		var returnRequestID string
-		if err := tx.QueryRow(ctx, insertRequestQuery, borrowRequestID).Scan(&returnRequestID); err != nil {
+		if err := row.Scan(&returnRequestID); err != nil {
 			return createReturnResponse{}, err
 		}
 
@@ -1091,6 +1093,10 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 			BorrowRequestID: borrowRequestID,
 			Items:           itemsJSON,
 		})
+
+		if err := r.createReturnRequestWithOTP(ctx, returnRequestID, tx); err != nil {
+			return createReturnResponse{}, err
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -1643,6 +1649,7 @@ type returnRequest struct {
 	Borrower         user.BasicInfo `json:"borrower"`
 	Equipments       []equipment    `json:"equipments"`
 	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
+	OTP              OTP            `json:"otp"`
 }
 
 type getReturnRequestParams struct {
@@ -1674,8 +1681,14 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 				'quantity', return_request_item.quantity
 			)
 		) AS equipments,
-		borrow_request.expected_return_at
+		borrow_request.expected_return_at,
+		jsonb_build_object(
+			'code', return_request_otp.code,
+			'createdAt', return_request_otp.created_at,
+			'expiresAt', return_request_otp.expires_at
+		) AS otp
 	FROM return_request
+	JOIN return_request_otp USING (return_request_id)
 	JOIN borrow_request ON borrow_request.borrow_request_id = return_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
 	JOIN return_request_item ON return_request_item.return_request_id = return_request.return_request_id
@@ -1708,7 +1721,8 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 		person.middle_name,
 		person.last_name,
 		person.avatar_url,
-		borrow_request.expected_return_at
+		borrow_request.expected_return_at,
+		return_request_otp.return_request_otp_id
 	`
 
 	if params.sort != nil && *params.sort != "" {
