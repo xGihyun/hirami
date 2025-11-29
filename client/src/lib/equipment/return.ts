@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import type { Equipment } from ".";
 import { BACKEND_URL, Sort, type ApiResponse } from "../api";
 import type { UserBasicInfo } from "../user";
+import type { OTP } from "./borrow";
 
 type GetReturnRequestParams = {
 	userId?: string;
@@ -15,6 +16,7 @@ export type ReturnRequest = {
 	borrower: UserBasicInfo;
 	equipments: Equipment[];
 	expectedReturnAt: string;
+	otp: OTP;
 };
 
 async function getReturnRequests(
@@ -46,7 +48,7 @@ async function getReturnRequests(
 
 export const returnRequestsQuery = (params: GetReturnRequestParams) =>
 	queryOptions({
-		queryKey: ["return-requests", params.userId, params.sort, params.category],
+		queryKey: ["return-requests", params],
 		queryFn: () => getReturnRequests(params),
 	});
 

@@ -1,9 +1,15 @@
-import { LabelLarge, LabelSmall } from "@/components/typography";
+import {
+	Caption,
+	H1,
+	H2,
+	LabelLarge,
+	LabelSmall,
+} from "@/components/typography";
 import { Badge } from "@/components/ui/badge";
 import { BACKEND_URL } from "@/lib/api";
 import type { Equipment } from "@/lib/equipment";
 import type { ReturnRequest } from "@/lib/equipment/return";
-import { cn } from "@/lib/utils";
+import { cn, getRemainingMs } from "@/lib/utils";
 import { format } from "date-fns";
 import type { JSX } from "react";
 import {
@@ -15,6 +21,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { QRCodeSVG } from "qrcode.react";
+import { Timer } from "@ark-ui/react/timer";
 
 type Props = {
 	returnRequests: ReturnRequest[];
@@ -45,7 +52,37 @@ export function ReturnRequestList(props: Props): JSX.Element {
 										</DialogDescription>
 									</DialogHeader>
 
-									<QRCodeSVG value={request.id} className="w-full size-60" />
+									<section className="space-y-8">
+										<div className="space-y-2">
+											<QRCodeSVG
+												value={request.otp.code}
+												className="size-64 mx-auto"
+												bgColor="transparent"
+											/>
+
+											<H2 className="text-center">{request.otp.code}</H2>
+										</div>
+
+										<div className="mx-auto text-center content-center space-y-2">
+											<Caption>Time left until OTP refreshes</Caption>
+
+											<Timer.Root
+												countdown
+												autoStart
+												startMs={getRemainingMs(
+													new Date(request.otp.expiresAt),
+												)}
+											>
+												<H1>
+													<Timer.Area className="flex justify-center">
+														<Timer.Item type="minutes" />
+														<Timer.Separator>:</Timer.Separator>
+														<Timer.Item type="seconds" />
+													</Timer.Area>
+												</H1>
+											</Timer.Root>
+										</div>
+									</section>
 								</DialogContent>
 							</Dialog>
 						);

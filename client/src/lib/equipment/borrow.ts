@@ -103,7 +103,7 @@ export type BorrowRequestStatusDetail = {
 	label: string;
 };
 
-type OTP = {
+export type OTP = {
 	code: string;
 	createdAt: string;
 	expiresAt: string;

@@ -11,7 +11,9 @@ export function capitalizeWords(str: string): string {
 	return str.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-export function getBorrowRequestBadgeVariant(status: BorrowRequestStatus): BadgeVariant {
+export function getBorrowRequestBadgeVariant(
+	status: BorrowRequestStatus,
+): BadgeVariant {
 	switch (status) {
 		case BorrowRequestStatus.Approved:
 			return "warning";
@@ -24,4 +26,9 @@ export function getBorrowRequestBadgeVariant(status: BorrowRequestStatus): Badge
 	}
 
 	return "default";
+}
+
+export function getRemainingMs(end: Date): number {
+	const now = new Date();
+	return end.getTime() - now.getTime();
 }

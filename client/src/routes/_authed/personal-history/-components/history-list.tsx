@@ -6,7 +6,6 @@ import {
 import { useState, type JSX } from "react";
 import { HistoryItem } from "./history-item";
 import { Caption, H1, H2, LabelMedium, TitleSmall } from "@/components/typography";
-import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft } from "@/lib/icons";
 import { toImageUrl } from "@/lib/api";
@@ -15,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment";
 import { QRCodeSVG } from "qrcode.react";
 import { Timer } from "@ark-ui/react/timer";
+import { getRemainingMs } from "@/lib/utils";
 
 type Props = {
 	history: BorrowTransaction[];
@@ -33,11 +33,6 @@ export function HistoryList(props: Props): JSX.Element {
 				No history found
 			</LabelMedium>
 		);
-	}
-
-	function getStartMs(end: Date): number {
-		const now = new Date();
-		return end.getTime() - now.getTime();
 	}
 
 	const otp = selectedItem?.transaction.otp;
@@ -124,7 +119,7 @@ export function HistoryList(props: Props): JSX.Element {
 							<Timer.Root
 								countdown
 								autoStart
-								startMs={getStartMs(new Date(otp.expiresAt))}
+								startMs={getRemainingMs(new Date(otp.expiresAt))}
 							>
 								<H1>
 									<Timer.Area className="flex justify-center">
