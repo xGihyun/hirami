@@ -76,7 +76,8 @@ export function Borrow(props: Props): JSX.Element {
 			</DrawerHeader>
 			<div className="px-4 py-4 overflow-y-auto space-y-4">
 				<EquipmentList equipments={props.transaction.equipments} />
-				<DrawerFooter className="mt-0">
+
+				<DrawerFooter>
 					<Button
 						onClick={() =>
 							mutation.mutate({
@@ -98,7 +99,7 @@ export function Borrow(props: Props): JSX.Element {
 
 function EquipmentList({ equipments }: { equipments: BorrowedEquipment[] }) {
 	return (
-		<div>
+		<div className="space-y-2.5">
 			{equipments.map((equipment) => {
 				const key = equipment.borrowRequestItemId;
 				const equipmentImage =

@@ -103,7 +103,7 @@ export function Return(props: Props): JSX.Element {
 					/>
 				</div>
 
-				<DrawerFooter className="mt-0">
+				<DrawerFooter>
 					<Button
 						onClick={() => {
 							if (!auth.user) return;
@@ -127,7 +127,7 @@ export function Return(props: Props): JSX.Element {
 
 function EquipmentList({ equipments }: { equipments: Equipment[] }) {
 	return (
-		<div>
+		<div className="space-y-2.5">
 			{equipments.map((equipment) => {
 				const key = equipment.id;
 				const equipmentImage =

@@ -400,7 +400,7 @@ function BorrowRequestReviewContent(
 				</div>
 			</div>
 
-			<DrawerFooter className="mt-4">
+			<DrawerFooter>
 				<div className="flex w-full gap-2">
 					<Button
 						className="flex-1"
