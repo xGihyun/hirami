@@ -63,7 +63,7 @@ export function Navbar(): JSX.Element {
 				icon: IconRoundArrowUp,
 			},
 			{
-				to: "/return-scan",
+				to: "/borrow-scan",
 				label: "Scan",
 				icon: IconQrCode,
 			},
@@ -82,7 +82,6 @@ export function Navbar(): JSX.Element {
 		<header
 			className={cn(
 				"gap-2 bg-card text-primary fixed bottom-0 left-0 w-full shadow z-40 pb-[env(safe-area-inset-bottom)] rounded-t-2xl pt-2",
-				location.search.success !== undefined ? "hidden" : "flex",
 			)}
 		>
 			<nav className="py-1 px-2 font-bold flex justify-around w-full h-16">

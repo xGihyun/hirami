@@ -72,7 +72,28 @@ export const returnRequestByIdQuery = (id: string) =>
 		queryFn: () => getReturnRequestById(id),
 	});
 
+async function getReturnRequestByOtp(otp: string): Promise<ReturnRequest> {
+	const url = new URL(`${BACKEND_URL}/return-requests/otp/${otp}`);
+	const response = await fetch(url.toString(), {
+		method: "GET",
+	});
+
+	const result: ApiResponse<ReturnRequest> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result.data;
+}
+
+export const returnRequestByOtpQuery = (otp: string) =>
+	queryOptions({
+		queryKey: ["return-requests", otp],
+		queryFn: () => getReturnRequestByOtp(otp),
+	});
+
 export type ConfirmReturnRequest = {
 	returnRequestId: string;
 	reviewedBy: string;
+	remarks?: string;
 };
