@@ -24,7 +24,7 @@ export const Route = createFileRoute(
 });
 
 const registerEquipmentNameSchema = z.object({
-	name: z.string().nonempty(),
+	name: z.string().nonempty({ error: "This field must not be left blank." }),
 	brand: z.string().optional(),
 	model: z.string().optional(),
 });
