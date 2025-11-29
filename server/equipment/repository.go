@@ -1173,6 +1173,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
 				'expiresAt', borrow_request_otp.expires_at
 			)
 		END AS otp
@@ -1285,6 +1286,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
 				'expiresAt', borrow_request_otp.expires_at
 			)
 		END AS otp
@@ -1410,6 +1412,7 @@ func (r *repository) getBorrowRequestByOTP(ctx context.Context, otp string) (bor
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
 				'expiresAt', borrow_request_otp.expires_at
 			)
 		END AS otp
@@ -1795,6 +1798,7 @@ type anomalyResult struct {
 
 type OTP struct {
 	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"createdAt"`
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
@@ -1896,6 +1900,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
 				'expiresAt', borrow_request_otp.expires_at
 			)
 		END AS otp
