@@ -764,7 +764,7 @@ func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) ap
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: "return-request:confirm",
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
