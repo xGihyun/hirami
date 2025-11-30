@@ -236,6 +236,11 @@ export type UpdateBorrowRequest = {
 	status: BorrowRequestStatus;
 };
 
+export type UpdateBorrowResponse = {
+	id: string;
+	status: BorrowRequestStatusDetail;
+};
+
 export async function updateBorrowRequest(
 	value: UpdateBorrowRequest,
 ): Promise<ApiResponse<UpdateBorrowRequest>> {
