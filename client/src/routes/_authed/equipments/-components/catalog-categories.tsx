@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 
 type Props = {
-	equipmentNames: string[];
+	categories: string[];
 };
 
 export function CatalogCategories(props: Props): JSX.Element {
@@ -28,7 +28,7 @@ export function CatalogCategories(props: Props): JSX.Element {
 		await navigate({
 			search: (prev) => ({
 				...prev,
-				categories: prev.categories?.includes(name)
+				categories: prev.categories.includes(name)
 					? prev.categories.filter((n) => n !== name)
 					: [...prev.categories, name],
 			}),
@@ -59,7 +59,7 @@ export function CatalogCategories(props: Props): JSX.Element {
 								All
 							</Toggle>
 
-							{props.equipmentNames.map((name) => (
+							{props.categories.map((name) => (
 								<Toggle
 									key={name}
 									variant="outline"
@@ -85,7 +85,7 @@ export function CatalogCategories(props: Props): JSX.Element {
 						All
 					</Toggle>
 
-					{props.equipmentNames.map((name) => (
+					{props.categories.map((name) => (
 						<Toggle
 							key={name}
 							variant="outline"
