@@ -22,7 +22,7 @@ export function NumberInput(props: Props): JSX.Element {
 			minValue={1}
 			{...props}
 			aria-label="Number input"
-            className="bg-card"
+            className="bg-card rounded-md"
 		>
 			<Group className="border-input data-focus-within:border-ring data-focus-within:ring-ring/50 data-focus-within:has-aria-invalid:ring-destructive/20 dark:data-focus-within:has-aria-invalid:ring-destructive/40 data-focus-within:has-aria-invalid:border-destructive relative inline-flex h-9 w-full items-center overflow-hidden rounded-md border text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none data-disabled:opacity-50 data-focus-within:ring-[3px]">
 				<Button
