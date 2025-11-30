@@ -1,7 +1,10 @@
 import type { JSX } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { equipmentsQuery, EquipmentStatus, type EquipmentType } from "@/lib/equipment";
+import {
+	EquipmentStatus,
+	type EquipmentType,
+} from "@/lib/equipment";
 import {
 	Form,
 	FormControl,
@@ -66,7 +69,6 @@ type Props = {
 
 export function ReallocateForm(props: Props): JSX.Element {
 	const params = useParams({ from: "/_authed/equipments/$equipmentId/edit/" });
-	const queryClient = useQueryClient();
 
 	const form = useForm<ReallocateEquipmentSchema>({
 		resolver: zodResolver(reallocateEquipmentSchema),
@@ -87,7 +89,6 @@ export function ReallocateForm(props: Props): JSX.Element {
 	}
 
 	function reset(): void {
-		queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
 		mutation.reset();
 	}
 

@@ -7,18 +7,13 @@ import {
 	toImageUrl,
 	type ApiResponse,
 } from "@/lib/api";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRef, useState, type JSX } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-	equipmentsQuery,
-	EquipmentStatus,
-	equipmentStatuses,
-	equipmentTypeQuery,
-} from "@/lib/equipment";
+import { equipmentTypeQuery } from "@/lib/equipment";
 import { FullScreenLoading } from "@/components/loading";
-import { H2, LabelLarge } from "@/components/typography";
+import { H2 } from "@/components/typography";
 import {
 	Form,
 	FormControl,
@@ -28,28 +23,12 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import {
-	IconArrowDown,
-	IconArrowLeft,
-	IconArrowRight,
-	IconArrowUp,
-	IconEdit,
-	IconPen,
-	IconUserPen,
-} from "@/lib/icons";
+import { IconArrowLeft, IconEdit, IconPen } from "@/lib/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Failed } from "@/components/failed";
 import { Success } from "@/components/success";
-import { Badge } from "@/components/ui/badge";
-import { getEquipmentBadgeVariant } from "@/lib/utils";
-import {
-	NativeSelect,
-	NativeSelectOptGroup,
-	NativeSelectOption,
-} from "@/components/ui/native-select";
-import { NumberInput } from "@/components/number-input";
 import { ReallocateForm } from "./-components/reallocate-form";
 
 export const Route = createFileRoute("/_authed/equipments/$equipmentId/edit/")({
@@ -101,7 +80,6 @@ async function editEquipment(value: EditEquipmentSchema): Promise<ApiResponse> {
 
 function RouteComponent(): JSX.Element {
 	const params = Route.useParams();
-	const queryClient = useQueryClient();
 	const equipmentType = useQuery(equipmentTypeQuery(params.equipmentId));
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -129,7 +107,6 @@ function RouteComponent(): JSX.Element {
 	}
 
 	function reset(): void {
-		queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
 		mutation.reset();
 	}
 
