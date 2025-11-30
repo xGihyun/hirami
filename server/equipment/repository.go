@@ -478,7 +478,7 @@ func (r *repository) reallocate(ctx context.Context, arg reallocateRequest) erro
 	}
 
 	if len(equipmentIDs) < int(arg.Quantity) {
-		return fmt.Errorf("insufficient quantity to reallocate")
+		return fmt.Errorf("insufficient quantity to reallocate: requested %d, got %d", arg.Quantity, len(equipmentIDs))
 	}
 
 	updateQuery := `
