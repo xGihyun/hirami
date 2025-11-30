@@ -34,6 +34,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /equipments/{equipmentTypeId}", api.Handler(s.getEquipmentByID))
 	mux.Handle("GET /equipment-names", api.Handler(s.getEquipmentNames))
 	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
+	mux.Handle("POST /equipments/{equipmentTypeId}/reallocate", api.Handler(s.reallocate))
 
 	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
 	mux.Handle("PATCH /borrow-requests/{id}", api.Handler(s.updateBorrowRequest))
@@ -330,6 +331,56 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully updated equipments.",
+	}
+}
+
+func (s *Server) reallocate(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	var data reallocateRequest
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("reallocate: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid reallocate request.",
+		}
+	}
+
+	err := s.repository.reallocate(ctx, data)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("reallocate: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to rellocate.",
+		}
+	}
+
+	eventRes := sse.EventResponse{
+		Event: "equipment:reallocate",
+	}
+	jsonData, err := json.Marshal(eventRes)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("reallocate: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to reallocate.",
+		}
+	}
+
+	pubCmd := s.valkeyClient.B().Publish().Channel("equipment").Message(string(jsonData)).Build()
+	if res := s.valkeyClient.Do(ctx, pubCmd); res.Error() != nil {
+		return api.Response{
+			Error:   fmt.Errorf("reallocate: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to reallocate.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully reallocated equipments.",
 	}
 }
 

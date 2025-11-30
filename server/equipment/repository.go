@@ -15,9 +15,10 @@ import (
 type Repository interface {
 	createEquipment(ctx context.Context, arg createRequest) (createResponse, error)
 	getAll(ctx context.Context, params getEquipmentParams) ([]equipmentWithBorrower, error)
-	getEquipmentTypeByID(ctx context.Context, id string) (updateRequest, error)
+	getEquipmentTypeByID(ctx context.Context, id string) (equipmentInventoryStatus, error)
 	getEquipmentNames(ctx context.Context) ([]string, error)
 	update(ctx context.Context, arg updateRequest) error
+	reallocate(ctx context.Context, arg reallocateRequest) error
 
 	createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error)
 	reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error)
@@ -298,25 +299,81 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 	return equipments, nil
 }
 
-func (r *repository) getEquipmentTypeByID(ctx context.Context, id string) (updateRequest, error) {
+type statusQuantity struct {
+	Quantity uint                  `json:"quantity"`
+	Status   equipmentStatusDetail `json:"status"`
+}
+
+type equipmentInventoryStatus struct {
+	EquipmentTypeID string           `json:"id"`
+	Name            string           `json:"name"`
+	Brand           *string          `json:"brand"`
+	Model           *string          `json:"model"`
+	ImageURL        *string          `json:"imageUrl"`
+	StatusQuantity  []statusQuantity `json:"statusQuantity"`
+}
+
+func (r *repository) getEquipmentTypeByID(ctx context.Context, id string) (equipmentInventoryStatus, error) {
 	query := `
-	SELECT 
-		equipment_type_id, name, brand, model, image_url
+	WITH equipment_status_counts AS (
+		SELECT
+			equipment.equipment_type_id,
+			COUNT(equipment.equipment_status_id) AS status_count,
+			equipment_status.equipment_status_id,
+			equipment_status.code,
+			equipment_status.label
+		FROM equipment
+		LEFT JOIN equipment_status
+			ON equipment_status.equipment_status_id = equipment.equipment_status_id
+		GROUP BY
+			equipment.equipment_type_id,
+			equipment_status.equipment_status_id,
+			equipment_status.code,
+			equipment_status.label
+		ORDER BY equipment_status.equipment_status_id
+	)
+	SELECT
+		equipment_type.equipment_type_id,
+		equipment_type.name,
+		equipment_type.brand,
+		equipment_type.model,
+		equipment_type.image_url,
+		jsonb_agg(
+			jsonb_build_object(
+				'quantity', COALESCE(equipment_status_counts.status_count, 0),
+				'status', jsonb_build_object(
+					'id', equipment_status.equipment_status_id,
+					'code', equipment_status.code,
+					'label', equipment_status.label
+				)
+			)
+		) AS statusQuantity
 	FROM equipment_type
-	WHERE equipment_type_id = $1
+	JOIN equipment_status ON TRUE
+	LEFT JOIN equipment_status_counts
+		ON equipment_type.equipment_type_id = equipment_status_counts.equipment_type_id
+		AND equipment_status.equipment_status_id = equipment_status_counts.equipment_status_id
+	WHERE equipment_type.equipment_type_id = $1
+	GROUP BY
+		equipment_type.equipment_type_id,
+		equipment_type.name,
+		equipment_type.brand,
+		equipment_type.model,
+		equipment_type.image_url
 	`
 
 	row := r.querier.QueryRow(ctx, query, id)
 
-	var res updateRequest
+	var res equipmentInventoryStatus
 	if err := row.Scan(
 		&res.EquipmentTypeID,
 		&res.Name,
 		&res.Brand,
 		&res.Model,
 		&res.ImageURL,
+		&res.StatusQuantity,
 	); err != nil {
-		return updateRequest{}, err
+		return equipmentInventoryStatus{}, err
 	}
 
 	return res, nil
@@ -377,6 +434,69 @@ func (r *repository) update(ctx context.Context, arg updateRequest) error {
 		arg.ImageURL,
 		arg.EquipmentTypeID,
 	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type reallocateRequest struct {
+	EquipmentTypeID string          `json:"id"`
+	Quantity        int             `json:"quantity"`
+	OldStatus       equipmentStatus `json:"oldStatus"`
+	NewStatus       equipmentStatus `json:"newStatus"`
+}
+
+func (r *repository) reallocate(ctx context.Context, arg reallocateRequest) error {
+	tx, err := r.querier.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	selectQuery := `
+    SELECT equipment_id
+    FROM equipment
+    WHERE equipment_type_id = $1 AND equipment_status_id = $2
+    LIMIT $3
+    FOR UPDATE
+    `
+
+	rows, err := tx.Query(ctx, selectQuery, arg.EquipmentTypeID, arg.OldStatus, arg.Quantity)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var equipmentIDs []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return err
+		}
+		equipmentIDs = append(equipmentIDs, id)
+	}
+
+	if len(equipmentIDs) < int(arg.Quantity) {
+		return fmt.Errorf("insufficient quantity to reallocate")
+	}
+
+	updateQuery := `
+    UPDATE equipment
+    SET equipment_status_id = $1, updated_at = NOW()
+    WHERE equipment_id = ANY($2::uuid[])
+    `
+
+	if _, err := tx.Exec(
+		ctx,
+		updateQuery,
+		arg.NewStatus,
+		equipmentIDs,
+	); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return err
 	}
 
