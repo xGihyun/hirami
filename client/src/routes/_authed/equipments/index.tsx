@@ -3,11 +3,7 @@ import {
 	equipmentsQuery,
 	type Equipment,
 } from "@/lib/equipment";
-import {
-	useQuery,
-	useQueryClient,
-	useSuspenseQuery,
-} from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/lib/api";
@@ -23,6 +19,7 @@ import { Catalog } from "./-components/catalog";
 import { LabelMedium } from "@/components/typography";
 import { CatalogCategories } from "./-components/catalog-categories";
 import { v4 as uuidv4 } from "uuid";
+import { ComponentLoading } from "@/components/loading";
 
 const searchSchema = z.object({
 	categories: z.array(z.string()).optional().default([]),
@@ -52,7 +49,7 @@ function RouteComponent(): JSX.Element {
 			names: search.categories,
 		}),
 	);
-	const equipmentNames = useSuspenseQuery(equipmentNamesQuery());
+	const equipmentNames = useQuery(equipmentNamesQuery());
 	const auth = useAuth();
 	const [isBorrowing, setIsBorrowing] = useState(false);
 
@@ -84,19 +81,31 @@ function RouteComponent(): JSX.Element {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
 
 		function handleEquipmentInvalidation(_: MessageEvent): void {
-			queryClient.invalidateQueries({ queryKey: ["equipments"] });
+			queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
 			queryClient.invalidateQueries(equipmentNamesQuery());
+		}
+
+		function handleEquipmentRellocation(_: MessageEvent): void {
+			queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
 		}
 
 		eventSource.addEventListener(
 			"equipment:create",
 			handleEquipmentInvalidation,
 		);
+		eventSource.addEventListener(
+			"equipment:reallocate",
+			handleEquipmentRellocation,
+		);
 
 		return () => {
 			eventSource.removeEventListener(
 				"equipment:create",
 				handleEquipmentInvalidation,
+			);
+			eventSource.removeEventListener(
+				"equipment:reallocate",
+				handleEquipmentRellocation,
 			);
 			eventSource.close();
 		};
@@ -117,9 +126,11 @@ function RouteComponent(): JSX.Element {
 		<div className="relative space-y-4">
 			<CatalogHeader user={auth.user!} />
 			<CatalogSearch user={auth.user!} />
-			<CatalogCategories equipmentNames={equipmentNames.data} />
+			<CatalogCategories categories={equipmentNames.data || []} />
 
-			{equipments.isError || equipments.data === undefined ? (
+			{equipments.isPending ? (
+				<ComponentLoading />
+			) : equipments.isError || equipments.data === undefined ? (
 				<LabelMedium className="text-muted text-center mt-10">
 					Failed to load equipment catalog
 				</LabelMedium>
