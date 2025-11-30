@@ -189,7 +189,7 @@ export function ReallocateForm(props: Props): JSX.Element {
 										field.onChange(e.currentTarget.value as EquipmentStatus)
 									}
 								>
-									<NativeSelectOption>Select status</NativeSelectOption>
+									<NativeSelectOption disabled selected hidden>Select status</NativeSelectOption>
 
 									{props.equipmentType.statusQuantity.map((q) => (
 										<NativeSelectOption
