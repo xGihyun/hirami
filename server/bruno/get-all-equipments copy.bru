@@ -1,0 +1,25 @@
+meta {
+  name: get-all-equipments copy
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/equipments/{{equipmentTypeId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~name: Basketball
+}
+
+vars:post-response {
+  equipmentTypeId: {{res.body.data[0].id}}
+  equipmentTypes: {{res.body.data}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
