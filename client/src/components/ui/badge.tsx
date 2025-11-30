@@ -22,6 +22,9 @@ const badgeVariants = cva(
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
       },
+      size: {
+        sm: "h-8 px-3 ",
+      },
     },
     defaultVariants: {
       variant: "default",
@@ -34,6 +37,7 @@ export type BadgeVariant = VariantProps<typeof badgeVariants>["variant"];
 function Badge({
   className,
   variant,
+  size,
   asChild = false,
   ...props
 }: React.ComponentProps<"span"> &
@@ -43,7 +47,7 @@ function Badge({
   return (
     <Comp
       data-slot="badge"
-      className={cn(badgeVariants({ variant }), className)}
+      className={cn(badgeVariants({ variant, size }), className)}
       {...props}
     />
   )

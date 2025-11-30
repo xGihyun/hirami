@@ -2,6 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { BorrowRequestStatus } from "./equipment/borrow";
 import type { BadgeVariant } from "@/components/ui/badge";
+import { EquipmentStatus } from "./equipment";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -23,6 +24,23 @@ export function getBorrowRequestBadgeVariant(
 			return "destructive";
 		case BorrowRequestStatus.Claimed:
 			return "secondary";
+	}
+
+	return "default";
+}
+
+export function getEquipmentBadgeVariant(
+	status: EquipmentStatus,
+): BadgeVariant {
+	switch (status) {
+		case EquipmentStatus.Available:
+			return "success";
+		case EquipmentStatus.Borrowed:
+			return "warning";
+		case EquipmentStatus.Damaged:
+			return "destructive";
+		case EquipmentStatus.Disposed:
+			return "outline";
 	}
 
 	return "default";
