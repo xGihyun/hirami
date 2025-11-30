@@ -13,8 +13,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { equipmentsQuery, equipmentTypeQuery } from "@/lib/equipment";
 import { FullScreenLoading } from "@/components/loading";
-import { Failed } from "./-components/failed";
-import { Success } from "./-components/success";
 import { H2 } from "@/components/typography";
 import {
 	Form,
@@ -29,6 +27,8 @@ import { IconArrowLeft, IconEdit, IconPen, IconUserPen } from "@/lib/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Failed } from "@/components/failed";
+import { Success } from "@/components/success";
 
 export const Route = createFileRoute("/_authed/equipments/$equipmentId/edit/")({
 	component: RouteComponent,
@@ -78,7 +78,6 @@ async function editEquipment(value: EditEquipmentSchema): Promise<ApiResponse> {
 }
 
 function RouteComponent(): JSX.Element {
-	const navigate = Route.useNavigate();
 	const params = Route.useParams();
 	const queryClient = useQueryClient();
 	const equipmentType = useQuery(equipmentTypeQuery(params.equipmentId));
@@ -107,9 +106,8 @@ function RouteComponent(): JSX.Element {
 		mutation.mutate(value);
 	}
 
-	async function onSuccess(): Promise<void> {
+	function reset(): void {
 		queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
-		await navigate({ to: "/equipments" });
 		mutation.reset();
 	}
 
@@ -127,11 +125,25 @@ function RouteComponent(): JSX.Element {
 	}
 
 	if (mutation.isError) {
-		return <Failed fn={onSuccess} retry={() => onSubmit(mutation.variables)} />;
+		return (
+			<Failed
+				fn={reset}
+				retry={form.handleSubmit(onSubmit)}
+				header="Edit equipment failed."
+				backLink="/equipments"
+				backMessage="or return to Catalog"
+			/>
+		);
 	}
 
 	if (mutation.isSuccess) {
-		return <Success fn={onSuccess} />;
+		return (
+			<Success
+				fn={reset}
+				header="Equipment details updateed successfully."
+				backLink="/equipments"
+			/>
+		);
 	}
 
 	return (
