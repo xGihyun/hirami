@@ -8,6 +8,15 @@
     "main"
   ],
   "permissions": [
-    "barcode-scanner:default"
+    "barcode-scanner:default",
+    "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "$PUBLIC/Hirami - Privacy Policy and T&C.pdf"
+        }
+      ]
+    }
   ]
 }
