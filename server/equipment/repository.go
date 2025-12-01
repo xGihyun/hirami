@@ -1232,6 +1232,12 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 }
 
 func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction, error) {
+	_, err := r.querier.Exec(ctx, "SET jit = off")
+	if err != nil {
+		return nil, err
+	}
+	defer r.querier.Exec(ctx, "RESET jit")
+
 	query := `
 	WITH latest_return_data AS (
 		SELECT 
@@ -2027,6 +2033,12 @@ type borrowHistoryParams struct {
 }
 
 func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error) {
+	_, err := r.querier.Exec(ctx, "SET jit = off")
+	if err != nil {
+		return nil, err
+	}
+	defer r.querier.Exec(ctx, "RESET jit")
+
 	query := `
 	WITH latest_return_data AS (
 		SELECT 
