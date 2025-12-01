@@ -1,4 +1,4 @@
-import { keepPreviousData, queryOptions } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 import { BACKEND_URL, type ApiResponse } from "../api";
 import type { Borrower } from "./borrow";
 
@@ -114,7 +114,6 @@ export const equipmentsQuery = (params: GetEquipmentParams) =>
 	queryOptions({
 		queryKey: ["equipments", params],
 		queryFn: () => getEquipments(params),
-		placeholderData: keepPreviousData,
 	});
 
 async function getEquipmentType(id: string): Promise<EquipmentType> {
@@ -135,7 +134,6 @@ export const equipmentTypeQuery = (id: string) =>
 	queryOptions({
 		queryKey: ["equipments", id],
 		queryFn: () => getEquipmentType(id),
-		placeholderData: keepPreviousData,
 	});
 
 async function getEquipmentNames(): Promise<string[]> {
@@ -156,5 +154,4 @@ export const equipmentNamesQuery = () =>
 	queryOptions({
 		queryKey: ["equipment-names"],
 		queryFn: () => getEquipmentNames(),
-		placeholderData: keepPreviousData,
 	});
