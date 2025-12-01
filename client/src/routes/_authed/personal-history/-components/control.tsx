@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button.tsx";
-import { IconArrowDownUp } from "@/lib/icons.ts";
+import { IconArrowDown, IconArrowDownUp, IconArrowUp } from "@/lib/icons.ts";
 import { Sort } from "@/lib/api.ts";
 import {
 	DropdownMenu,
@@ -30,12 +30,22 @@ export function Control(): JSX.Element {
 	}
 
 	function handleSortChange(field: SortField) {
-		if (search.sortBy === field) {
+		if (search.sort && search.sortBy === field) {
 			toggleSort(field, search.sort);
 			return;
 		}
 
 		toggleSort(field, Sort.Asc);
+	}
+
+	function renderSortIcon(field: SortField) {
+		if (search.sortBy !== field) return null;
+
+		return search.sort === Sort.Desc ? (
+			<IconArrowDown className="mr-2 size-4" />
+		) : (
+			<IconArrowUp className="mr-2 size-4" />
+		);
 	}
 
 	return (
@@ -50,12 +60,17 @@ export function Control(): JSX.Element {
 				</DropdownMenuTrigger>
 				<DropdownMenuContent>
 					<DropdownMenuItem onClick={() => handleSortChange("borrowedAt")}>
+						{renderSortIcon("borrowedAt")}
 						Date and Time Borrowed
 					</DropdownMenuItem>
+
 					<DropdownMenuItem onClick={() => handleSortChange("returnedAt")}>
+						{renderSortIcon("returnedAt")}
 						Date and Time Returned
 					</DropdownMenuItem>
+
 					<DropdownMenuItem onClick={() => handleSortChange("status")}>
+						{renderSortIcon("status")}
 						Status
 					</DropdownMenuItem>
 				</DropdownMenuContent>
