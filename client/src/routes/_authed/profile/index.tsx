@@ -24,8 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useRef, useState } from "react";
-import { IconEdit, IconUserPen } from "@/lib/icons";
-import { Separator } from "@/components/ui/separator";
+import { IconUserPen } from "@/lib/icons";
 import { H2 } from "@/components/typography";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
@@ -85,7 +84,9 @@ function RouteComponent() {
 	const auth = useAuth();
 	const navigate = Route.useNavigate();
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const [previewUrl, setPreviewUrl] = useState<string | null>(toImageUrl(auth.user?.avatarUrl) || null);
+	const [previewUrl, setPreviewUrl] = useState<string | null>(
+		toImageUrl(auth.user?.avatarUrl) || null,
+	);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -115,13 +116,12 @@ function RouteComponent() {
 
 	async function handleLogout(): Promise<void> {
 		await auth.logout();
-		await navigate({ to: "/login" });
+		await navigate({ to: "/onboarding" });
 	}
 
 	const avatarUrl = auth.user?.avatarUrl
 		? `${BACKEND_URL}/${auth.user.avatarUrl}`
 		: undefined;
-
 
 	if (mutation.isError) {
 		return (
@@ -147,7 +147,6 @@ function RouteComponent() {
 			/>
 		);
 	}
-
 
 	return (
 		<div className="flex flex-col justify-between gap-4">
