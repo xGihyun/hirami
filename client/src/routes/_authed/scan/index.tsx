@@ -8,7 +8,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type JSX } from "react";
 import { Drawer } from "@/components/ui/drawer";
 import { BACKEND_URL } from "@/lib/api";
-import { H2 } from "@/components/typography";
+import { Caption, H2, LabelLarge } from "@/components/typography";
 import { EventSource } from "eventsource";
 import QrScanner from "qr-scanner";
 import { Failed } from "@/components/failed";
@@ -18,6 +18,32 @@ import {
 } from "@/lib/equipment/borrow";
 import { Borrow } from "./-components/borrow";
 import { Return } from "./-components/return";
+import {
+	InputOTP,
+	InputOTPGroup,
+	InputOTPSeparator,
+	InputOTPSlot,
+} from "@/components/ui/input-otp";
+import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
+import z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+	Form,
+	FormControl,
+	FormDescription,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+
+const formSchema = z.object({
+	otp: z.string().max(7),
+});
+
+type FormSchema = z.infer<typeof formSchema>;
 
 export const Route = createFileRoute("/_authed/scan/")({
 	component: RouteComponent,
@@ -26,6 +52,36 @@ export const Route = createFileRoute("/_authed/scan/")({
 function RouteComponent(): JSX.Element {
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const queryClient = useQueryClient();
+	const [borrowRequest, setBorrowRequest] = useState<BorrowTransaction | null>(
+		null,
+	);
+	const [returnRequest, setReturnRequest] = useState<ReturnRequest | null>(
+		null,
+	);
+	const scannerRef = useRef<QrScanner | null>(null);
+
+	const form = useForm<FormSchema>({
+		resolver: zodResolver(formSchema),
+		defaultValues: {
+			otp: "",
+		},
+	});
+
+	async function onSubmit(value: FormSchema): Promise<void> {
+		if (value.otp[0] === "B") {
+			const request = await queryClient.fetchQuery(
+				borrowRequestByOtpQuery(value.otp),
+			);
+			setBorrowRequest(request);
+		} else {
+			const request = await queryClient.fetchQuery(
+				returnRequestByOtpQuery(value.otp),
+			);
+			setReturnRequest(request);
+		}
+
+		form.reset();
+	}
 
 	useEffect(() => {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
@@ -39,10 +95,10 @@ function RouteComponent(): JSX.Element {
 	}, []);
 
 	return (
-		<div className="relative space-y-4 flex w-full items-center justify-center flex-col">
+		<main className="relative space-y-4 flex w-full items-center justify-center flex-col">
 			<H2 className="text-center">Scan QR Code</H2>
 
-			<div className="relative w-full aspect-square">
+			<section className="relative w-full aspect-square">
 				<div className="relative w-full aspect-square bg-accent rounded-4xl overflow-clip">
 					<video
 						ref={videoRef}
@@ -57,50 +113,107 @@ function RouteComponent(): JSX.Element {
 				<span className="absolute right-0 top-0 size-9 border-r-4 border-t-4 border-secondary rounded-tr-4xl"></span>
 				<span className="absolute left-0 bottom-0 size-9 border-l-4 border-b-4 border-secondary rounded-bl-4xl"></span>
 				<span className="absolute right-0 bottom-0 size-9 border-r-4 border-b-4 border-secondary rounded-br-4xl"></span>
-			</div>
+			</section>
 
-			<Scanner videoRef={videoRef} />
-		</div>
+			<Scanner
+				videoRef={videoRef}
+				borrowRequest={borrowRequest}
+				setBorrowRequest={setBorrowRequest}
+				returnRequest={returnRequest}
+				setReturnRequest={setReturnRequest}
+				scannerRef={scannerRef}
+			/>
+
+			<section className="space-y-2 w-full">
+				<Form {...form}>
+					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+						<FormField
+							control={form.control}
+							name="otp"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel className="text-center mx-auto">
+										Or enter the code (e.g. B123456)
+									</FormLabel>
+
+									<FormControl>
+										<InputOTP
+											inputMode="text"
+											maxLength={7}
+											pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+											containerClassName="justify-center"
+											{...field}
+										>
+											<InputOTPGroup>
+												<InputOTPSlot index={0} />
+											</InputOTPGroup>
+
+											<InputOTPSeparator />
+
+											<InputOTPGroup>
+												<InputOTPSlot index={1} />
+												<InputOTPSlot index={2} />
+												<InputOTPSlot index={3} />
+												<InputOTPSlot index={4} />
+												<InputOTPSlot index={5} />
+												<InputOTPSlot index={6} />
+											</InputOTPGroup>
+										</InputOTP>
+									</FormControl>
+
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+
+						<Button type="submit" className="w-full">
+							Submit
+						</Button>
+					</form>
+				</Form>
+			</section>
+		</main>
 	);
 }
 
 type ScannerProps = {
 	videoRef: React.RefObject<HTMLVideoElement | null>;
+	borrowRequest: BorrowTransaction | null;
+	setBorrowRequest: React.Dispatch<
+		React.SetStateAction<BorrowTransaction | null>
+	>;
+	returnRequest: ReturnRequest | null;
+	setReturnRequest: React.Dispatch<React.SetStateAction<ReturnRequest | null>>;
+	scannerRef: React.RefObject<QrScanner | null>;
 };
 
-function Scanner({ videoRef }: ScannerProps) {
-	const [borrowRequest, setBorrowRequest] = useState<BorrowTransaction | null>(
-		null,
-	);
-	const [returnRequest, setReturnRequest] = useState<ReturnRequest | null>(
-		null,
-	);
+function Scanner(props: ScannerProps) {
 	const [scanError, setScanError] = useState(false);
-	const scannerRef = useRef<QrScanner | null>(null);
+	// const scannerRef = useRef<QrScanner | null>(null);
 	const queryClient = useQueryClient();
 
 	async function handleScan() {
-		if (!videoRef.current) return;
+		if (!props.videoRef.current) return;
 
 		setScanError(false);
 
-		scannerRef.current = new QrScanner(
-			videoRef.current,
+		props.scannerRef.current = new QrScanner(
+			props.videoRef.current,
 			async (result) => {
 				try {
 					if (result.data[0] === "B") {
 						const request = await queryClient.fetchQuery(
 							borrowRequestByOtpQuery(result.data),
 						);
-						setBorrowRequest(request);
+						props.setBorrowRequest(request);
 					} else {
 						const request = await queryClient.fetchQuery(
 							returnRequestByOtpQuery(result.data),
 						);
-						setReturnRequest(request);
+						props.setReturnRequest(request);
 					}
 
-					scannerRef.current?.stop();
+					props.scannerRef.current?.stop();
 				} catch (error) {
 					console.error(error);
 					setScanError(true);
@@ -119,25 +232,25 @@ function Scanner({ videoRef }: ScannerProps) {
 			},
 		);
 
-		await scannerRef.current.start();
+		await props.scannerRef.current.start();
 	}
 
 	function resetState(): void {
-		setBorrowRequest(null);
-		setReturnRequest(null);
+		props.setBorrowRequest(null);
+		props.setReturnRequest(null);
 		setScanError(false);
 	}
 
 	useEffect(() => {
-		if (!borrowRequest && !returnRequest && !scanError) {
+		if (!props.borrowRequest && !props.returnRequest && !scanError) {
 			handleScan();
 		}
 		return () => {
-			scannerRef.current?.stop();
-			scannerRef.current?.destroy();
-			scannerRef.current = null;
+			props.scannerRef.current?.stop();
+			props.scannerRef.current?.destroy();
+			props.scannerRef.current = null;
 		};
-	}, [borrowRequest, returnRequest, scanError]);
+	}, [props.borrowRequest, props.returnRequest, scanError]);
 
 	if (scanError) {
 		return (
@@ -151,13 +264,15 @@ function Scanner({ videoRef }: ScannerProps) {
 
 	return (
 		<Drawer
-			open={borrowRequest !== null || returnRequest !== null}
+			open={props.borrowRequest !== null || props.returnRequest !== null}
 			onOpenChange={resetState}
 		>
-			{borrowRequest && (
-				<Borrow transaction={borrowRequest} reset={resetState} />
+			{props.borrowRequest && (
+				<Borrow transaction={props.borrowRequest} reset={resetState} />
 			)}
-			{returnRequest && <Return request={returnRequest} reset={resetState} />}
+			{props.returnRequest && (
+				<Return request={props.returnRequest} reset={resetState} />
+			)}
 		</Drawer>
 	);
 }
