@@ -5,8 +5,7 @@ import {
 	type BorrowedEquipment,
 } from "@/lib/equipment/borrow";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { BACKEND_URL, SHOW_ANOMALY, toImageUrl } from "@/lib/api";
-import type { Equipment } from "@/lib/equipment";
+import { SHOW_ANOMALY, toImageUrl } from "@/lib/api";
 import { capitalizeWords, cn, getBorrowRequestBadgeVariant } from "@/lib/utils";
 import { H2, LabelLarge, LabelSmall } from "@/components/typography";
 import { Badge } from "@/components/ui/badge";
@@ -96,7 +95,7 @@ function RouteComponent(): JSX.Element {
 			<section className="space-y-2 h-full">
 				{borrowRequest.data.equipments.map((equipment) => {
 					return (
-						<Equipment
+						<EquipmentItem
 							key={equipment.borrowRequestItemId}
 							equipment={equipment}
 						/>
@@ -126,10 +125,10 @@ type EquipmentProps = {
 	className?: string;
 };
 
-function Equipment(props: EquipmentProps): JSX.Element {
-	const equipmentImage = props.equipment.imageUrl
-		? `${BACKEND_URL}${props.equipment.imageUrl}`
-		: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
+function EquipmentItem(props: EquipmentProps): JSX.Element {
+	const equipmentImage =
+		toImageUrl(props.equipment.imageUrl) ||
+		"https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 
 	return (
 		<div
