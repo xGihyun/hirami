@@ -54,7 +54,7 @@ function RouteComponent() {
 			queryClient.invalidateQueries(borrowHistoryQuery({}));
 		}
 
-		eventSource.addEventListener("equipment:create", handleEvent);
+		eventSource.addEventListener("borrow-request:review", handleEvent);
 		eventSource.addEventListener("equipment:anomaly", handleEvent);
 		eventSource.addEventListener(
 			"borrow-request:update",
@@ -62,7 +62,7 @@ function RouteComponent() {
 		);
 
 		return () => {
-			eventSource.removeEventListener("equipment:create", handleEvent);
+			eventSource.removeEventListener("borrow-request:review", handleEvent);
 			eventSource.close();
 		};
 	}, []);
