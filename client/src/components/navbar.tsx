@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 
 export function Navbar(): JSX.Element {
 	const auth = useAuth();
-	const location = useLocation();
 
 	const getNavOptions = () => {
 		const profileOption = {
