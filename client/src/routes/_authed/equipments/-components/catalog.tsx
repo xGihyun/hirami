@@ -118,6 +118,21 @@ export function Catalog(props: Props): JSX.Element {
 						);
 					}
 
+					if (
+						equipment.status.code === EquipmentStatus.Borrowed ||
+						equipment.status.code === EquipmentStatus.Reserved
+					) {
+						return (
+							<Link
+								key={key}
+								to="/equipments/$equipmentId"
+								params={{ equipmentId: "d8d4de7d-3e56-4f94-b0af-5e5185b83098" }}
+							>
+								<CardContent className="hover:bg-tertiary transition active:bg-tertiary" />
+							</Link>
+						);
+					}
+
 					return (
 						<label
 							htmlFor={key}
