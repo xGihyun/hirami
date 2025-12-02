@@ -315,7 +315,8 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 		AvatarURL:  avatarURL,
 	}
 
-	if err := s.repository.Update(ctx, data); err != nil {
+	user, err := s.repository.Update(ctx, data)
+	if err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("update user: %w", err),
 			Code:    http.StatusInternalServerError,
@@ -326,6 +327,7 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully updated user.",
+		Data:    user,
 	}
 }
 
