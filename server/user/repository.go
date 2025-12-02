@@ -258,22 +258,12 @@ func (r *repository) getAll(ctx context.Context, params getParams) ([]user, erro
 		searchTerm := "%" + strings.ToLower(*params.search) + "%"
 		query += fmt.Sprintf(` 
 		AND (
-			LOWER(equipment_type.name) LIKE $%d 
-			OR LOWER(equipment_type.brand) LIKE $%d 
-			OR LOWER(equipment_type.model) LIKE $%d
+			LOWER(person.email) LIKE $%d
 			OR LOWER(person.first_name) LIKE $%d
 			OR LOWER(person.middle_name) LIKE $%d
 			OR LOWER(person.last_name) LIKE $%d
-			OR LOWER(person_borrow_reviewer.first_name) LIKE $%d
-			OR LOWER(person_borrow_reviewer.middle_name) LIKE $%d
-			OR LOWER(person_borrow_reviewer.last_name) LIKE $%d
 		)
 		`,
-			argIdx,
-			argIdx,
-			argIdx,
-			argIdx,
-			argIdx,
 			argIdx,
 			argIdx,
 			argIdx,

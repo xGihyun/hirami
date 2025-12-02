@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/users
+  url: {{baseUrl}}/users?search
   body: none
   auth: inherit
+}
+
+params:query {
+  search: 
 }
 
 vars:post-response {
