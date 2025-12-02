@@ -3,6 +3,7 @@ import { twMerge } from "tailwind-merge";
 import { BorrowRequestStatus } from "./equipment/borrow";
 import type { BadgeVariant } from "@/components/ui/badge";
 import { EquipmentStatus } from "./equipment";
+import { UserRole } from "./user";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -42,6 +43,16 @@ export function getEquipmentBadgeVariant(
 		case EquipmentStatus.Disposed:
 			return "outline";
 	}
+
+	return "default";
+}
+
+export function getUserRoleBadgeVariant(
+	status: UserRole,
+): BadgeVariant {
+    if(status === UserRole.EquipmentManager) {
+        return "secondary"
+    }
 
 	return "default";
 }
