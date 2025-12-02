@@ -1,17 +1,18 @@
 meta {
-  name: get-borrow-history copy
+  name: get-users
   type: http
-  seq: 22
+  seq: 7
 }
 
 get {
-  url: {{baseUrl}}/borrow-history
+  url: {{baseUrl}}/users
   body: none
   auth: inherit
 }
 
 vars:post-response {
-  borrowHistory: {{res.body.data}}
+  requestedBy: {{res.body.data.id}}
+  reviewedBy: {{res.body.data.id}}
 }
 
 settings {
