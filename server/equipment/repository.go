@@ -175,11 +175,9 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 			equipment_type.model,
 			equipment_type.image_url,
 			equipment.equipment_id,
-			jsonb_build_object(
-				'id', equipment_status.equipment_status_id,
-				'code', equipment_status.code,
-				'label', equipment_status.label
-			) AS status,
+			equipment_status.equipment_status_id,
+			equipment_status.code,
+			equipment_status.label,
 			CASE
 				-- Get borrower info if equipment is borrowed
 				WHEN EXISTS (
@@ -256,7 +254,11 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 		brand,
 		model,
 		image_url,
-		status,
+		jsonb_build_object(
+			'id', equipment_status_id,
+			'code', code,
+			'label', label
+		) AS status,
 		COUNT(equipment_id) AS quantity,
 		borrower
 	FROM equipment_with_status
@@ -286,7 +288,10 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 		argIdx++
 	}
 
-	query += " GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower"
+	query += ` 
+	GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower, equipment_status_id
+	ORDER BY equipment_status_id
+	`
 
 	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
