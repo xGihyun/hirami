@@ -273,6 +273,8 @@ func (r *repository) getAll(ctx context.Context, params getParams) ([]user, erro
 		argIdx++
 	}
 
+	query += " ORDER BY person_role.person_role_id"
+
 	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
