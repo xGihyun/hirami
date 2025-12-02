@@ -103,8 +103,9 @@ export type BorrowRequestStatusDetail = {
 	label: string;
 };
 
-type OTP = {
+export type OTP = {
 	code: string;
+	createdAt: string;
 	expiresAt: string;
 };
 
@@ -233,6 +234,11 @@ export const borrowedItemsQuery = (params: GetBorrowedItemParams) =>
 export type UpdateBorrowRequest = {
 	id: string;
 	status: BorrowRequestStatus;
+};
+
+export type UpdateBorrowResponse = {
+	id: string;
+	status: BorrowRequestStatusDetail;
 };
 
 export async function updateBorrowRequest(

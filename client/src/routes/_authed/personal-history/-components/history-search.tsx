@@ -25,7 +25,10 @@ export function HistorySearch(): JSX.Element {
 			if (searchParams.search !== inputValue) {
 				// Using replace: true prevents flooding the history with partial searches
 				navigate({
-					search: (prev) => ({ ...prev, search: inputValue }),
+					search: (prev) => ({
+						...prev,
+						search: inputValue.length > 0 ? inputValue : undefined,
+					}),
 					replace: true,
 				});
 			}
@@ -34,7 +37,7 @@ export function HistorySearch(): JSX.Element {
 		return () => {
 			clearTimeout(handler);
 		};
-	}, [inputValue, searchParams.search]);
+	}, [inputValue]);
 
 	return (
 		<form onSubmit={onSubmit} className="w-full">

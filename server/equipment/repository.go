@@ -15,9 +15,10 @@ import (
 type Repository interface {
 	createEquipment(ctx context.Context, arg createRequest) (createResponse, error)
 	getAll(ctx context.Context, params getEquipmentParams) ([]equipmentWithBorrower, error)
-	getEquipmentTypeByID(ctx context.Context, id string) (updateRequest, error)
+	getEquipmentTypeByID(ctx context.Context, id string) (equipmentInventoryStatus, error)
 	getEquipmentNames(ctx context.Context) ([]string, error)
 	update(ctx context.Context, arg updateRequest) error
+	reallocate(ctx context.Context, arg reallocateRequest) error
 
 	createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error)
 	reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error)
@@ -30,6 +31,7 @@ type Repository interface {
 	confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error)
 	getReturnRequests(ctx context.Context, params getReturnRequestParams) ([]returnRequest, error)
 	getReturnRequestByID(ctx context.Context, id string) (returnRequest, error)
+	getReturnRequestByOTP(ctx context.Context, otp string) (returnRequest, error)
 
 	getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error)
 	getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]borrowedItem, error)
@@ -297,25 +299,81 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 	return equipments, nil
 }
 
-func (r *repository) getEquipmentTypeByID(ctx context.Context, id string) (updateRequest, error) {
+type statusQuantity struct {
+	Quantity uint                  `json:"quantity"`
+	Status   equipmentStatusDetail `json:"status"`
+}
+
+type equipmentInventoryStatus struct {
+	EquipmentTypeID string           `json:"id"`
+	Name            string           `json:"name"`
+	Brand           *string          `json:"brand"`
+	Model           *string          `json:"model"`
+	ImageURL        *string          `json:"imageUrl"`
+	StatusQuantity  []statusQuantity `json:"statusQuantity"`
+}
+
+func (r *repository) getEquipmentTypeByID(ctx context.Context, id string) (equipmentInventoryStatus, error) {
 	query := `
-	SELECT 
-		equipment_type_id, name, brand, model, image_url
+	WITH equipment_status_counts AS (
+		SELECT
+			equipment.equipment_type_id,
+			COUNT(equipment.equipment_status_id) AS status_count,
+			equipment_status.equipment_status_id,
+			equipment_status.code,
+			equipment_status.label
+		FROM equipment
+		LEFT JOIN equipment_status
+			ON equipment_status.equipment_status_id = equipment.equipment_status_id
+		GROUP BY
+			equipment.equipment_type_id,
+			equipment_status.equipment_status_id,
+			equipment_status.code,
+			equipment_status.label
+		ORDER BY equipment_status.equipment_status_id
+	)
+	SELECT
+		equipment_type.equipment_type_id,
+		equipment_type.name,
+		equipment_type.brand,
+		equipment_type.model,
+		equipment_type.image_url,
+		jsonb_agg(
+			jsonb_build_object(
+				'quantity', COALESCE(equipment_status_counts.status_count, 0),
+				'status', jsonb_build_object(
+					'id', equipment_status.equipment_status_id,
+					'code', equipment_status.code,
+					'label', equipment_status.label
+				)
+			)
+		) AS statusQuantity
 	FROM equipment_type
-	WHERE equipment_type_id = $1
+	JOIN equipment_status ON TRUE
+	LEFT JOIN equipment_status_counts
+		ON equipment_type.equipment_type_id = equipment_status_counts.equipment_type_id
+		AND equipment_status.equipment_status_id = equipment_status_counts.equipment_status_id
+	WHERE equipment_type.equipment_type_id = $1
+	GROUP BY
+		equipment_type.equipment_type_id,
+		equipment_type.name,
+		equipment_type.brand,
+		equipment_type.model,
+		equipment_type.image_url
 	`
 
 	row := r.querier.QueryRow(ctx, query, id)
 
-	var res updateRequest
+	var res equipmentInventoryStatus
 	if err := row.Scan(
 		&res.EquipmentTypeID,
 		&res.Name,
 		&res.Brand,
 		&res.Model,
 		&res.ImageURL,
+		&res.StatusQuantity,
 	); err != nil {
-		return updateRequest{}, err
+		return equipmentInventoryStatus{}, err
 	}
 
 	return res, nil
@@ -376,6 +434,69 @@ func (r *repository) update(ctx context.Context, arg updateRequest) error {
 		arg.ImageURL,
 		arg.EquipmentTypeID,
 	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type reallocateRequest struct {
+	EquipmentTypeID string          `json:"id"`
+	Quantity        int             `json:"quantity"`
+	OldStatus       equipmentStatus `json:"oldStatus"`
+	NewStatus       equipmentStatus `json:"newStatus"`
+}
+
+func (r *repository) reallocate(ctx context.Context, arg reallocateRequest) error {
+	tx, err := r.querier.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	selectQuery := `
+    SELECT equipment_id
+    FROM equipment
+    WHERE equipment_type_id = $1 AND equipment_status_id = $2
+    LIMIT $3
+    FOR UPDATE
+    `
+
+	rows, err := tx.Query(ctx, selectQuery, arg.EquipmentTypeID, arg.OldStatus, arg.Quantity)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var equipmentIDs []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return err
+		}
+		equipmentIDs = append(equipmentIDs, id)
+	}
+
+	if len(equipmentIDs) < int(arg.Quantity) {
+		return fmt.Errorf("insufficient quantity to reallocate: requested %d, got %d", arg.Quantity, len(equipmentIDs))
+	}
+
+	updateQuery := `
+    UPDATE equipment
+    SET equipment_status_id = $1, updated_at = NOW()
+    WHERE equipment_id = ANY($2::uuid[])
+    `
+
+	if _, err := tx.Exec(
+		ctx,
+		updateQuery,
+		arg.NewStatus,
+		equipmentIDs,
+	); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return err
 	}
 
@@ -1065,8 +1186,10 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	`
 
 	for borrowRequestID, items := range itemsByBorrowRequest {
+		row := tx.QueryRow(ctx, insertRequestQuery, borrowRequestID)
+
 		var returnRequestID string
-		if err := tx.QueryRow(ctx, insertRequestQuery, borrowRequestID).Scan(&returnRequestID); err != nil {
+		if err := row.Scan(&returnRequestID); err != nil {
 			return createReturnResponse{}, err
 		}
 
@@ -1091,6 +1214,10 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 			BorrowRequestID: borrowRequestID,
 			Items:           itemsJSON,
 		})
+
+		if err := r.createReturnRequestWithOTP(ctx, returnRequestID, tx); err != nil {
+			return createReturnResponse{}, err
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -1105,6 +1232,12 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 }
 
 func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction, error) {
+	_, err := r.querier.Exec(ctx, "SET jit = off")
+	if err != nil {
+		return nil, err
+	}
+	defer r.querier.Exec(ctx, "RESET jit")
+
 	query := `
 	WITH latest_return_data AS (
 		SELECT 
@@ -1173,6 +1306,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
 				'expiresAt', borrow_request_otp.expires_at
 			)
 		END AS otp
@@ -1285,6 +1419,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
 				'expiresAt', borrow_request_otp.expires_at
 			)
 		END AS otp
@@ -1410,6 +1545,7 @@ func (r *repository) getBorrowRequestByOTP(ctx context.Context, otp string) (bor
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
 				'expiresAt', borrow_request_otp.expires_at
 			)
 		END AS otp
@@ -1640,6 +1776,7 @@ type returnRequest struct {
 	Borrower         user.BasicInfo `json:"borrower"`
 	Equipments       []equipment    `json:"equipments"`
 	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
+	OTP              OTP            `json:"otp"`
 }
 
 type getReturnRequestParams struct {
@@ -1671,8 +1808,14 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 				'quantity', return_request_item.quantity
 			)
 		) AS equipments,
-		borrow_request.expected_return_at
+		borrow_request.expected_return_at,
+		jsonb_build_object(
+			'code', return_request_otp.code,
+			'createdAt', return_request_otp.created_at,
+			'expiresAt', return_request_otp.expires_at
+		) AS otp
 	FROM return_request
+	JOIN return_request_otp USING (return_request_id)
 	JOIN borrow_request ON borrow_request.borrow_request_id = return_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
 	JOIN return_request_item ON return_request_item.return_request_id = return_request.return_request_id
@@ -1705,7 +1848,8 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 		person.middle_name,
 		person.last_name,
 		person.avatar_url,
-		borrow_request.expected_return_at
+		borrow_request.expected_return_at,
+		return_request_otp.return_request_otp_id
 	`
 
 	if params.sort != nil && *params.sort != "" {
@@ -1786,6 +1930,66 @@ func (r *repository) getReturnRequestByID(ctx context.Context, id string) (retur
 	return req, nil
 }
 
+func (r *repository) getReturnRequestByOTP(ctx context.Context, otp string) (returnRequest, error) {
+	query := `
+	SELECT 
+		return_request.return_request_id,
+		return_request.created_at,
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS borrower,
+		jsonb_agg(
+			jsonb_build_object(
+				'returnRequestItemId', return_request_item.return_request_item_id,
+				'id', equipment_type.equipment_type_id,
+				'name', equipment_type.name,
+				'brand', equipment_type.brand,
+				'model', equipment_type.model,
+				'imageUrl', equipment_type.image_url,
+				'quantity', return_request_item.quantity
+			)
+		) AS equipments,
+		borrow_request.expected_return_at
+	FROM return_request
+	JOIN borrow_request ON borrow_request.borrow_request_id = return_request.borrow_request_id
+	JOIN person ON person.person_id = borrow_request.requested_by
+	JOIN return_request_item ON return_request_item.return_request_id = return_request.return_request_id
+	JOIN borrow_request_item ON borrow_request_item.borrow_request_item_id = return_request_item.borrow_request_item_id
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
+	JOIN return_request_otp 
+		ON return_request_otp.return_request_id = return_request.return_request_id
+	WHERE return_request_otp.code = $1
+	GROUP BY 
+		return_request.return_request_id,
+		return_request.created_at,
+		person.person_id,
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		borrow_request.expected_return_at,
+		return_request_otp.return_request_otp_id
+	`
+
+	var req returnRequest
+	row := r.querier.QueryRow(ctx, query, otp)
+	if err := row.Scan(
+		&req.ReturnRequestID,
+		&req.CreatedAt,
+		&req.Borrower,
+		&req.Equipments,
+		&req.ExpectedReturnAt,
+	); err != nil {
+		return returnRequest{}, err
+	}
+
+	return req, nil
+}
+
 type anomalyResult struct {
 	BorrowRequestID string  `json:"borrowRequestId"`
 	Score           float32 `json:"score"`
@@ -1795,6 +1999,7 @@ type anomalyResult struct {
 
 type OTP struct {
 	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"createdAt"`
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
@@ -1828,6 +2033,12 @@ type borrowHistoryParams struct {
 }
 
 func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error) {
+	_, err := r.querier.Exec(ctx, "SET jit = off")
+	if err != nil {
+		return nil, err
+	}
+	defer r.querier.Exec(ctx, "RESET jit")
+
 	query := `
 	WITH latest_return_data AS (
 		SELECT 
@@ -1896,6 +2107,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
 				'expiresAt', borrow_request_otp.expires_at
 			)
 		END AS otp

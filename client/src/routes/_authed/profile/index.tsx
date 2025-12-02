@@ -24,11 +24,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useRef, useState } from "react";
-import { IconEdit, IconUserPen } from "@/lib/icons";
-import { Separator } from "@/components/ui/separator";
+import { IconUserPen } from "@/lib/icons";
 import { H2 } from "@/components/typography";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
+import type { User } from "@/lib/user";
 
 export const Route = createFileRoute("/_authed/profile/")({
 	component: RouteComponent,
@@ -59,7 +59,7 @@ const formSchema = z.object({
 
 async function editProfile(
 	value: z.infer<typeof formSchema>,
-): Promise<ApiResponse> {
+): Promise<ApiResponse<User>> {
 	const formData = new FormData();
 	formData.append("id", value.userId);
 	if (value.email) formData.append("email", value.email);
@@ -73,7 +73,7 @@ async function editProfile(
 		body: formData,
 	});
 
-	const result: ApiResponse = await response.json();
+	const result: ApiResponse<User> = await response.json();
 	if (!response.ok) {
 		throw new Error(result.message || "Failed to update profile");
 	}
@@ -85,7 +85,9 @@ function RouteComponent() {
 	const auth = useAuth();
 	const navigate = Route.useNavigate();
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const [previewUrl, setPreviewUrl] = useState<string | null>(toImageUrl(auth.user?.avatarUrl) || null);
+	const [previewUrl, setPreviewUrl] = useState<string | null>(
+		toImageUrl(auth.user?.avatarUrl) || null,
+	);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -101,6 +103,9 @@ function RouteComponent() {
 
 	const mutation = useMutation({
 		mutationFn: editProfile,
+		onSuccess: (res) => {
+			auth.setUser(res.data);
+		},
 	});
 
 	async function onSubmit(value: z.infer<typeof formSchema>): Promise<void> {
@@ -115,20 +120,15 @@ function RouteComponent() {
 
 	async function handleLogout(): Promise<void> {
 		await auth.logout();
-		await navigate({ to: "/login" });
+		await navigate({ to: "/onboarding" });
 	}
-
-	const avatarUrl = auth.user?.avatarUrl
-		? `${BACKEND_URL}/${auth.user.avatarUrl}`
-		: undefined;
-
 
 	if (mutation.isError) {
 		return (
 			<Failed
 				backLink="/profile"
 				header="Profile update failed."
-				fn={() => console.log("xD")}
+				fn={form.handleSubmit(onSubmit)}
 				backMessage="or return to Request List"
 				retry={form.handleSubmit(onSubmit)}
 			/>
@@ -141,13 +141,11 @@ function RouteComponent() {
 				backLink="/profile"
 				header="Profile updated successfully."
 				fn={() => {
-					console.log("Updated profile xD");
 					mutation.reset();
 				}}
 			/>
 		);
 	}
-
 
 	return (
 		<div className="flex flex-col justify-between gap-4">

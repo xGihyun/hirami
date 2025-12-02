@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import type { Equipment } from ".";
 import { BACKEND_URL, Sort, type ApiResponse } from "../api";
 import type { UserBasicInfo } from "../user";
+import type { OTP } from "./borrow";
 
 type GetReturnRequestParams = {
 	userId?: string;
@@ -15,6 +16,7 @@ export type ReturnRequest = {
 	borrower: UserBasicInfo;
 	equipments: Equipment[];
 	expectedReturnAt: string;
+	otp: OTP;
 };
 
 async function getReturnRequests(
@@ -46,7 +48,7 @@ async function getReturnRequests(
 
 export const returnRequestsQuery = (params: GetReturnRequestParams) =>
 	queryOptions({
-		queryKey: ["return-requests", params.userId, params.sort, params.category],
+		queryKey: ["return-requests", params],
 		queryFn: () => getReturnRequests(params),
 	});
 
@@ -70,7 +72,44 @@ export const returnRequestByIdQuery = (id: string) =>
 		queryFn: () => getReturnRequestById(id),
 	});
 
+async function getReturnRequestByOtp(otp: string): Promise<ReturnRequest> {
+	const url = new URL(`${BACKEND_URL}/return-requests/otp/${otp}`);
+	const response = await fetch(url.toString(), {
+		method: "GET",
+	});
+
+	const result: ApiResponse<ReturnRequest> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result.data;
+}
+
+export const returnRequestByOtpQuery = (otp: string) =>
+	queryOptions({
+		queryKey: ["return-requests", otp],
+		queryFn: () => getReturnRequestByOtp(otp),
+	});
+
 export type ConfirmReturnRequest = {
 	returnRequestId: string;
 	reviewedBy: string;
+	remarks?: string;
 };
+
+export async function confirmReturnRequest(
+	value: ConfirmReturnRequest,
+): Promise<ApiResponse> {
+	const response = await fetch(
+		`${BACKEND_URL}/return-requests/${value.returnRequestId}`,
+		{
+			method: "PATCH",
+			body: JSON.stringify(value),
+			headers: { "Content-Type": "application/json" },
+		},
+	);
+	const result: ApiResponse = await response.json();
+	if (!response.ok) throw new Error(result.message);
+	return result;
+}

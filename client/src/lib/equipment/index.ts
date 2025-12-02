@@ -1,4 +1,4 @@
-import { keepPreviousData, queryOptions } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 import { BACKEND_URL, type ApiResponse } from "../api";
 import type { Borrower } from "./borrow";
 
@@ -15,10 +15,53 @@ export enum EquipmentStatus {
 	Disposed = "disposed",
 }
 
+export const equipmentStatuses: EquipmentStatusDetail[] = [
+	{
+		id: 1,
+		code: EquipmentStatus.Available,
+		label: "Available",
+	},
+	{
+		id: 2,
+		code: EquipmentStatus.Reserved,
+		label: "Reserved",
+	},
+	{
+		id: 3,
+		code: EquipmentStatus.Borrowed,
+		label: "Borrowed",
+	},
+	{
+		id: 4,
+		code: EquipmentStatus.Damaged,
+		label: "Damaged",
+	},
+	{
+		id: 5,
+		code: EquipmentStatus.Lost,
+		label: "Lost",
+	},
+	{
+		id: 6,
+		code: EquipmentStatus.Maintenance,
+		label: "Maintenance",
+	},
+	{
+		id: 7,
+		code: EquipmentStatus.Disposed,
+		label: "Disposed",
+	},
+];
+
 export type EquipmentStatusDetail = {
 	id: number;
 	code: EquipmentStatus;
 	label: string;
+};
+
+export type EquipmentStatusQuantity = {
+	quantity: number;
+	status: EquipmentStatusDetail;
 };
 
 export type EquipmentType = {
@@ -27,6 +70,7 @@ export type EquipmentType = {
 	brand?: string;
 	model?: string;
 	imageUrl?: string;
+	statusQuantity: EquipmentStatusQuantity[];
 };
 
 export type Equipment = {
@@ -70,7 +114,6 @@ export const equipmentsQuery = (params: GetEquipmentParams) =>
 	queryOptions({
 		queryKey: ["equipments", params],
 		queryFn: () => getEquipments(params),
-		placeholderData: keepPreviousData,
 	});
 
 async function getEquipmentType(id: string): Promise<EquipmentType> {
@@ -91,7 +134,6 @@ export const equipmentTypeQuery = (id: string) =>
 	queryOptions({
 		queryKey: ["equipments", id],
 		queryFn: () => getEquipmentType(id),
-		placeholderData: keepPreviousData,
 	});
 
 async function getEquipmentNames(): Promise<string[]> {
@@ -112,5 +154,4 @@ export const equipmentNamesQuery = () =>
 	queryOptions({
 		queryKey: ["equipment-names"],
 		queryFn: () => getEquipmentNames(),
-		placeholderData: keepPreviousData,
 	});

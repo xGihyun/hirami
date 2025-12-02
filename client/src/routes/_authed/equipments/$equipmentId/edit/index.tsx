@@ -7,14 +7,12 @@ import {
 	toImageUrl,
 	type ApiResponse,
 } from "@/lib/api";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRef, useState, type JSX } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { equipmentsQuery, equipmentTypeQuery } from "@/lib/equipment";
+import { equipmentTypeQuery } from "@/lib/equipment";
 import { FullScreenLoading } from "@/components/loading";
-import { Failed } from "./-components/failed";
-import { Success } from "./-components/success";
 import { H2 } from "@/components/typography";
 import {
 	Form,
@@ -25,10 +23,13 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { IconArrowLeft, IconEdit, IconPen, IconUserPen } from "@/lib/icons";
+import { IconArrowLeft, IconEdit, IconPen } from "@/lib/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Failed } from "@/components/failed";
+import { Success } from "@/components/success";
+import { ReallocateForm } from "./-components/reallocate-form";
 
 export const Route = createFileRoute("/_authed/equipments/$equipmentId/edit/")({
 	component: RouteComponent,
@@ -78,9 +79,7 @@ async function editEquipment(value: EditEquipmentSchema): Promise<ApiResponse> {
 }
 
 function RouteComponent(): JSX.Element {
-	const navigate = Route.useNavigate();
 	const params = Route.useParams();
-	const queryClient = useQueryClient();
 	const equipmentType = useQuery(equipmentTypeQuery(params.equipmentId));
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -107,9 +106,7 @@ function RouteComponent(): JSX.Element {
 		mutation.mutate(value);
 	}
 
-	async function onSuccess(): Promise<void> {
-		queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
-		await navigate({ to: "/equipments" });
+	function reset(): void {
 		mutation.reset();
 	}
 
@@ -127,11 +124,25 @@ function RouteComponent(): JSX.Element {
 	}
 
 	if (mutation.isError) {
-		return <Failed fn={onSuccess} retry={() => onSubmit(mutation.variables)} />;
+		return (
+			<Failed
+				fn={reset}
+				retry={form.handleSubmit(onSubmit)}
+				header="Edit equipment failed."
+				backLink="/equipments"
+				backMessage="or return to Catalog"
+			/>
+		);
 	}
 
 	if (mutation.isSuccess) {
-		return <Success fn={onSuccess} />;
+		return (
+			<Success
+				fn={reset}
+				header="Equipment details updated successfully."
+				backLink="/equipments"
+			/>
+		);
 	}
 
 	return (
@@ -285,6 +296,12 @@ function RouteComponent(): JSX.Element {
 						</Button>
 					</form>
 				</Form>
+			</section>
+
+			<Separator />
+
+			<section>
+				<ReallocateForm equipmentType={equipmentType.data!} />
 			</section>
 		</div>
 	);

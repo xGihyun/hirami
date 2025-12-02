@@ -7,17 +7,22 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-const charset = "0123456789"
+const (
+	charset      = "0123456789"
+	returnPrefix = "R"
+	borrowPrefix = "B"
+)
 
-func generateRandomOTP(length int) string {
+func generateRandomOTP(length int, prefix string) string {
 	b := make([]byte, length)
 	for i := range b {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
-	return string(b)
+	return prefix + string(b)
 }
 
 func (s *Server) StartExpirationWorker(ctx context.Context) {
@@ -47,7 +52,7 @@ func (r *repository) createBorrowRequestWithOTP(ctx context.Context, borrowReque
 	`
 
 	for range maxRetries {
-		otp := generateRandomOTP(6)
+		otp := generateRandomOTP(6, borrowPrefix)
 
 		_, err := r.querier.Exec(
 			ctx,
@@ -168,7 +173,7 @@ func (r *repository) processExpiredBorrowRequests(ctx context.Context) error {
 
 // OTP for Return Requests
 
-func (r *repository) createReturnRequestWithOTP(ctx context.Context, returnRequestID string) error {
+func (r *repository) createReturnRequestWithOTP(ctx context.Context, returnRequestID string, tx pgx.Tx) error {
 	maxRetries := 5
 
 	query := `
@@ -177,9 +182,9 @@ func (r *repository) createReturnRequestWithOTP(ctx context.Context, returnReque
 	`
 
 	for range maxRetries {
-		otp := generateRandomOTP(6)
+		otp := generateRandomOTP(6, returnPrefix)
 
-		_, err := r.querier.Exec(
+		_, err := tx.Exec(
 			ctx,
 			query,
 			returnRequestID,
@@ -242,7 +247,7 @@ func (r *repository) renewExpiredReturnRequests(ctx context.Context) error {
 	maxRetries := 5
 	for _, id := range expiredReturnRequestIDs {
 		for range maxRetries {
-			otp := generateRandomOTP(6)
+			otp := generateRandomOTP(6, returnPrefix)
 			newExpiry := time.Now().Add(30 * time.Minute)
 
 			_, err := tx.Exec(

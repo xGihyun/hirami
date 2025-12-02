@@ -1,4 +1,10 @@
-import { DisplayLarge, TitleSmall } from "@/components/typography";
+import {
+	DisplayLarge,
+	LabelLarge,
+	LabelMedium,
+	LabelSmall,
+	TitleSmall,
+} from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { morningWorkoutIllustration } from "@/lib/assets";
 import {
@@ -10,6 +16,7 @@ import {
 import type { JSX } from "react";
 import z from "zod";
 import { Onboarding } from "./-components/onboarding";
+import { openPath } from "@tauri-apps/plugin-opener";
 
 const searchSchema = z.object({
 	step: z.number().optional(),
@@ -40,6 +47,10 @@ function RouteComponent(): JSX.Element {
 }
 
 function Welcome(): JSX.Element {
+	// async function handleOpen(): Promise<void> {
+	// 	await openPath("Hirami - Privacy Policy and T&C.pdf");
+	// }
+
 	return (
 		<div className="h-full w-full flex flex-col justify-center items-center">
 			<div className="w-full space-y-20">
@@ -66,6 +77,16 @@ function Welcome(): JSX.Element {
 					<Button className="w-full" variant="ghost" asChild>
 						<Link to="/register">Create a new account</Link>
 					</Button>
+
+					<LabelMedium className="underline text-center text-primary mt-10">
+						<a
+							href="https://docs.google.com/document/d/1LYMJ3kEMjBGzp_XxVLRCjC7Ht69krWmOeiQq3TP7jCE/edit?usp=sharing"
+							rel="noreferrer"
+							target="_blank"
+						>
+							Privacy Policy & Terms and Conditions
+						</a>
+					</LabelMedium>
 				</section>
 			</div>
 		</div>

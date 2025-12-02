@@ -4,11 +4,12 @@ import {
 	type BorrowTransaction,
 	type ReviewBorrowRequest,
 	type ReviewBorrowResponse,
+    type UpdateBorrowResponse,
 } from "@/lib/equipment/borrow";
 import {
 	useMutation,
+	useQuery,
 	useQueryClient,
-	useSuspenseQuery,
 } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type JSX } from "react";
@@ -56,11 +57,6 @@ export const Route = createFileRoute("/_authed/borrow-requests/")({
 	},
 });
 
-type UpdateBorrowResponse = {
-	id: string;
-	status: BorrowRequestStatus;
-};
-
 async function reviewBorrowRequest(
 	value: ReviewBorrowRequest,
 ): Promise<ApiResponse<ReviewBorrowResponse>> {
@@ -81,7 +77,7 @@ async function reviewBorrowRequest(
 }
 
 function RouteComponent(): JSX.Element {
-	const { data } = useSuspenseQuery(borrowRequestsQuery);
+	const borrowRequests = useQuery(borrowRequestsQuery);
 	const [selectedRequest, setSelectedRequest] = useState<
 		BorrowTransaction | undefined
 	>(undefined);
@@ -126,7 +122,7 @@ function RouteComponent(): JSX.Element {
 
 		function handleBorrowRequestEvent(e: MessageEvent): void {
 			const res: UpdateBorrowResponse = JSON.parse(e.data);
-			setIsReceived(res.status === BorrowRequestStatus.Claimed);
+			setIsReceived(res.status.code === BorrowRequestStatus.Claimed);
 		}
 
 		eventSource.addEventListener("equipment:create", handleEvent);
@@ -158,15 +154,15 @@ function RouteComponent(): JSX.Element {
 		mutation.reset();
 	}
 
-	if (isReceived) {
-		return (
-			<Success
-				fn={reset}
-				header="Request approved successfully."
-				backLink="/borrow-requests"
-			/>
-		);
-	}
+	// if (isReceived) {
+	// 	return (
+	// 		<Success
+	// 			fn={reset}
+	// 			header="Request approved successfully."
+	// 			backLink="/borrow-requests"
+	// 		/>
+	// 	);
+	// }
 
 	if (mutation.isError) {
 		return (
@@ -186,8 +182,18 @@ function RouteComponent(): JSX.Element {
 	) {
 		return (
 			<Success
-				fn={handleDrawerClose}
+				fn={reset}
 				header="Request rejected successfully."
+				backLink="/borrow-requests"
+			/>
+		);
+	}
+
+	if (mutation.isSuccess) {
+		return (
+			<Success
+				fn={reset}
+				header="Request approved successfully."
 				backLink="/borrow-requests"
 			/>
 		);
@@ -208,7 +214,7 @@ function RouteComponent(): JSX.Element {
 				}}
 			>
 				<div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
-					{data.map((request) => {
+					{borrowRequests.data?.map((request) => {
 						const borrowerInitials = `${request.borrower.firstName[0]}${request.borrower.lastName[0]}`;
 						const borrowerName = `${request.borrower.firstName} ${request.borrower.lastName}`;
 						const requestedAt = `${format(request.borrowedAt, "h:mm a")} at ${format(request.borrowedAt, "MM/dd/yyyy")}`;
@@ -400,7 +406,7 @@ function BorrowRequestReviewContent(
 				</div>
 			</div>
 
-			<DrawerFooter className="mt-4">
+			<DrawerFooter>
 				<div className="flex w-full gap-2">
 					<Button
 						className="flex-1"

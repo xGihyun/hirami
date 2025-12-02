@@ -25,7 +25,10 @@ export function HistorySearch(): JSX.Element {
 			if (searchParams.search !== inputValue) {
 				// Using replace: true prevents flooding the history with partial searches
 				navigate({
-					search: (prev) => ({ ...prev, search: inputValue }),
+					search: (prev) => ({
+						...prev,
+						search: inputValue.length > 0 ? inputValue : undefined,
+					}),
 					replace: true,
 				});
 			}

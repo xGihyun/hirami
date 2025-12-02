@@ -14,7 +14,7 @@ type Repository interface {
 	Register(ctx context.Context, arg RegisterRequest) (string, error)
 	login(ctx context.Context, arg loginRequest) (signInResponse, error)
 	get(ctx context.Context, userID string) (user, error)
-	Update(ctx context.Context, arg UpdateRequest) error
+	Update(ctx context.Context, arg UpdateRequest) (user, error)
 
 	createPasswordResetToken(ctx context.Context, email, tokenHash string, expiresAt time.Time) error
 	resetPasswordWithToken(ctx context.Context, tokenHash, newPassword string) error
@@ -279,19 +279,48 @@ type UpdateRequest struct {
 	AvatarURL  *string
 }
 
-func (r *repository) Update(ctx context.Context, arg UpdateRequest) error {
+func (r *repository) Update(ctx context.Context, arg UpdateRequest) (user, error) {
 	query := `
-	UPDATE person
-	SET email = COALESCE($1, email),
-		first_name = COALESCE($2, first_name),
-		middle_name = COALESCE($3, middle_name),
-		last_name = COALESCE($4, last_name),
-		person_role_id = COALESCE($5, person_role_id),
-		avatar_url = COALESCE($6, avatar_url)
+	WITH updated_user AS (
+		UPDATE person
+		SET email = COALESCE($1, email),
+			first_name = COALESCE($2, first_name),
+			middle_name = COALESCE($3, middle_name),
+			last_name = COALESCE($4, last_name),
+			person_role_id = COALESCE($5, person_role_id),
+			avatar_url = COALESCE($6, avatar_url)
+		WHERE person_id = $7
+		RETURNING 
+			person_id,
+			email,
+			first_name,
+			middle_name,
+			last_name,
+			person_role_id,
+			avatar_url,
+			created_at,
+			updated_at
+	)
+	SELECT 
+		updated_user.person_id, 
+		updated_user.created_at, 
+		updated_user.updated_at,
+		updated_user.email, 
+		updated_user.first_name,
+		updated_user.middle_name,
+		updated_user.last_name,
+		updated_user.avatar_url,
+		jsonb_build_object(
+			'id', person_role.person_role_id,
+			'code', person_role.code,
+			'label', person_role.label
+		) AS role
+	FROM updated_user
+	JOIN person_role USING (person_role_id)
 	WHERE person_id = $7
 	`
 
-	if _, err := r.querier.Exec(
+	row := r.querier.QueryRow(
 		ctx,
 		query,
 		arg.Email,
@@ -301,11 +330,24 @@ func (r *repository) Update(ctx context.Context, arg UpdateRequest) error {
 		arg.Role,
 		arg.AvatarURL,
 		arg.PersonID,
+	)
+
+	var person user
+	if err := row.Scan(
+		&person.UserID,
+		&person.CreatedAt,
+		&person.UpdatedAt,
+		&person.Email,
+		&person.FirstName,
+		&person.MiddleName,
+		&person.LastName,
+		&person.AvatarURL,
+		&person.Role,
 	); err != nil {
-		return err
+		return user{}, err
 	}
 
-	return nil
+	return person, nil
 }
 
 func (r *repository) createPasswordResetToken(ctx context.Context, email, tokenHash string, expiresAt time.Time) error {

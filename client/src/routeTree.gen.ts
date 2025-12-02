@@ -16,13 +16,12 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/_register'
 import { Route as AuthedUsersIndexRouteImport } from './routes/_authed/users/index'
+import { Route as AuthedScanIndexRouteImport } from './routes/_authed/scan/index'
 import { Route as AuthedReturnIndexRouteImport } from './routes/_authed/return/index'
-import { Route as AuthedReturnScanIndexRouteImport } from './routes/_authed/return-scan/index'
 import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile/index'
 import { Route as AuthedPersonalHistoryIndexRouteImport } from './routes/_authed/personal-history/index'
 import { Route as AuthedHistoryIndexRouteImport } from './routes/_authed/history/index'
 import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equipments/index'
-import { Route as AuthedBorrowScanIndexRouteImport } from './routes/_authed/borrow-scan/index'
 import { Route as AuthedBorrowRequestsIndexRouteImport } from './routes/_authed/borrow-requests/index'
 import { Route as AuthPasswordResetIndexRouteImport } from './routes/_auth/password-reset/index'
 import { Route as AuthOnboardingIndexRouteImport } from './routes/_auth/onboarding/index'
@@ -75,14 +74,14 @@ const AuthedUsersIndexRoute = AuthedUsersIndexRouteImport.update({
   path: '/users/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedScanIndexRoute = AuthedScanIndexRouteImport.update({
+  id: '/scan/',
+  path: '/scan/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedReturnIndexRoute = AuthedReturnIndexRouteImport.update({
   id: '/return/',
   path: '/return/',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedReturnScanIndexRoute = AuthedReturnScanIndexRouteImport.update({
-  id: '/return-scan/',
-  path: '/return-scan/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedProfileIndexRoute = AuthedProfileIndexRouteImport.update({
@@ -104,11 +103,6 @@ const AuthedHistoryIndexRoute = AuthedHistoryIndexRouteImport.update({
 const AuthedEquipmentsIndexRoute = AuthedEquipmentsIndexRouteImport.update({
   id: '/equipments/',
   path: '/equipments/',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedBorrowScanIndexRoute = AuthedBorrowScanIndexRouteImport.update({
-  id: '/borrow-scan/',
-  path: '/borrow-scan/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedBorrowRequestsIndexRoute =
@@ -228,13 +222,12 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthOnboardingIndexRoute
   '/password-reset': typeof AuthPasswordResetIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
-  '/borrow-scan': typeof AuthedBorrowScanIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
   '/personal-history': typeof AuthedPersonalHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
-  '/return-scan': typeof AuthedReturnScanIndexRoute
   '/return': typeof AuthedReturnIndexRoute
+  '/scan': typeof AuthedScanIndexRoute
   '/users': typeof AuthedUsersIndexRoute
   '/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdRegisterRouteWithChildren
   '/register': typeof AuthRegisterRegisterIndexRoute
@@ -258,13 +251,12 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthOnboardingIndexRoute
   '/password-reset': typeof AuthPasswordResetIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
-  '/borrow-scan': typeof AuthedBorrowScanIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
   '/personal-history': typeof AuthedPersonalHistoryIndexRoute
   '/profile': typeof AuthedProfileIndexRoute
-  '/return-scan': typeof AuthedReturnScanIndexRoute
   '/return': typeof AuthedReturnIndexRoute
+  '/scan': typeof AuthedScanIndexRoute
   '/users': typeof AuthedUsersIndexRoute
   '/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdIndexRoute
   '/register': typeof AuthRegisterRegisterIndexRoute
@@ -291,13 +283,12 @@ export interface FileRoutesById {
   '/_auth/onboarding/': typeof AuthOnboardingIndexRoute
   '/_auth/password-reset/': typeof AuthPasswordResetIndexRoute
   '/_authed/borrow-requests/': typeof AuthedBorrowRequestsIndexRoute
-  '/_authed/borrow-scan/': typeof AuthedBorrowScanIndexRoute
   '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
   '/_authed/history/': typeof AuthedHistoryIndexRoute
   '/_authed/personal-history/': typeof AuthedPersonalHistoryIndexRoute
   '/_authed/profile/': typeof AuthedProfileIndexRoute
-  '/_authed/return-scan/': typeof AuthedReturnScanIndexRoute
   '/_authed/return/': typeof AuthedReturnIndexRoute
+  '/_authed/scan/': typeof AuthedScanIndexRoute
   '/_authed/users/': typeof AuthedUsersIndexRoute
   '/_authed/equipments/$equipmentId': typeof AuthedEquipmentsEquipmentIdRouteWithChildren
   '/_authed/equipments/$equipmentId/_register': typeof AuthedEquipmentsEquipmentIdRegisterRouteWithChildren
@@ -324,13 +315,12 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/password-reset'
     | '/borrow-requests'
-    | '/borrow-scan'
     | '/equipments'
     | '/history'
     | '/personal-history'
     | '/profile'
-    | '/return-scan'
     | '/return'
+    | '/scan'
     | '/users'
     | '/equipments/$equipmentId'
     | '/register'
@@ -354,13 +344,12 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/password-reset'
     | '/borrow-requests'
-    | '/borrow-scan'
     | '/equipments'
     | '/history'
     | '/personal-history'
     | '/profile'
-    | '/return-scan'
     | '/return'
+    | '/scan'
     | '/users'
     | '/equipments/$equipmentId'
     | '/register'
@@ -386,13 +375,12 @@ export interface FileRouteTypes {
     | '/_auth/onboarding/'
     | '/_auth/password-reset/'
     | '/_authed/borrow-requests/'
-    | '/_authed/borrow-scan/'
     | '/_authed/equipments/'
     | '/_authed/history/'
     | '/_authed/personal-history/'
     | '/_authed/profile/'
-    | '/_authed/return-scan/'
     | '/_authed/return/'
+    | '/_authed/scan/'
     | '/_authed/users/'
     | '/_authed/equipments/$equipmentId'
     | '/_authed/equipments/$equipmentId/_register'
@@ -461,18 +449,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedUsersIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/scan/': {
+      id: '/_authed/scan/'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof AuthedScanIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/return/': {
       id: '/_authed/return/'
       path: '/return'
       fullPath: '/return'
       preLoaderRoute: typeof AuthedReturnIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/return-scan/': {
-      id: '/_authed/return-scan/'
-      path: '/return-scan'
-      fullPath: '/return-scan'
-      preLoaderRoute: typeof AuthedReturnScanIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/profile/': {
@@ -501,13 +489,6 @@ declare module '@tanstack/react-router' {
       path: '/equipments'
       fullPath: '/equipments'
       preLoaderRoute: typeof AuthedEquipmentsIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/borrow-scan/': {
-      id: '/_authed/borrow-scan/'
-      path: '/borrow-scan'
-      fullPath: '/borrow-scan'
-      preLoaderRoute: typeof AuthedBorrowScanIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/borrow-requests/': {
@@ -731,13 +712,12 @@ const AuthedEquipmentsEquipmentIdRouteWithChildren =
 
 interface AuthedRouteChildren {
   AuthedBorrowRequestsIndexRoute: typeof AuthedBorrowRequestsIndexRoute
-  AuthedBorrowScanIndexRoute: typeof AuthedBorrowScanIndexRoute
   AuthedEquipmentsIndexRoute: typeof AuthedEquipmentsIndexRoute
   AuthedHistoryIndexRoute: typeof AuthedHistoryIndexRoute
   AuthedPersonalHistoryIndexRoute: typeof AuthedPersonalHistoryIndexRoute
   AuthedProfileIndexRoute: typeof AuthedProfileIndexRoute
-  AuthedReturnScanIndexRoute: typeof AuthedReturnScanIndexRoute
   AuthedReturnIndexRoute: typeof AuthedReturnIndexRoute
+  AuthedScanIndexRoute: typeof AuthedScanIndexRoute
   AuthedUsersIndexRoute: typeof AuthedUsersIndexRoute
   AuthedEquipmentsEquipmentIdRoute: typeof AuthedEquipmentsEquipmentIdRouteWithChildren
   AuthedHistoryBorrowRequestIdIndexRoute: typeof AuthedHistoryBorrowRequestIdIndexRoute
@@ -747,13 +727,12 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedBorrowRequestsIndexRoute: AuthedBorrowRequestsIndexRoute,
-  AuthedBorrowScanIndexRoute: AuthedBorrowScanIndexRoute,
   AuthedEquipmentsIndexRoute: AuthedEquipmentsIndexRoute,
   AuthedHistoryIndexRoute: AuthedHistoryIndexRoute,
   AuthedPersonalHistoryIndexRoute: AuthedPersonalHistoryIndexRoute,
   AuthedProfileIndexRoute: AuthedProfileIndexRoute,
-  AuthedReturnScanIndexRoute: AuthedReturnScanIndexRoute,
   AuthedReturnIndexRoute: AuthedReturnIndexRoute,
+  AuthedScanIndexRoute: AuthedScanIndexRoute,
   AuthedUsersIndexRoute: AuthedUsersIndexRoute,
   AuthedEquipmentsEquipmentIdRoute:
     AuthedEquipmentsEquipmentIdRouteWithChildren,

@@ -1,11 +1,11 @@
-import type {
-	BorrowedEquipment,
-	BorrowTransaction,
+import {
+	BorrowRequestStatus,
+	type BorrowedEquipment,
+	type BorrowTransaction,
 } from "@/lib/equipment/borrow";
 import { useState, type JSX } from "react";
 import { HistoryItem } from "./history-item";
-import { Caption, H2, LabelMedium, TitleSmall } from "@/components/typography";
-import { Link } from "@tanstack/react-router";
+import { Caption, H1, H2, LabelMedium, TitleSmall } from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft } from "@/lib/icons";
 import { toImageUrl } from "@/lib/api";
@@ -13,6 +13,8 @@ import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment";
 import { QRCodeSVG } from "qrcode.react";
+import { Timer } from "@ark-ui/react/timer";
+import { getRemainingMs } from "@/lib/utils";
 
 type Props = {
 	history: BorrowTransaction[];
@@ -32,6 +34,8 @@ export function HistoryList(props: Props): JSX.Element {
 			</LabelMedium>
 		);
 	}
+
+	const otp = selectedItem?.transaction.otp;
 
 	if (selectedItem !== null) {
 		return (
@@ -95,15 +99,37 @@ export function HistoryList(props: Props): JSX.Element {
 					</div>
 				</section>
 
-				{selectedItem.transaction.otp ? (
-					<section className="space-y-2">
-						<QRCodeSVG
-							value={selectedItem.transaction.otp.code}
-							className="size-64 mx-auto"
-							bgColor="transparent"
-						/>
+				{otp &&
+				selectedItem.transaction.status.code ===
+					BorrowRequestStatus.Approved ? (
+					<section className="space-y-8">
+						<div className="space-y-2">
+							<QRCodeSVG
+								value={otp.code}
+								className="size-64 mx-auto"
+								bgColor="transparent"
+							/>
 
-						<H2 className="text-center">{selectedItem.transaction.otp.code}</H2>
+							<H2 className="text-center">{otp.code}</H2>
+						</div>
+
+						<div className="mx-auto text-center content-center space-y-2">
+							<Caption>Time left to claim</Caption>
+
+							<Timer.Root
+								countdown
+								autoStart
+								startMs={getRemainingMs(new Date(otp.expiresAt))}
+							>
+								<H1>
+									<Timer.Area className="flex justify-center">
+										<Timer.Item type="minutes" />
+										<Timer.Separator>:</Timer.Separator>
+										<Timer.Item type="seconds" />
+									</Timer.Area>
+								</H1>
+							</Timer.Root>
+						</div>
 					</section>
 				) : null}
 			</div>
