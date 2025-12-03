@@ -34,6 +34,7 @@ import { Route as AuthedHistoryBorrowRequestIdIndexRouteImport } from './routes/
 import { Route as AuthedEquipmentsEquipmentIdIndexRouteImport } from './routes/_authed/equipments/$equipmentId/index'
 import { Route as AuthRegisterRegisterIndexRouteImport } from './routes/_auth/_register/register/index'
 import { Route as AuthedEquipmentsEquipmentIdRegisterRouteImport } from './routes/_authed/equipments/$equipmentId/_register'
+import { Route as AuthedUsersUserIdRegisterIndexRouteImport } from './routes/_authed/users/$userId/register/index'
 import { Route as AuthedEquipmentsEquipmentIdEditIndexRouteImport } from './routes/_authed/equipments/$equipmentId/edit/index'
 import { Route as AuthRegisterRegisterPersonalIndexRouteImport } from './routes/_auth/_register/register/personal/index'
 import { Route as AuthRegisterRegisterPasswordIndexRouteImport } from './routes/_auth/_register/register/password/index'
@@ -172,6 +173,12 @@ const AuthedEquipmentsEquipmentIdRegisterRoute =
     id: '/_register',
     getParentRoute: () => AuthedEquipmentsEquipmentIdRoute,
   } as any)
+const AuthedUsersUserIdRegisterIndexRoute =
+  AuthedUsersUserIdRegisterIndexRouteImport.update({
+    id: '/users/$userId/register/',
+    path: '/users/$userId/register/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedEquipmentsEquipmentIdEditIndexRoute =
   AuthedEquipmentsEquipmentIdEditIndexRouteImport.update({
     id: '/edit/',
@@ -246,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/register/password': typeof AuthRegisterRegisterPasswordIndexRoute
   '/register/personal': typeof AuthRegisterRegisterPersonalIndexRoute
   '/equipments/$equipmentId/edit': typeof AuthedEquipmentsEquipmentIdEditIndexRoute
+  '/users/$userId/register': typeof AuthedUsersUserIdRegisterIndexRoute
   '/equipments/$equipmentId/register': typeof AuthedEquipmentsEquipmentIdRegisterRegisterIndexRoute
   '/equipments/$equipmentId/register/image': typeof AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute
   '/equipments/$equipmentId/register/name': typeof AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRoute
@@ -275,6 +283,7 @@ export interface FileRoutesByTo {
   '/register/password': typeof AuthRegisterRegisterPasswordIndexRoute
   '/register/personal': typeof AuthRegisterRegisterPersonalIndexRoute
   '/equipments/$equipmentId/edit': typeof AuthedEquipmentsEquipmentIdEditIndexRoute
+  '/users/$userId/register': typeof AuthedUsersUserIdRegisterIndexRoute
   '/equipments/$equipmentId/register': typeof AuthedEquipmentsEquipmentIdRegisterRegisterIndexRoute
   '/equipments/$equipmentId/register/image': typeof AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute
   '/equipments/$equipmentId/register/name': typeof AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRoute
@@ -310,6 +319,7 @@ export interface FileRoutesById {
   '/_auth/_register/register/password/': typeof AuthRegisterRegisterPasswordIndexRoute
   '/_auth/_register/register/personal/': typeof AuthRegisterRegisterPersonalIndexRoute
   '/_authed/equipments/$equipmentId/edit/': typeof AuthedEquipmentsEquipmentIdEditIndexRoute
+  '/_authed/users/$userId/register/': typeof AuthedUsersUserIdRegisterIndexRoute
   '/_authed/equipments/$equipmentId/_register/register/': typeof AuthedEquipmentsEquipmentIdRegisterRegisterIndexRoute
   '/_authed/equipments/$equipmentId/_register/register/image/': typeof AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute
   '/_authed/equipments/$equipmentId/_register/register/name/': typeof AuthedEquipmentsEquipmentIdRegisterRegisterNameIndexRoute
@@ -342,6 +352,7 @@ export interface FileRouteTypes {
     | '/register/password'
     | '/register/personal'
     | '/equipments/$equipmentId/edit'
+    | '/users/$userId/register'
     | '/equipments/$equipmentId/register'
     | '/equipments/$equipmentId/register/image'
     | '/equipments/$equipmentId/register/name'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/register/password'
     | '/register/personal'
     | '/equipments/$equipmentId/edit'
+    | '/users/$userId/register'
     | '/equipments/$equipmentId/register'
     | '/equipments/$equipmentId/register/image'
     | '/equipments/$equipmentId/register/name'
@@ -405,6 +417,7 @@ export interface FileRouteTypes {
     | '/_auth/_register/register/password/'
     | '/_auth/_register/register/personal/'
     | '/_authed/equipments/$equipmentId/edit/'
+    | '/_authed/users/$userId/register/'
     | '/_authed/equipments/$equipmentId/_register/register/'
     | '/_authed/equipments/$equipmentId/_register/register/image/'
     | '/_authed/equipments/$equipmentId/_register/register/name/'
@@ -587,6 +600,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedEquipmentsEquipmentIdRegisterRouteImport
       parentRoute: typeof AuthedEquipmentsEquipmentIdRoute
     }
+    '/_authed/users/$userId/register/': {
+      id: '/_authed/users/$userId/register/'
+      path: '/users/$userId/register'
+      fullPath: '/users/$userId/register'
+      preLoaderRoute: typeof AuthedUsersUserIdRegisterIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/equipments/$equipmentId/edit/': {
       id: '/_authed/equipments/$equipmentId/edit/'
       path: '/edit'
@@ -743,6 +763,7 @@ interface AuthedRouteChildren {
   AuthedHistoryBorrowRequestItemIdIndexRoute: typeof AuthedHistoryBorrowRequestItemIdIndexRoute
   AuthedPersonalHistoryBorrowRequestItemIdIndexRoute: typeof AuthedPersonalHistoryBorrowRequestItemIdIndexRoute
   AuthedUsersUserIdIndexRoute: typeof AuthedUsersUserIdIndexRoute
+  AuthedUsersUserIdRegisterIndexRoute: typeof AuthedUsersUserIdRegisterIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -763,6 +784,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedPersonalHistoryBorrowRequestItemIdIndexRoute:
     AuthedPersonalHistoryBorrowRequestItemIdIndexRoute,
   AuthedUsersUserIdIndexRoute: AuthedUsersUserIdIndexRoute,
+  AuthedUsersUserIdRegisterIndexRoute: AuthedUsersUserIdRegisterIndexRoute,
 }
 
 const AuthedRouteWithChildren =

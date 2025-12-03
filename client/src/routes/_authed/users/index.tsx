@@ -1,12 +1,14 @@
 import { H2, LabelMedium } from "@/components/typography";
 import { usersQuery } from "@/lib/user";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import z from "zod";
 import { Search } from "./-components/search";
 import type { JSX } from "react";
 import { ComponentLoading } from "@/components/loading";
 import { UserList } from "./-components/user-list";
+import { Button } from "@/components/ui/button";
+import { v4 as uuidv4 } from "uuid";
 
 const searchSchema = z.object({
 	search: z.string().optional(),
@@ -29,6 +31,15 @@ function RouteComponent(): JSX.Element {
 			</header>
 
 			<Users />
+
+			{/* <Button */}
+			{/* 	className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow" */}
+			{/* 	asChild */}
+			{/* > */}
+			{/* 	<Link to="/users/$userId/register" params={{ userId: uuidv4() }}> */}
+			{/* 		Create New User */}
+			{/* 	</Link> */}
+			{/* </Button> */}
 		</main>
 	);
 }

@@ -79,7 +79,7 @@ function UserItem(props: UserItemProps): JSX.Element {
 								Edit
 							</Link>
 						</DropdownMenuItem>
-						<DropdownMenuItem>Deactivate</DropdownMenuItem>
+						{/* <DropdownMenuItem>Deactivate</DropdownMenuItem> */}
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</ItemActions>
