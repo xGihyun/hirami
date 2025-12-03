@@ -17,6 +17,8 @@ import IconPen from "~icons/lucide/pen";
 import IconArrowRight from "~icons/lucide/arrow-right";
 import IconArrowUp from "~icons/lucide/arrow-up";
 import IconArrowDown from "~icons/lucide/arrow-down";
+import IconTrash from "~icons/lucide/trash-2";
+import IconMoreHorizontal from "~icons/lucide/more-horizontal";
 
 export {
 	IconRoundArrowDown,
@@ -38,4 +40,6 @@ export {
 	IconArrowRight,
 	IconArrowUp,
 	IconArrowDown,
+	IconTrash,
+	IconMoreHorizontal,
 };

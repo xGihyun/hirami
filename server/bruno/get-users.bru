@@ -1,0 +1,25 @@
+meta {
+  name: get-users
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/users?search
+  body: none
+  auth: inherit
+}
+
+params:query {
+  search: 
+}
+
+vars:post-response {
+  requestedBy: {{res.body.data.id}}
+  reviewedBy: {{res.body.data.id}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

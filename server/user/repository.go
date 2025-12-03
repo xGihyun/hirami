@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -14,6 +15,7 @@ type Repository interface {
 	Register(ctx context.Context, arg RegisterRequest) (string, error)
 	login(ctx context.Context, arg loginRequest) (signInResponse, error)
 	get(ctx context.Context, userID string) (user, error)
+	getAll(ctx context.Context, params getParams) ([]user, error)
 	Update(ctx context.Context, arg UpdateRequest) (user, error)
 
 	createPasswordResetToken(ctx context.Context, email, tokenHash string, expiresAt time.Time) error
@@ -125,7 +127,7 @@ func (r *repository) login(ctx context.Context, arg loginRequest) (signInRespons
 }
 
 type user struct {
-	UserID     string     `json:"id"`
+	UserID     string     `json:"id" db:"person_id"`
 	CreatedAt  time.Time  `json:"createdAt"`
 	UpdatedAt  time.Time  `json:"updatedAt"`
 	Email      string     `json:"email"`
@@ -222,6 +224,68 @@ func (r *repository) GetByEmail(ctx context.Context, email string) (user, error)
 	}
 
 	return person, nil
+}
+
+type getParams struct {
+	search *string
+}
+
+func (r *repository) getAll(ctx context.Context, params getParams) ([]user, error) {
+	query := `
+	SELECT 
+		person.person_id, 
+		person.created_at, 
+		person.updated_at,
+		person.email, 
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		jsonb_build_object(
+			'id', person_role.person_role_id,
+			'code', person_role.code,
+			'label', person_role.label
+		) AS role
+	FROM person
+	JOIN person_role USING (person_role_id)
+	WHERE TRUE
+	`
+
+	var args []any
+	argIdx := 1
+
+	if params.search != nil && *params.search != "" {
+		searchTerm := "%" + strings.ToLower(*params.search) + "%"
+		query += fmt.Sprintf(` 
+		AND (
+			LOWER(person.email) LIKE $%d
+			OR LOWER(person.first_name) LIKE $%d
+			OR LOWER(person.middle_name) LIKE $%d
+			OR LOWER(person.last_name) LIKE $%d
+		)
+		`,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+		)
+		args = append(args, searchTerm)
+		argIdx++
+	}
+
+	query += " ORDER BY person_role.person_role_id"
+
+	rows, err := r.querier.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[user])
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 //

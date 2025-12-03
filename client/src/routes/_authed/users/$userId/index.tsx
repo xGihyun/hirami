@@ -1,12 +1,11 @@
-import { useAuth } from "@/auth";
 import { Button } from "@/components/ui/button";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { toImageUrl } from "@/lib/api";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	Form,
 	FormControl,
@@ -17,68 +16,75 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useRef, useState, type JSX } from "react";
-import { IconUserPen } from "@/lib/icons";
+import { IconArrowLeft, IconUserPen } from "@/lib/icons";
 import { H2 } from "@/components/typography";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
 import {
 	editUser,
 	editUserSchema,
+	userByIdQuery,
+	UserRole,
 	type EditUserSchema,
 } from "@/lib/user";
+import {
+	NativeSelect,
+	NativeSelectOption,
+} from "@/components/ui/native-select";
 
-export const Route = createFileRoute("/_authed/profile/")({
+export const Route = createFileRoute("/_authed/users/$userId/")({
 	component: RouteComponent,
+	loader: ({ context, params }) => {
+		context.queryClient.ensureQueryData(userByIdQuery(params.userId));
+	},
 });
 
 function RouteComponent(): JSX.Element {
-	const auth = useAuth();
-	const navigate = Route.useNavigate();
+	const params = Route.useParams();
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const userResult = useQuery(userByIdQuery(params.userId));
+	const user = userResult.data;
+	const queryClient = useQueryClient();
+
 	const [previewUrl, setPreviewUrl] = useState<string | null>(
-		toImageUrl(auth.user?.avatarUrl) || null,
+		toImageUrl(user?.avatarUrl) || null,
 	);
 
 	const form = useForm<EditUserSchema>({
 		resolver: zodResolver(editUserSchema),
 		defaultValues: {
-			email: auth.user?.email,
-			firstName: auth.user?.firstName,
-			middleName: auth.user?.middleName || "",
-			lastName: auth.user?.lastName,
-			userId: auth.user?.id || "",
-            role: auth.user?.role.code
+			email: user?.email,
+			firstName: user?.firstName,
+			middleName: user?.middleName || "",
+			lastName: user?.lastName,
+			userId: user?.id || "",
+			role: user?.role.code,
 		},
 		mode: "onTouched",
 	});
 
 	const mutation = useMutation({
 		mutationFn: editUser,
-		onSuccess: (res) => {
-			auth.setUser(res.data);
+		onSuccess: () => {
+			queryClient.invalidateQueries(userByIdQuery(params.userId));
 		},
 	});
 
 	async function onSubmit(value: EditUserSchema): Promise<void> {
-		if (!auth.user?.id) {
+		if (!user?.id) {
 			toast.error("User not found");
 			return;
 		}
 
-		value.userId = auth.user.id;
+		value.userId = user.id;
 		mutation.mutate(value);
-	}
-
-	async function handleLogout(): Promise<void> {
-		await auth.logout();
-		await navigate({ to: "/onboarding" });
 	}
 
 	if (mutation.isError) {
 		return (
 			<Failed
-				backLink="/profile"
-				header="Profile update failed."
+				backLink={`/users/${params.userId}`}
+				header="User update failed."
 				fn={form.handleSubmit(onSubmit)}
 				backMessage="or return to Profile"
 				retry={form.handleSubmit(onSubmit)}
@@ -89,8 +95,8 @@ function RouteComponent(): JSX.Element {
 	if (mutation.isSuccess) {
 		return (
 			<Success
-				backLink="/profile"
-				header="Profile updated successfully."
+				backLink={`/users`}
+				header="User updated successfully."
 				fn={() => {
 					mutation.reset();
 				}}
@@ -99,9 +105,19 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<div className="flex flex-col justify-between gap-4">
+		<div className="flex flex-col justify-between gap-4 relative">
+			<Button
+				variant="ghost"
+				size="icon"
+				className="size-15 mb-0 absolute inset-0"
+			>
+				<Link to="/users">
+					<IconArrowLeft className="size-8" />
+				</Link>
+			</Button>
+
 			<div className="space-y-6">
-				<H2 className="text-center">Profile</H2>
+				<H2 className="text-center">Edit Profile</H2>
 
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -165,7 +181,7 @@ function RouteComponent(): JSX.Element {
 									) : value ? null : null}
 
 									<H2 className="text-center">
-										{auth.user?.firstName} {auth.user?.lastName}
+										{user?.firstName} {user?.lastName}
 									</H2>
 								</FormItem>
 							)}
@@ -178,11 +194,7 @@ function RouteComponent(): JSX.Element {
 								<FormItem>
 									<FormLabel>Email</FormLabel>
 									<FormControl>
-										<Input
-											placeholder="youremail@gmail.com"
-											disabled
-											{...field}
-										/>
+										<Input placeholder="hirami@gmail.com" {...field} />
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -196,7 +208,7 @@ function RouteComponent(): JSX.Element {
 								<FormItem>
 									<FormLabel>First Name</FormLabel>
 									<FormControl>
-										<Input placeholder="Enter your first name" {...field} />
+										<Input placeholder="Enter first name" {...field} />
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -210,7 +222,7 @@ function RouteComponent(): JSX.Element {
 								<FormItem>
 									<FormLabel>Middle Name</FormLabel>
 									<FormControl>
-										<Input placeholder="Enter your middle name" {...field} />
+										<Input placeholder="Enter middle name" {...field} />
 									</FormControl>
 									<FormMessage />
 								</FormItem>
@@ -224,32 +236,46 @@ function RouteComponent(): JSX.Element {
 								<FormItem>
 									<FormLabel>Last Name</FormLabel>
 									<FormControl>
-										<Input placeholder="Enter your last name" {...field} />
+										<Input placeholder="Enter last name" {...field} />
 									</FormControl>
 									<FormMessage />
 								</FormItem>
 							)}
 						/>
 
-						<div className="space-y-2.5">
-							<Button
-								type="submit"
-								className="w-full"
-								disabled={mutation.isPending}
-							>
-								Update Profile
-							</Button>
+						<FormField
+							control={form.control}
+							name="role"
+							render={({ field }) => (
+								<FormItem>
+									<FormLabel>Role</FormLabel>
+									<FormControl>
+										<NativeSelect
+											{...field}
+											onChange={(e) =>
+												field.onChange(e.currentTarget.value as UserRole)
+											}
+										>
+											<NativeSelectOption value={UserRole.Borrower}>
+												Borrower
+											</NativeSelectOption>
+											<NativeSelectOption value={UserRole.EquipmentManager}>
+												Equipment Manager
+											</NativeSelectOption>
+										</NativeSelect>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
 
-							<Button
-								type="button"
-								onClick={handleLogout}
-								className="w-full"
-								variant="secondary"
-								disabled={mutation.isPending}
-							>
-								Log Out
-							</Button>
-						</div>
+						<Button
+							type="submit"
+							className="w-full"
+							disabled={mutation.isPending}
+						>
+							Update User
+						</Button>
 					</form>
 				</Form>
 			</div>

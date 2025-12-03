@@ -155,3 +155,19 @@ export const equipmentNamesQuery = () =>
 		queryKey: ["equipment-names"],
 		queryFn: () => getEquipmentNames(),
 	});
+
+type EquipmentBorrower = {
+	quantity: number;
+	borrower: Borrower;
+	expectedReturnAt: string;
+};
+
+export type EquipmentWithBorrower = {
+	id: string;
+	name: string;
+	brand?: string;
+	model?: string;
+	imageUrl?: string;
+	quantity: number;
+	borrowers: EquipmentBorrower[];
+};
