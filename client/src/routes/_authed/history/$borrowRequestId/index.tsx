@@ -58,12 +58,20 @@ function RouteComponent(): JSX.Element {
 						{borrower.firstName} {borrower.lastName}
 					</H2>
 
-					<Badge
-						className="mt-1"
-						variant={getBorrowRequestBadgeVariant(transaction.status.code)}
-					>
-						Status: {capitalizeWords(transaction.status.code)}
-					</Badge>
+					<div className="flex gap-1">
+						<Badge
+							className="mt-1"
+							variant={getBorrowRequestBadgeVariant(transaction.status.code)}
+						>
+							Status: {capitalizeWords(transaction.status.code)}
+						</Badge>
+
+						{anomalyResult && anomalyResult.isAnomaly && SHOW_ANOMALY ? (
+							<Badge className="mt-1 mx-auto block" variant="destructive">
+								Anomaly
+							</Badge>
+						) : null}
+					</div>
 				</div>
 
 				<div>
@@ -84,12 +92,6 @@ function RouteComponent(): JSX.Element {
 						</LabelSmall>
 					) : null}
 				</div>
-
-				{anomalyResult && anomalyResult.isAnomaly && SHOW_ANOMALY ? (
-					<Badge className="mt-1 mx-auto block" variant="destructive">
-						Anomaly
-					</Badge>
-				) : null}
 			</section>
 
 			<section className="space-y-2 h-full">
