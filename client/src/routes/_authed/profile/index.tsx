@@ -47,6 +47,7 @@ function RouteComponent(): JSX.Element {
 			middleName: auth.user?.middleName || "",
 			lastName: auth.user?.lastName,
 			userId: auth.user?.id || "",
+            role: auth.user?.role.code
 		},
 		mode: "onTouched",
 	});
