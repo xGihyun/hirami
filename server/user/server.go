@@ -387,8 +387,8 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
 	}
 
 	// NOTE: Hardcoded client URL
-	// resetLink := fmt.Sprintf("hirami://password-reset/%s", rawToken) // Mobile URL
-	resetLink := fmt.Sprintf("http://localhost:3000/password-reset/%s", rawToken) // Web URL
+	resetLink := fmt.Sprintf("hirami://password-reset/%s", rawToken) // Mobile URL
+	// resetLink := fmt.Sprintf("http://localhost:3000/password-reset/%s", rawToken) // Web URL
 	subject := "Password Reset Request"
 	bodyHTML := fmt.Sprintf(`
 	  <p>Click the button below to reset your password:</p>
