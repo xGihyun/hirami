@@ -62,7 +62,7 @@ function RouteComponent() {
 			return toast.loading("Requesting for password reset.");
 		},
 		onSuccess: (result, _variables, toastId) => {
-			toast.success(result.message, { id: toastId });
+			toast.success("A password reset link has been sent to your email.", { id: toastId });
 		},
 		onError: (error, _variables, toastId) => {
 			toast.error(error.message, { id: toastId });

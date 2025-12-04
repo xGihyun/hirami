@@ -4,8 +4,9 @@ import {
 	IconBox,
 	IconHistory,
 	IconProfile,
-	IconRoundArrowDown,
+	IconQrCode,
 	IconRoundArrowUp,
+	IconUserRoundCog,
 } from "@/lib/icons";
 import { LabelSmall } from "./typography";
 import { useAuth } from "@/auth";
@@ -14,17 +15,8 @@ import { cn } from "@/lib/utils";
 
 export function Navbar(): JSX.Element {
 	const auth = useAuth();
-	const location = useLocation();
 
 	const getNavOptions = () => {
-		const commonOptions = [
-			{
-				to: "/equipments",
-				label: "Catalog",
-				icon: IconBox,
-			},
-		];
-
 		const profileOption = {
 			to: "/profile",
 			label: "Profile",
@@ -37,33 +29,49 @@ export function Navbar(): JSX.Element {
 			icon: IconHistory,
 		};
 
-		if (auth.user?.role === UserRole.Borrower) {
+		if (auth.user?.role.code === UserRole.Borrower) {
 			return [
-				...commonOptions,
+				{
+					to: "/equipments",
+					label: "Catalog",
+					icon: IconBox,
+				},
 				{
 					to: "/return",
 					label: "Return",
 					icon: IconRoundArrowUp,
 				},
-				historyOption,
+				{
+					to: "/personal-history",
+					label: "History",
+					icon: IconHistory,
+				},
 				profileOption,
 			];
 		}
 
 		return [
-			...commonOptions,
+			{
+				to: "/equipments",
+				label: "Manage",
+				icon: IconBox,
+			},
 			{
 				to: "/borrow-requests",
-				label: "Borrows",
-				icon: IconRoundArrowDown,
-			},
-			{
-				to: "/return-requests",
-				label: "Returns",
+				label: "Requests",
 				icon: IconRoundArrowUp,
 			},
+			{
+				to: "/scan",
+				label: "Scan",
+				icon: IconQrCode,
+			},
 			historyOption,
-			profileOption,
+			{
+				to: "/users",
+				label: "Users",
+				icon: IconUserRoundCog,
+			},
 		];
 	};
 
@@ -73,7 +81,6 @@ export function Navbar(): JSX.Element {
 		<header
 			className={cn(
 				"gap-2 bg-card text-primary fixed bottom-0 left-0 w-full shadow z-40 pb-[env(safe-area-inset-bottom)] rounded-t-2xl pt-2",
-				location.search.success !== undefined ? "hidden" : "flex",
 			)}
 		>
 			<nav className="py-1 px-2 font-bold flex justify-around w-full h-16">

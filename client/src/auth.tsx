@@ -13,6 +13,7 @@ import { BACKEND_URL } from "./lib/api";
 
 export type AuthContextValue = {
 	user: User | null;
+	setUser: React.Dispatch<React.SetStateAction<User | null>>;
 	sessionToken: string;
 	validateSession: () => Promise<AuthSession | null>;
 	logout: () => Promise<void>;
@@ -72,7 +73,7 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
 
 	return (
 		<AuthContext
-			value={{ user, validateSession, logout: signOut, sessionToken }}
+			value={{ user, setUser, validateSession, logout: signOut, sessionToken }}
 		>
 			{props.children}
 		</AuthContext>

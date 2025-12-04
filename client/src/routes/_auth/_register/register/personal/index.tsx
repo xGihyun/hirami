@@ -31,6 +31,8 @@ import { toast } from "sonner";
 import { IconUserPen } from "@/lib/icons";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { accessDeniedIllustration, doneIllustration } from "@/lib/assets";
+import { Success } from "@/components/success";
+import { Failed } from "@/components/failed";
 
 export const Route = createFileRoute("/_auth/_register/register/personal/")({
 	component: RouteComponent,
@@ -109,7 +111,7 @@ function RouteComponent(): JSX.Element {
 		onSuccess: (data, _variables, toastId) => {
 			setStatus("success");
 			toast.success(data.message, { id: toastId });
-			navigate({ to: "/login" });
+			// navigate({ to: "/login" });
 		},
 		onError: (error, _variables, toastId) => {
 			setStatus("failed");
@@ -161,11 +163,23 @@ function RouteComponent(): JSX.Element {
 	}, []);
 
 	if (status === "success") {
-		return <Success />;
+		return (
+			<Success
+				header="You have successfully created an account."
+				backLink="/login"
+			/>
+		);
 	}
 
 	if (status === "failed") {
-		return <Failed />;
+		return (
+			<Failed
+				header="Failed to create account."
+				backLink="/onboarding"
+				backMessage="or return to Welcome Page"
+				retry={form.handleSubmit(onSubmit)}
+			/>
+		);
 	}
 
 	return (
@@ -298,58 +312,6 @@ function RouteComponent(): JSX.Element {
 						</Button>
 					</form>
 				</Form>
-			</section>
-		</div>
-	);
-}
-
-function Success(): JSX.Element {
-	return (
-		<div className="h-full w-full flex flex-col gap-30">
-			<section className="space-y-3.5 content-center flex flex-col justify-center items-center">
-				<img
-					src={doneIllustration}
-					alt="Done illustration"
-					className="w-full max-w-xs mx-auto"
-				/>
-
-				<H1 className="text-center">
-					You have successfully created an account.
-				</H1>
-			</section>
-
-			<Button asChild>
-				<Link to="/login">Log In</Link>
-			</Button>
-		</div>
-	);
-}
-
-function Failed(): JSX.Element {
-	return (
-		<div className="h-full w-full flex flex-col gap-30">
-			<section className="space-y-7.5 content-center flex flex-col justify-center items-center">
-				<img
-					src={accessDeniedIllustration}
-					alt="Failed illustration"
-					className="w-full max-w-xs mx-auto"
-				/>
-
-				<div className="space-y-1.5">
-					<H1 className="text-center">Failed to create account.</H1>
-					<TitleSmall className="text-center">
-						A temporary issue occured. Please check your network and Try Again
-						in a moment.
-					</TitleSmall>
-				</div>
-			</section>
-
-			<section className="w-full flex flex-col text-center gap-4">
-				<Button>Try Again</Button>
-
-				<Link to="/">
-					<LabelLarge>or return to Welcome Page</LabelLarge>
-				</Link>
 			</section>
 		</div>
 	);

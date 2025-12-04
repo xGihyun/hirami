@@ -9,7 +9,7 @@ type Props = {
 	retry: () => Promise<void>;
 };
 
-export function ReturnFailed(props: Props): JSX.Element {
+export function Failed(props: Props): JSX.Element {
 	return (
 		<div className="px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] h-svh inset-0 fixed bg-background w-full z-50">
 			<Button
@@ -31,10 +31,7 @@ export function ReturnFailed(props: Props): JSX.Element {
 						/>
 
 						<div className="space-y-1.5">
-							<H1 className="text-center">
-								Return request failed. <br />
-								Please try again
-							</H1>
+							<H1 className="text-center">Equipment registration failed.</H1>
 
 							<TitleSmall className="text-center">
 								A temporary issue occured. Please check your network and Try
@@ -47,7 +44,7 @@ export function ReturnFailed(props: Props): JSX.Element {
 						<Button onClick={props.retry}>Try Again</Button>
 
 						<button onClick={props.reset}>
-							<LabelLarge>or return to Return Page</LabelLarge>
+							<LabelLarge>or return to Catalog</LabelLarge>
 						</button>
 					</section>
 				</div>

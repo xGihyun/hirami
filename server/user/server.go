@@ -27,6 +27,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /register", api.Handler(s.Register))
 	mux.Handle("POST /login", api.Handler(s.Login))
 	mux.Handle("POST /logout", api.Handler(s.Logout))
+	mux.Handle("GET /users", api.Handler(s.getAll))
 	mux.Handle("GET /users/{id}", api.Handler(s.Get))
 	mux.Handle("PATCH /users/{id}", api.Handler(s.Update))
 
@@ -214,6 +215,29 @@ func (s *Server) Get(w http.ResponseWriter, r *http.Request) api.Response {
 	}
 }
 
+func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	search := r.URL.Query().Get("search")
+	params := getParams{
+		search: &search,
+	}
+	users, err := s.repository.getAll(ctx, params)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get users: %s", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get users.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched users.",
+		Data:    users,
+	}
+}
+
 func (s *Server) GetSession(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
@@ -289,20 +313,34 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 		return &trimmed
 	}
 
-	role := Role(r.FormValue("role"))
+	var role *Role
+	if roleStr := r.FormValue("role"); roleStr != "" {
+		roleStr = strings.TrimSpace(strings.ToLower(roleStr))
+
+		r, ok := stringToRole[roleStr]
+		if !ok {
+			return api.Response{
+				Error:   fmt.Errorf("update user: invalid role %s", roleStr),
+				Code:    http.StatusBadRequest,
+				Message: "Invalid role. Must be 'borrower' or 'equipment_manager'.",
+			}
+		}
+
+		role = &r
+	}
+
 	data := UpdateRequest{
 		PersonID:   r.FormValue("id"),
 		Email:      toOptionalString(r.FormValue("email")),
 		FirstName:  toOptionalString(r.FormValue("firstName")),
 		MiddleName: toOptionalString(r.FormValue("middleName")),
 		LastName:   toOptionalString(r.FormValue("lastName")),
-		Role:       &role,
+		Role:       role,
 		AvatarURL:  avatarURL,
 	}
 
-	fmt.Println(*data.Role)
-
-	if err := s.repository.Update(ctx, data); err != nil {
+	user, err := s.repository.Update(ctx, data)
+	if err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("update user: %w", err),
 			Code:    http.StatusInternalServerError,
@@ -313,6 +351,7 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully updated user.",
+		Data:    user,
 	}
 }
 

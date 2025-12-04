@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -14,12 +15,13 @@ type Repository interface {
 	Register(ctx context.Context, arg RegisterRequest) (string, error)
 	login(ctx context.Context, arg loginRequest) (signInResponse, error)
 	get(ctx context.Context, userID string) (user, error)
-	Update(ctx context.Context, arg UpdateRequest) error
+	getAll(ctx context.Context, params getParams) ([]user, error)
+	Update(ctx context.Context, arg UpdateRequest) (user, error)
 
 	createPasswordResetToken(ctx context.Context, email, tokenHash string, expiresAt time.Time) error
 	resetPasswordWithToken(ctx context.Context, tokenHash, newPassword string) error
 
-	getByEmail(ctx context.Context, email string) (user, error)
+	GetByEmail(ctx context.Context, email string) (user, error)
 	invalidateSession(ctx context.Context, token string) error
 	createSession(ctx context.Context, token, userID string) (session, error)
 	validateSessionToken(ctx context.Context, token string) (sessionValidationResponse, error)
@@ -51,7 +53,7 @@ func (r *repository) Register(ctx context.Context, arg RegisterRequest) (string,
 	}
 
 	query := `
-	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, role, avatar_url)
+	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, person_role_id, avatar_url)
 	VALUES ($1, $2, $3, $4, $5, $6, $7)
 	RETURNING person_id
 	`
@@ -103,7 +105,7 @@ func (r *repository) login(ctx context.Context, arg loginRequest) (signInRespons
 		return signInResponse{}, errInvalidPassword
 	}
 
-	person, err := r.getByEmail(ctx, arg.Email)
+	person, err := r.GetByEmail(ctx, arg.Email)
 	if err != nil {
 		return signInResponse{}, err
 	}
@@ -125,15 +127,15 @@ func (r *repository) login(ctx context.Context, arg loginRequest) (signInRespons
 }
 
 type user struct {
-	UserID     string    `json:"id"`
-	CreatedAt  time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
-	Email      string    `json:"email"`
-	FirstName  string    `json:"firstName"`
-	MiddleName *string   `json:"middleName"`
-	LastName   string    `json:"lastName"`
-	AvatarURL  *string   `json:"avatarUrl"`
-	Role       Role      `json:"role"`
+	UserID     string     `json:"id" db:"person_id"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	UpdatedAt  time.Time  `json:"updatedAt"`
+	Email      string     `json:"email"`
+	FirstName  string     `json:"firstName"`
+	MiddleName *string    `json:"middleName"`
+	LastName   string     `json:"lastName"`
+	AvatarURL  *string    `json:"avatarUrl"`
+	Role       RoleDetail `json:"role"`
 }
 
 type BasicInfo struct {
@@ -144,26 +146,24 @@ type BasicInfo struct {
 	AvatarURL  *string `json:"avatarUrl"`
 }
 
-type Role string
-
-const (
-	Borrower         Role = "borrower"
-	EquipmentManager Role = "equipment_manager"
-)
-
 func (r *repository) get(ctx context.Context, userID string) (user, error) {
 	query := `
 	SELECT 
-		person_id, 
-		created_at, 
-		updated_at,
-		email, 
-		first_name,
-		middle_name,
-		last_name,
-		avatar_url,
-		role
+		person.person_id, 
+		person.created_at, 
+		person.updated_at,
+		person.email, 
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		jsonb_build_object(
+			'id', person_role.person_role_id,
+			'code', person_role.code,
+			'label', person_role.label
+		) AS role
 	FROM person
+	JOIN person_role USING (person_role_id)
 	WHERE person_id = ($1)
 	`
 	row := r.querier.QueryRow(ctx, query, userID)
@@ -186,19 +186,24 @@ func (r *repository) get(ctx context.Context, userID string) (user, error) {
 	return person, nil
 }
 
-func (r *repository) getByEmail(ctx context.Context, email string) (user, error) {
+func (r *repository) GetByEmail(ctx context.Context, email string) (user, error) {
 	query := `
 	SELECT 
-		person_id, 
-		created_at, 
-		updated_at,
-		email, 
-		first_name,
-		middle_name,
-		last_name,
-		avatar_url,
-		role
+		person.person_id, 
+		person.created_at, 
+		person.updated_at,
+		person.email, 
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		jsonb_build_object(
+			'id', person_role.person_role_id,
+			'code', person_role.code,
+			'label', person_role.label
+		) AS role
 	FROM person
+	JOIN person_role USING (person_role_id)
 	WHERE email = TRIM($1)
 	`
 	row := r.querier.QueryRow(ctx, query, email)
@@ -219,6 +224,68 @@ func (r *repository) getByEmail(ctx context.Context, email string) (user, error)
 	}
 
 	return person, nil
+}
+
+type getParams struct {
+	search *string
+}
+
+func (r *repository) getAll(ctx context.Context, params getParams) ([]user, error) {
+	query := `
+	SELECT 
+		person.person_id, 
+		person.created_at, 
+		person.updated_at,
+		person.email, 
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		jsonb_build_object(
+			'id', person_role.person_role_id,
+			'code', person_role.code,
+			'label', person_role.label
+		) AS role
+	FROM person
+	JOIN person_role USING (person_role_id)
+	WHERE TRUE
+	`
+
+	var args []any
+	argIdx := 1
+
+	if params.search != nil && *params.search != "" {
+		searchTerm := "%" + strings.ToLower(*params.search) + "%"
+		query += fmt.Sprintf(` 
+		AND (
+			LOWER(person.email) LIKE $%d
+			OR LOWER(person.first_name) LIKE $%d
+			OR LOWER(person.middle_name) LIKE $%d
+			OR LOWER(person.last_name) LIKE $%d
+		)
+		`,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+		)
+		args = append(args, searchTerm)
+		argIdx++
+	}
+
+	query += " ORDER BY person_role.person_role_id"
+
+	rows, err := r.querier.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[user])
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 //
@@ -242,7 +309,7 @@ func (r *repository) create(ctx context.Context, arg createRequest) error {
 	}
 
 	query := `
-	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, role)
+	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, person_role_id)
 	VALUES ($1, $2, $3, $4, $5, $6)
 	RETURNING person_id
 	`
@@ -267,30 +334,57 @@ func (r *repository) create(ctx context.Context, arg createRequest) error {
 }
 
 type UpdateRequest struct {
-	PersonID   string  `json:"id"`
-	Email      *string `json:"email"`
-	FirstName  *string `json:"firstName"`
-	MiddleName *string `json:"middleName"`
-	LastName   *string `json:"lastName"`
-	Role       *Role   `json:"role"`
-	AvatarURL  *string `json:"avatarUrl"`
+	PersonID   string
+	Email      *string
+	FirstName  *string
+	MiddleName *string
+	LastName   *string
+	Role       *Role
+	AvatarURL  *string
 }
 
-func (r *repository) Update(ctx context.Context, arg UpdateRequest) error {
+func (r *repository) Update(ctx context.Context, arg UpdateRequest) (user, error) {
 	query := `
-	UPDATE person
-	SET email = COALESCE($1, email),
-		first_name = COALESCE($2, first_name),
-		middle_name = COALESCE($3, middle_name),
-		last_name = COALESCE($4, last_name),
-		role = COALESCE($5, role),
-		avatar_url = COALESCE($6, avatar_url)
+	WITH updated_user AS (
+		UPDATE person
+		SET email = COALESCE($1, email),
+			first_name = COALESCE($2, first_name),
+			middle_name = COALESCE($3, middle_name),
+			last_name = COALESCE($4, last_name),
+			person_role_id = COALESCE($5, person_role_id),
+			avatar_url = COALESCE($6, avatar_url)
+		WHERE person_id = $7
+		RETURNING 
+			person_id,
+			email,
+			first_name,
+			middle_name,
+			last_name,
+			person_role_id,
+			avatar_url,
+			created_at,
+			updated_at
+	)
+	SELECT 
+		updated_user.person_id, 
+		updated_user.created_at, 
+		updated_user.updated_at,
+		updated_user.email, 
+		updated_user.first_name,
+		updated_user.middle_name,
+		updated_user.last_name,
+		updated_user.avatar_url,
+		jsonb_build_object(
+			'id', person_role.person_role_id,
+			'code', person_role.code,
+			'label', person_role.label
+		) AS role
+	FROM updated_user
+	JOIN person_role USING (person_role_id)
 	WHERE person_id = $7
 	`
 
-	fmt.Println(*arg.Role)
-
-	if _, err := r.querier.Exec(
+	row := r.querier.QueryRow(
 		ctx,
 		query,
 		arg.Email,
@@ -300,11 +394,24 @@ func (r *repository) Update(ctx context.Context, arg UpdateRequest) error {
 		arg.Role,
 		arg.AvatarURL,
 		arg.PersonID,
+	)
+
+	var person user
+	if err := row.Scan(
+		&person.UserID,
+		&person.CreatedAt,
+		&person.UpdatedAt,
+		&person.Email,
+		&person.FirstName,
+		&person.MiddleName,
+		&person.LastName,
+		&person.AvatarURL,
+		&person.Role,
 	); err != nil {
-		return err
+		return user{}, err
 	}
 
-	return nil
+	return person, nil
 }
 
 func (r *repository) createPasswordResetToken(ctx context.Context, email, tokenHash string, expiresAt time.Time) error {

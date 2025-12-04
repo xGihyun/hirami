@@ -1,0 +1,22 @@
+{
+  "identifier": "mobile-capability",
+  "platforms": [
+    "android",
+    "iOS"
+  ],
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "barcode-scanner:default",
+    "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "$PUBLIC/Hirami - Privacy Policy and T&C.pdf"
+        }
+      ]
+    }
+  ]
+}

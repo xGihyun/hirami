@@ -1,20 +1,18 @@
+import { useAuth } from "@/auth";
+import { ComponentLoading } from "@/components/loading";
+import { LabelMedium } from "@/components/typography";
+import { borrowedItemsQuery } from "@/lib/equipment/borrow";
+import { useQuery } from "@tanstack/react-query";
+import { useSearch } from "@tanstack/react-router";
 import { useState, type JSX } from "react";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type { SelectedBorrowedEquipment } from "../-model.ts";
-import { useAuth } from "@/auth";
 import { cn } from "@/lib/utils";
-import {
-	borrowedItemsQuery,
-	type BorrowedEquipment,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
-import { returnRequestsQuery } from "@/lib/equipment/return";
+import { type BorrowedEquipment } from "@/lib/equipment/borrow";
 import type { CheckedState } from "@radix-ui/react-checkbox";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BorrowedItem } from "./borrowed-item";
@@ -29,8 +27,10 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { FullScreenLoading } from "@/components/loading.tsx";
-import { ReturnSuccess } from "./return-success.tsx";
-import { ReturnFailed } from "./return-failed.tsx";
+import { Success } from "@/components/success.tsx";
+import { Failed } from "@/components/failed.tsx";
+import z from "zod";
+import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 
 const returnEquipmentItemSchema = z.object({
 	borrowRequestItemId: z.string().nonempty(),
@@ -62,16 +62,17 @@ async function returnEquipments(
 	return result;
 }
 
-type ReturnEquipmentFormProps = {
-	transactions: BorrowTransaction[];
-	className?: string;
-};
-
-export function ReturnEquipmentForm(
-	props: ReturnEquipmentFormProps,
-): JSX.Element {
+export function BorrowedItemList(): JSX.Element {
+	const search = useSearch({ from: "/_authed/return/" });
 	const auth = useAuth();
-	const queryClient = useQueryClient();
+	const borrowHistory = useQuery(
+		borrowedItemsQuery({
+			userId: auth.user?.id,
+			sort: search.dueDateSort,
+			category: search.category,
+		}),
+	);
+
 	const form = useForm<ReturnEquipmentSchema>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
@@ -120,25 +121,18 @@ export function ReturnEquipmentForm(
 
 	const mutation = useMutation({
 		mutationFn: returnEquipments,
-		onSuccess: () => {
-			queryClient.invalidateQueries(
-				borrowedItemsQuery({ userId: auth.user?.id }),
-			);
-			queryClient.invalidateQueries(
-				returnRequestsQuery({ userId: auth.user?.id }),
-			);
-			resetState();
-		},
 	});
 
 	function resetState(): void {
 		setIsDialogOpen(false);
 		setSelectedEquipments([]);
+		console.log("State reset");
 	}
 
 	function reset(): void {
 		resetState();
 		mutation.reset();
+		console.log("Reset!");
 	}
 
 	async function onSubmit(value: ReturnEquipmentSchema): Promise<void> {
@@ -162,12 +156,44 @@ export function ReturnEquipmentForm(
 
 	if (mutation.isError) {
 		return (
-			<ReturnFailed reset={reset} retry={() => onSubmit(mutation.variables)} />
+			<Failed
+				header="Return request failed."
+				fn={reset}
+				retry={form.handleSubmit(onSubmit)}
+				backLink="/return"
+				backMessage="or return to Return Page"
+			/>
 		);
 	}
 
 	if (mutation.isSuccess) {
-		return <ReturnSuccess reset={reset} />;
+		return (
+			<Success
+				header="Return request submitted successfully"
+				fn={reset}
+				backLink="/return"
+			/>
+		);
+	}
+
+	if (borrowHistory.isLoading) {
+		return <ComponentLoading />;
+	}
+
+	if (borrowHistory.isError) {
+		return (
+			<LabelMedium className="text-muted text-center mt-10">
+				Failed to load borrowed equipments.
+			</LabelMedium>
+		);
+	}
+
+	if (!borrowHistory.data || borrowHistory.data.length === 0) {
+		return (
+			<LabelMedium className="text-muted text-center mt-10">
+				No borrowed equipment found.
+			</LabelMedium>
+		);
 	}
 
 	return (
@@ -175,9 +201,9 @@ export function ReturnEquipmentForm(
 			<form
 				id="return-request-form"
 				onSubmit={form.handleSubmit(onSubmit)}
-				className={cn("space-y-4", props.className)}
+				className={cn("space-y-4")}
 			>
-				{props.transactions.map((transaction) => (
+				{borrowHistory.data.map((transaction) => (
 					<div
 						className="flex flex-col gap-3.5"
 						key={transaction.borrowRequestId}
@@ -210,7 +236,7 @@ export function ReturnEquipmentForm(
 										transaction={transaction}
 										handleUpdateQuantity={handleUpdateQuantity}
 										className="cursor-pointer group-has-data-[state=checked]:bg-primary group-has-data-[state=checked]:text-primary-foreground"
-                                        isSelected={isChecked}
+										isSelected={isChecked}
 									/>
 								</label>
 							);
@@ -239,8 +265,8 @@ export function ReturnEquipmentForm(
 								Confirm Equipment Return
 							</DialogTitle>
 							<DialogDescription className="text-start">
-								You are about to return {totalQuantity} items. Do
-								you wish to proceed?
+								You are about to return {totalQuantity} items. Do you wish to
+								proceed?
 							</DialogDescription>
 						</DialogHeader>
 

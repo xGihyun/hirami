@@ -1,10 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { JSX, ReactNode } from "react";
 
-type Props = {
-	children: ReactNode;
-	className?: string;
-};
+type Props = React.ComponentProps<"p">;
 
 export function H1(props: Props): JSX.Element {
 	return (

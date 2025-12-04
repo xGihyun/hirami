@@ -15,19 +15,31 @@ import (
 type Repository interface {
 	createEquipment(ctx context.Context, arg createRequest) (createResponse, error)
 	getAll(ctx context.Context, params getEquipmentParams) ([]equipmentWithBorrower, error)
+	getEquipmentTypeByID(ctx context.Context, id string) (equipmentInventoryStatus, error)
 	getEquipmentNames(ctx context.Context) ([]string, error)
 	update(ctx context.Context, arg updateRequest) error
+	reallocate(ctx context.Context, arg reallocateRequest) error
 
 	createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error)
 	reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error)
-	getBorrowRequests(ctx context.Context) ([]borrowRequest, error)
+	getBorrowRequests(ctx context.Context) ([]borrowTransaction, error)
+	getBorrowRequestByID(ctx context.Context, id string) (borrowTransaction, error)
+	getBorrowRequestByOTP(ctx context.Context, otp string) (borrowTransaction, error)
+	updateBorrowRequest(ctx context.Context, arg updateBorrowRequest) (updateBorrowResponse, error)
 
 	createReturnRequest(ctx context.Context, arg createReturnRequest) (createReturnResponse, error)
 	confirmReturnRequest(ctx context.Context, arg confirmReturnRequest) (confirmReturnRequest, error)
 	getReturnRequests(ctx context.Context, params getReturnRequestParams) ([]returnRequest, error)
+	getReturnRequestByID(ctx context.Context, id string) (returnRequest, error)
+	getReturnRequestByOTP(ctx context.Context, otp string) (returnRequest, error)
 
 	getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error)
 	getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]borrowedItem, error)
+
+	createAnomalyResult(ctx context.Context, arg anomalyResult) error
+
+	processExpiredBorrowRequests(ctx context.Context) error
+	renewExpiredReturnRequests(ctx context.Context) error
 }
 
 type repository struct {
@@ -39,13 +51,6 @@ func NewRepository(querier *pgxpool.Pool) Repository {
 		querier: querier,
 	}
 }
-
-type equipmentStatus string
-
-const (
-	available equipmentStatus = "available"
-	borrowed  equipmentStatus = "borrowed"
-)
 
 type createRequest struct {
 	Name            string    `json:"name"`
@@ -96,15 +101,16 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) (cr
 	equipment.AcquisitionDate = arg.AcquisitionDate
 
 	query = `
-	INSERT INTO equipment (equipment_type_id, acquired_at)
-	SELECT $1, $2
-	FROM generate_series(1, $3)
+	INSERT INTO equipment (equipment_type_id, acquired_at, equipment_status_id)
+	SELECT $1, $2, $3
+	FROM generate_series(1, $4)
 	`
 	if _, err := r.querier.Exec(
 		ctx,
 		query,
 		equipment.EquipmentTypeID,
 		arg.AcquisitionDate,
+		available,
 		arg.Quantity,
 	); err != nil {
 		return createResponse{}, err
@@ -114,13 +120,13 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) (cr
 }
 
 type equipment struct {
-	EquipmentTypeID string          `json:"id"`
-	Name            string          `json:"name"`
-	Brand           *string         `json:"brand"`
-	Model           *string         `json:"model"`
-	ImageURL        *string         `json:"imageUrl"`
-	Quantity        uint            `json:"quantity"`
-	Status          equipmentStatus `json:"status,omitzero"`
+	EquipmentTypeID string                `json:"id"`
+	Name            string                `json:"name"`
+	Brand           *string               `json:"brand"`
+	Model           *string               `json:"model"`
+	ImageURL        *string               `json:"imageUrl"`
+	Quantity        uint                  `json:"quantity"`
+	Status          equipmentStatusDetail `json:"status,omitzero"`
 }
 
 type equipmentWithBorrower struct {
@@ -131,13 +137,37 @@ type equipmentWithBorrower struct {
 
 type getEquipmentParams struct {
 	name   *string
-	status *equipmentStatus
+	status *string
 	search *string
 }
 
 func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]equipmentWithBorrower, error) {
 	query := `
-	WITH equipment_with_status AS (
+	WITH reserved_counts AS (
+		SELECT 
+			borrow_request_item.equipment_type_id,
+			SUM(borrow_request_item.quantity) AS reserved_quantity,
+			jsonb_build_object(
+				'id', person.person_id,
+				'firstName', person.first_name,
+				'middleName', person.middle_name,
+				'lastName', person.last_name,
+				'avatarUrl', person.avatar_url
+			) AS reserver
+		FROM borrow_request_item
+		JOIN borrow_request 
+			ON borrow_request.borrow_request_id = borrow_request_item.borrow_request_id
+		JOIN person ON person.person_id = borrow_request.requested_by
+		WHERE borrow_request.borrow_request_status_id = $1
+		GROUP BY 
+			borrow_request_item.equipment_type_id, 
+			person.person_id, 
+			person.first_name, 
+			person.middle_name,
+			person.last_name,
+			person.avatar_url
+	),
+	equipment_with_status AS (
 		SELECT
 			equipment_type.equipment_type_id,
 			equipment_type.name,
@@ -145,19 +175,11 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 			equipment_type.model,
 			equipment_type.image_url,
 			equipment.equipment_id,
+			equipment_status.equipment_status_id,
+			equipment_status.code,
+			equipment_status.label,
 			CASE
-				WHEN EXISTS (
-					SELECT 1 FROM borrow_transaction
-					WHERE borrow_transaction.equipment_id = equipment.equipment_id
-					AND NOT EXISTS (
-						SELECT 1 
-						FROM return_transaction 
-						WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
-					)
-				) THEN 'borrowed'
-				ELSE 'available'
-			END AS status,
-			CASE
+				-- Get borrower info if equipment is borrowed
 				WHEN EXISTS (
 					SELECT 1 FROM borrow_transaction
 					WHERE borrow_transaction.equipment_id = equipment.equipment_id
@@ -191,10 +213,40 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 					ORDER BY borrow_transaction.created_at DESC
 					LIMIT 1
 				)
+				-- Get reserver info if equipment is reserved
+				WHEN EXISTS (
+					SELECT 1 FROM reserved_counts
+					WHERE reserved_counts.equipment_type_id = equipment.equipment_type_id
+				)
+				AND (
+					SELECT COUNT(*)
+					FROM equipment e2
+					WHERE e2.equipment_type_id = equipment.equipment_type_id
+					AND e2.equipment_id <= equipment.equipment_id
+					AND NOT EXISTS (
+						SELECT 1 FROM borrow_transaction bt
+						WHERE bt.equipment_id = e2.equipment_id
+						AND NOT EXISTS (
+							SELECT 1 FROM return_transaction rt
+							WHERE rt.borrow_transaction_id = bt.borrow_transaction_id
+						)
+					)
+				) <= COALESCE((
+					SELECT reserved_quantity 
+					FROM reserved_counts 
+					WHERE reserved_counts.equipment_type_id = equipment.equipment_type_id
+				), 0)
+				THEN (
+					SELECT reserver
+					FROM reserved_counts
+					WHERE reserved_counts.equipment_type_id = equipment.equipment_type_id
+					LIMIT 1
+				)
 				ELSE NULL
 			END AS borrower
 		FROM equipment_type
 		JOIN equipment ON equipment.equipment_type_id = equipment_type.equipment_type_id
+		JOIN equipment_status ON equipment_status.equipment_status_id = equipment.equipment_status_id
 	)
 	SELECT
 		equipment_type_id,
@@ -202,15 +254,19 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 		brand,
 		model,
 		image_url,
-		status,
+		jsonb_build_object(
+			'id', equipment_status_id,
+			'code', code,
+			'label', label
+		) AS status,
 		COUNT(equipment_id) AS quantity,
 		borrower
 	FROM equipment_with_status
 	WHERE TRUE
 	`
 
-	var args []any
-	argIdx := 1
+	var args []any = []any{approved}
+	argIdx := 2
 
 	if params.name != nil && *params.name != "" {
 		names := strings.Split(*params.name, ",")
@@ -232,7 +288,10 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 		argIdx++
 	}
 
-	query += " GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower ORDER BY status"
+	query += ` 
+	GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower, equipment_status_id
+	ORDER BY equipment_status_id
+	`
 
 	rows, err := r.querier.Query(ctx, query, args...)
 	if err != nil {
@@ -243,6 +302,86 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 		return nil, err
 	}
 	return equipments, nil
+}
+
+type statusQuantity struct {
+	Quantity uint                  `json:"quantity"`
+	Status   equipmentStatusDetail `json:"status"`
+}
+
+type equipmentInventoryStatus struct {
+	EquipmentTypeID string           `json:"id"`
+	Name            string           `json:"name"`
+	Brand           *string          `json:"brand"`
+	Model           *string          `json:"model"`
+	ImageURL        *string          `json:"imageUrl"`
+	StatusQuantity  []statusQuantity `json:"statusQuantity"`
+}
+
+func (r *repository) getEquipmentTypeByID(ctx context.Context, id string) (equipmentInventoryStatus, error) {
+	query := `
+	WITH equipment_status_counts AS (
+		SELECT
+			equipment.equipment_type_id,
+			COUNT(equipment.equipment_status_id) AS status_count,
+			equipment_status.equipment_status_id,
+			equipment_status.code,
+			equipment_status.label
+		FROM equipment
+		LEFT JOIN equipment_status
+			ON equipment_status.equipment_status_id = equipment.equipment_status_id
+		GROUP BY
+			equipment.equipment_type_id,
+			equipment_status.equipment_status_id,
+			equipment_status.code,
+			equipment_status.label
+		ORDER BY equipment_status.equipment_status_id
+	)
+	SELECT
+		equipment_type.equipment_type_id,
+		equipment_type.name,
+		equipment_type.brand,
+		equipment_type.model,
+		equipment_type.image_url,
+		jsonb_agg(
+			jsonb_build_object(
+				'quantity', COALESCE(equipment_status_counts.status_count, 0),
+				'status', jsonb_build_object(
+					'id', equipment_status.equipment_status_id,
+					'code', equipment_status.code,
+					'label', equipment_status.label
+				)
+			)
+		) AS statusQuantity
+	FROM equipment_type
+	JOIN equipment_status ON TRUE
+	LEFT JOIN equipment_status_counts
+		ON equipment_type.equipment_type_id = equipment_status_counts.equipment_type_id
+		AND equipment_status.equipment_status_id = equipment_status_counts.equipment_status_id
+	WHERE equipment_type.equipment_type_id = $1
+	GROUP BY
+		equipment_type.equipment_type_id,
+		equipment_type.name,
+		equipment_type.brand,
+		equipment_type.model,
+		equipment_type.image_url
+	`
+
+	row := r.querier.QueryRow(ctx, query, id)
+
+	var res equipmentInventoryStatus
+	if err := row.Scan(
+		&res.EquipmentTypeID,
+		&res.Name,
+		&res.Brand,
+		&res.Model,
+		&res.ImageURL,
+		&res.StatusQuantity,
+	); err != nil {
+		return equipmentInventoryStatus{}, err
+	}
+
+	return res, nil
 }
 
 func (r *repository) getEquipmentNames(ctx context.Context) ([]string, error) {
@@ -284,10 +423,10 @@ type updateRequest struct {
 func (r *repository) update(ctx context.Context, arg updateRequest) error {
 	query := `
 	UPDATE equipment_type
-	SET name = $1,
-		brand = $2,
-		model = $3,
-		image_url = $4
+	SET name = COALESCE($1, name),
+		brand = COALESCE($2, brand),
+		model = COALESCE($3, model),
+		image_url = COALESCE($4, image_url)
 	WHERE equipment_type_id = $5
 	`
 
@@ -300,6 +439,69 @@ func (r *repository) update(ctx context.Context, arg updateRequest) error {
 		arg.ImageURL,
 		arg.EquipmentTypeID,
 	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type reallocateRequest struct {
+	EquipmentTypeID string          `json:"id"`
+	Quantity        int             `json:"quantity"`
+	OldStatus       equipmentStatus `json:"oldStatus"`
+	NewStatus       equipmentStatus `json:"newStatus"`
+}
+
+func (r *repository) reallocate(ctx context.Context, arg reallocateRequest) error {
+	tx, err := r.querier.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	selectQuery := `
+    SELECT equipment_id
+    FROM equipment
+    WHERE equipment_type_id = $1 AND equipment_status_id = $2
+    LIMIT $3
+    FOR UPDATE
+    `
+
+	rows, err := tx.Query(ctx, selectQuery, arg.EquipmentTypeID, arg.OldStatus, arg.Quantity)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var equipmentIDs []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return err
+		}
+		equipmentIDs = append(equipmentIDs, id)
+	}
+
+	if len(equipmentIDs) < int(arg.Quantity) {
+		return fmt.Errorf("insufficient quantity to reallocate: requested %d, got %d", arg.Quantity, len(equipmentIDs))
+	}
+
+	updateQuery := `
+    UPDATE equipment
+    SET equipment_status_id = $1, updated_at = NOW()
+    WHERE equipment_id = ANY($2::uuid[])
+    `
+
+	if _, err := tx.Exec(
+		ctx,
+		updateQuery,
+		arg.NewStatus,
+		equipmentIDs,
+	); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return err
 	}
 
@@ -331,6 +533,7 @@ type borrowedEquipment struct {
 
 type createBorrowResponse struct {
 	BorrowRequestID  string              `json:"borrowRequestId"`
+	CreatedAt        time.Time           `json:"createdAt"`
 	Borrower         user.BasicInfo      `json:"borrower"`
 	Equipments       []borrowedEquipment `json:"equipments"`
 	Location         string              `json:"location"`
@@ -387,7 +590,7 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 	WITH inserted_request AS (
 		INSERT INTO borrow_request (location, purpose, expected_return_at, requested_by)
 		VALUES ($1, $2, $3, $4)
-		RETURNING borrow_request_id, location, purpose, expected_return_at, requested_by
+		RETURNING borrow_request_id, location, purpose, expected_return_at, requested_by, created_at
 	),
 	inserted_items AS (
 		INSERT INTO borrow_request_item 
@@ -421,7 +624,8 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		inserted_request.borrow_request_id,
 		inserted_request.location,
 		inserted_request.purpose,
-		inserted_request.expected_return_at
+		inserted_request.expected_return_at,
+		inserted_request.created_at
 	FROM inserted_request
 	JOIN person ON person.person_id = inserted_request.requested_by
 	JOIN inserted_items ON inserted_items.borrow_request_id = inserted_request.borrow_request_id
@@ -435,7 +639,8 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		person.avatar_url,
 		inserted_request.location,
 		inserted_request.purpose,
-		inserted_request.expected_return_at
+		inserted_request.expected_return_at,
+		inserted_request.created_at
 	`
 
 	// Prepare arrays for PostgreSQL
@@ -463,38 +668,162 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		&res.Location,
 		&res.Purpose,
 		&res.ExpectedReturnAt,
+		&res.CreatedAt,
 	); err != nil {
 		return createBorrowResponse{}, err
 	}
 	return res, nil
 }
 
-type borrowRequestStatus string
-
-const (
-	pending   borrowRequestStatus = "pending"
-	approved  borrowRequestStatus = "approved"
-	rejected  borrowRequestStatus = "rejected"
-	fulfilled borrowRequestStatus = "fulfilled"
-)
-
-type reviewBorrowRequest struct {
-	BorrowRequestID string              `json:"id"`
-	ReviewedBy      string              `json:"reviewedBy"`
-	Remarks         *string             `json:"remarks"`
-	Status          borrowRequestStatus `json:"status"`
+type updateBorrowRequest struct {
+	BorrowRequestID string `json:"id"`
+	Status          string `json:"status"`
 }
 
-type reviewedBorrowRequest struct {
-	BorrowRequestID string              `json:"id"`
-	Status          borrowRequestStatus `json:"status"`
+type updateBorrowResponse struct {
+	BorrowRequestID string                    `json:"id"`
+	Status          borrowRequestStatusDetail `json:"status"`
+}
+
+func (r *repository) updateBorrowRequest(ctx context.Context, arg updateBorrowRequest) (updateBorrowResponse, error) {
+	tx, err := r.querier.Begin(ctx)
+	if err != nil {
+		return updateBorrowResponse{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	status := stringToBorrowRequestStatus[arg.Status]
+	query := `
+	WITH updated_borrow_request AS (
+		UPDATE borrow_request
+		SET borrow_request_status_id = $1
+		WHERE borrow_request_id = $2
+		RETURNING borrow_request_id, borrow_request_status_id
+	)
+	SELECT updated_borrow_request.borrow_request_id,
+		jsonb_build_object(
+			'id', borrow_request_status.borrow_request_status_id,
+			'code', borrow_request_status.code,
+			'label', borrow_request_status.label
+		) AS status
+	FROM updated_borrow_request
+	JOIN borrow_request_status USING (borrow_request_status_id)
+	`
+	row := tx.QueryRow(
+		ctx,
+		query,
+		status,
+		arg.BorrowRequestID,
+	)
+
+	var res updateBorrowResponse
+
+	if err := row.Scan(
+		&res.BorrowRequestID,
+		&res.Status,
+	); err != nil {
+		return updateBorrowResponse{}, err
+	}
+
+	// Create borrow transactions when the items are received
+	if status == claimed {
+		itemsQuery := `
+		SELECT borrow_request_item_id, equipment_type_id, quantity
+		FROM borrow_request_item
+		WHERE borrow_request_id = $1
+		`
+
+		itemRows, err := tx.Query(ctx, itemsQuery, arg.BorrowRequestID)
+		if err != nil {
+			return updateBorrowResponse{}, err
+		}
+
+		type requestItem struct {
+			itemID          string
+			equipmentTypeID string
+			quantity        int16
+		}
+
+		var items []requestItem
+		for itemRows.Next() {
+			var item requestItem
+			if err := itemRows.Scan(&item.itemID, &item.equipmentTypeID, &item.quantity); err != nil {
+				return updateBorrowResponse{}, err
+			}
+			items = append(items, item)
+		}
+
+		equipmentQuery := `
+		SELECT DISTINCT equipment_id
+		FROM equipment
+		WHERE equipment_type_id = $1 AND equipment_status_id = $2
+		ORDER BY equipment_id
+		LIMIT $3
+		`
+
+		borrowEquipmentsQuery := `
+		UPDATE equipment
+		SET equipment_status_id = $1
+		WHERE equipment_id = $2
+		`
+
+		transactionQuery := `
+		INSERT INTO borrow_transaction (borrow_request_item_id, equipment_id)
+		VALUES ($1, $2)
+		`
+
+		for _, item := range items {
+			quantity := int(item.quantity)
+
+			equipmentRows, err := tx.Query(ctx, equipmentQuery, item.equipmentTypeID, reserved, quantity)
+			if err != nil {
+				return updateBorrowResponse{}, err
+			}
+
+			var equipmentIDs []string
+			for equipmentRows.Next() {
+				var equipmentID string
+				if err := equipmentRows.Scan(&equipmentID); err != nil {
+					return updateBorrowResponse{}, err
+				}
+				equipmentIDs = append(equipmentIDs, equipmentID)
+			}
+
+			if len(equipmentIDs) < quantity {
+				return updateBorrowResponse{}, errInsufficientEquipmentQuantity
+			}
+
+			for _, equipmentID := range equipmentIDs {
+				if _, err := tx.Exec(ctx, borrowEquipmentsQuery, borrowed, equipmentID); err != nil {
+					return updateBorrowResponse{}, err
+				}
+
+				if _, err := tx.Exec(ctx, transactionQuery, item.itemID, equipmentID); err != nil {
+					return updateBorrowResponse{}, err
+				}
+			}
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return updateBorrowResponse{}, err
+	}
+
+	return res, nil
+}
+
+type reviewBorrowRequest struct {
+	BorrowRequestID string  `json:"id"`
+	ReviewedBy      string  `json:"reviewedBy"`
+	Remarks         *string `json:"remarks"`
+	Status          string  `json:"status"`
 }
 
 type reviewBorrowResponse struct {
-	BorrowRequestID string              `json:"id"`
-	Status          borrowRequestStatus `json:"status"`
-	ReviewedBy      user.BasicInfo      `json:"reviewedBy"`
-	Remarks         *string             `json:"remarks"`
+	BorrowRequestID string                    `json:"id"`
+	ReviewedBy      user.BasicInfo            `json:"reviewedBy"`
+	Remarks         *string                   `json:"remarks"`
+	Status          borrowRequestStatusDetail `json:"status"`
 }
 
 func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error) {
@@ -504,16 +833,21 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 	}
 	defer tx.Rollback(ctx)
 
+	status := stringToBorrowRequestStatus[arg.Status]
 	query := `
 	WITH reviewed_request AS (
 		UPDATE borrow_request
-		SET status = $1, reviewed_by = $2, remarks = $3, reviewed_at = now()
+		SET borrow_request_status_id = $1, reviewed_by = $2, remarks = $3, reviewed_at = now()
 		WHERE borrow_request_id = $4
-		RETURNING borrow_request_id, status 
+		RETURNING borrow_request_id, borrow_request_status_id 
 	)
 	SELECT 
 		reviewed_request.borrow_request_id,
-		reviewed_request.status,
+		jsonb_build_object(
+			'id', borrow_request_status.borrow_request_status_id,
+			'code', borrow_request_status.code,
+			'label', borrow_request_status.label
+		) AS status,
 		jsonb_build_object(
 			'id', person.person_id,
 			'firstName', person.first_name,
@@ -522,6 +856,7 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 			'avatarUrl', person.avatar_url
 		) AS reviewed_by
 	FROM reviewed_request
+	JOIN borrow_request_status USING (borrow_request_status_id)
 	CROSS JOIN person
 	WHERE person.person_id = $2
 	`
@@ -529,7 +864,7 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 	row := tx.QueryRow(
 		ctx,
 		query,
-		arg.Status,
+		status,
 		arg.ReviewedBy,
 		arg.Remarks,
 		arg.BorrowRequestID,
@@ -547,7 +882,7 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 
 	res.Remarks = arg.Remarks
 
-	if arg.Status == approved {
+	if status == approved {
 		// Get all items in this borrow request
 		itemsQuery := `
 		SELECT borrow_request_item_id, equipment_type_id, quantity
@@ -576,34 +911,17 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 		}
 
 		equipmentQuery := `
-		WITH equipment_with_status AS (
-			SELECT DISTINCT
-				equipment.equipment_id,
-				equipment.equipment_type_id,
-				CASE 
-					WHEN EXISTS (
-						SELECT 1 FROM borrow_transaction
-						WHERE borrow_transaction.equipment_id = equipment.equipment_id
-						AND NOT EXISTS (
-							SELECT 1 FROM return_transaction
-							WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
-						)
-					) THEN 'borrowed'
-					ELSE 'available'
-				END AS status
-			FROM equipment
-			WHERE equipment.equipment_type_id = $1
-		)
-		SELECT equipment_id 
-		FROM equipment_with_status
-		WHERE status = $2
+		SELECT DISTINCT equipment_id 
+		FROM equipment
+		WHERE equipment_type_id = $1 AND equipment_status_id = $2
 		ORDER BY equipment_id
 		LIMIT $3
 		`
 
-		transactionQuery := `
-		INSERT INTO borrow_transaction (borrow_request_item_id, equipment_id)
-		VALUES ($1, $2)
+		reserveEquipmentQuery := `
+		UPDATE equipment
+		SET equipment_status_id = $1
+		WHERE equipment_id = $2
 		`
 
 		for _, item := range items {
@@ -621,17 +939,22 @@ func (r *repository) reviewBorrowRequest(ctx context.Context, arg reviewBorrowRe
 					return reviewBorrowResponse{}, err
 				}
 				equipmentIDs = append(equipmentIDs, equipmentID)
+
 			}
 
 			if len(equipmentIDs) < quantity {
 				return reviewBorrowResponse{}, errInsufficientEquipmentQuantity
 			}
 
-			for _, equipmentID := range equipmentIDs {
-				if _, err := tx.Exec(ctx, transactionQuery, item.itemID, equipmentID); err != nil {
+			for _, id := range equipmentIDs {
+				if _, err := tx.Exec(ctx, reserveEquipmentQuery, reserved, id); err != nil {
 					return reviewBorrowResponse{}, err
 				}
 			}
+		}
+
+		if err := r.createBorrowRequestWithOTP(ctx, res.BorrowRequestID); err != nil {
+			return reviewBorrowResponse{}, err
 		}
 	}
 
@@ -669,7 +992,7 @@ type returnRequestGroup struct {
 }
 
 var (
-	errBorrowRequestNotApproved         = fmt.Errorf("borrow request is not approved")
+	errInvalidBorrowRequestStatus       = fmt.Errorf("invalid borrow request status")
 	errExceedsRemainingBorrowedQuantity = fmt.Errorf("return quantity exceeds remaining borrowed quantity")
 	errInvalidReturnQuantity            = fmt.Errorf("return quantity must be greater than zero")
 	errEmptyReturnItemList              = fmt.Errorf("return items list cannot be empty")
@@ -723,7 +1046,7 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	}
 
 	statusQuery := `
-	SELECT borrow_request_id, status
+	SELECT borrow_request_id, borrow_request_status_id
 	FROM borrow_request
 	WHERE borrow_request_id = ANY($1)
 	`
@@ -735,15 +1058,18 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	defer statusRows.Close()
 
 	for statusRows.Next() {
-		var id string
-		var status borrowRequestStatus
+		var (
+			id     string
+			status borrowRequestStatus
+		)
 		if err := statusRows.Scan(&id, &status); err != nil {
 			return createReturnResponse{}, err
 		}
-		if status != approved {
-			return createReturnResponse{}, errBorrowRequestNotApproved
+		if status != claimed {
+			return createReturnResponse{}, errInvalidBorrowRequestStatus
 		}
 	}
+
 	if err = statusRows.Err(); err != nil {
 		return createReturnResponse{}, err
 	}
@@ -865,8 +1191,10 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	`
 
 	for borrowRequestID, items := range itemsByBorrowRequest {
+		row := tx.QueryRow(ctx, insertRequestQuery, borrowRequestID)
+
 		var returnRequestID string
-		if err := tx.QueryRow(ctx, insertRequestQuery, borrowRequestID).Scan(&returnRequestID); err != nil {
+		if err := row.Scan(&returnRequestID); err != nil {
 			return createReturnResponse{}, err
 		}
 
@@ -891,6 +1219,10 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 			BorrowRequestID: borrowRequestID,
 			Items:           itemsJSON,
 		})
+
+		if err := r.createReturnRequestWithOTP(ctx, returnRequestID, tx); err != nil {
+			return createReturnResponse{}, err
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -904,21 +1236,27 @@ func (r *repository) createReturnRequest(ctx context.Context, arg createReturnRe
 	return res, nil
 }
 
-type borrowRequest struct {
-	BorrowRequestID  string              `json:"id"`
-	CreatedAt        time.Time           `json:"createdAt"`
-	Borrower         user.BasicInfo      `json:"borrower"`
-	Equipments       []borrowedEquipment `json:"equipments"`
-	Location         string              `json:"location"`
-	Purpose          string              `json:"purpose"`
-	ExpectedReturnAt time.Time           `json:"expectedReturnAt"`
-}
+func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowTransaction, error) {
+	_, err := r.querier.Exec(ctx, "SET jit = off")
+	if err != nil {
+		return nil, err
+	}
+	defer r.querier.Exec(ctx, "RESET jit")
 
-func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, error) {
 	query := `
+	WITH latest_return_data AS (
+		SELECT 
+			borrow_request_id,
+			return_request_id,
+			created_at
+		FROM return_request
+		WHERE (borrow_request_id, created_at) IN (
+			SELECT borrow_request_id, MAX(created_at)
+			FROM return_request
+			GROUP BY borrow_request_id
+		)
+	)
 	SELECT 
-		borrow_request.borrow_request_id,
-		borrow_request.created_at,
 		jsonb_build_object(
 			'id', person.person_id,
 			'firstName', person.first_name,
@@ -926,10 +1264,21 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 			'lastName', person.last_name,
 			'avatarUrl', person.avatar_url
 		) AS borrower,
+		CASE
+		  WHEN person_borrow_reviewer.person_id IS NULL THEN NULL
+		  ELSE jsonb_build_object(
+			'id', person_borrow_reviewer.person_id,
+			'firstName', person_borrow_reviewer.first_name,
+			'middleName', person_borrow_reviewer.middle_name,
+			'lastName', person_borrow_reviewer.last_name,
+			'avatarUrl', person_borrow_reviewer.avatar_url
+		  ) 
+		END AS borrow_reviewed_by,
+		NULL AS return_confirmed_by,
 		jsonb_agg(
 			jsonb_build_object(
-				'borrowRequestItemId', borrow_request_item.borrow_request_item_id,
 				'equipmentTypeId', equipment_type.equipment_type_id,
+				'borrowRequestItemId', borrow_request_item.borrow_request_item_id,
 				'name', equipment_type.name,
 				'brand', equipment_type.brand,
 				'model', equipment_type.model,
@@ -937,45 +1286,332 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 				'quantity', borrow_request_item.quantity
 			)
 		) AS equipments,
+		borrow_request.borrow_request_id,
+		borrow_request.created_at AS borrowed_at,
 		borrow_request.location,
 		borrow_request.purpose,
-		borrow_request.expected_return_at
+		borrow_request.expected_return_at,
+		latest_return_data.created_at AS actual_return_at,
+		jsonb_build_object(
+			'id', borrow_request_status.borrow_request_status_id,
+			'code', borrow_request_status.code,
+			'label', borrow_request_status.label
+		) AS status,
+		borrow_request.remarks,
+		CASE 
+			WHEN anomaly_result.anomaly_result_id IS NULL THEN NULL
+			ELSE jsonb_build_object(
+				'borrowRequestId', anomaly_result.borrow_request_id,
+				'score', anomaly_result.score,
+				'isAnomaly', anomaly_result.is_anomaly,
+				'isFalsePositive', anomaly_result.is_false_positive
+			)
+		END AS anomalyResult,
+		CASE 
+			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
+			ELSE jsonb_build_object(
+				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
+				'expiresAt', borrow_request_otp.expires_at
+			)
+		END AS otp
 	FROM borrow_request
+	JOIN borrow_request_status USING (borrow_request_status_id)
+	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
+	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
+	-- LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
+	LEFT JOIN anomaly_result ON anomaly_result.borrow_request_id = borrow_request.borrow_request_id
+	LEFT JOIN borrow_request_otp ON borrow_request_otp.borrow_request_id = borrow_request.borrow_request_id
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
-	WHERE NOT EXISTS (
-		SELECT 1 FROM borrow_transaction
-		WHERE borrow_transaction.borrow_request_item_id = borrow_request_item.borrow_request_item_id
-	) AND borrow_request.status = 'pending'
+	WHERE borrow_request.borrow_request_status_id = $1
 	GROUP BY 
-		borrow_request.borrow_request_id,
-		borrow_request.created_at,
 		person.person_id,
 		person.first_name,
 		person.middle_name,
 		person.last_name,
 		person.avatar_url,
-		borrow_request.location,
-		borrow_request.purpose,
-		borrow_request.expected_return_at
-	ORDER BY borrow_request.created_at
+		person_borrow_reviewer.person_id,
+		person_borrow_reviewer.first_name,
+		person_borrow_reviewer.middle_name,
+		person_borrow_reviewer.last_name,
+		person_borrow_reviewer.avatar_url,
+		borrow_request.borrow_request_id,
+		borrow_request_status.borrow_request_status_id,
+		latest_return_data.created_at,
+		anomaly_result.anomaly_result_id,
+		borrow_request_otp.borrow_request_otp_id
 	`
 
-	rows, err := r.querier.Query(ctx, query)
+	rows, err := r.querier.Query(ctx, query, pending)
 	if err != nil {
 		return nil, err
 	}
-	borrowRequests, err := pgx.CollectRows(rows, pgx.RowToStructByName[borrowRequest])
+	borrowRequests, err := pgx.CollectRows(rows, pgx.RowToStructByName[borrowTransaction])
 	if err != nil {
 		return nil, err
 	}
 	return borrowRequests, nil
 }
 
+func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borrowTransaction, error) {
+	query := `
+	WITH latest_return_data AS (
+		SELECT 
+			borrow_request_id,
+			return_request_id,
+			created_at
+		FROM return_request
+		WHERE (borrow_request_id, created_at) IN (
+			SELECT borrow_request_id, MAX(created_at)
+			FROM return_request
+			GROUP BY borrow_request_id
+		)
+	)
+	SELECT 
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS borrower,
+		CASE
+		  WHEN person_borrow_reviewer.person_id IS NULL THEN NULL
+		  ELSE jsonb_build_object(
+			'id', person_borrow_reviewer.person_id,
+			'firstName', person_borrow_reviewer.first_name,
+			'middleName', person_borrow_reviewer.middle_name,
+			'lastName', person_borrow_reviewer.last_name,
+			'avatarUrl', person_borrow_reviewer.avatar_url
+		  ) 
+		END AS borrow_reviewed_by,
+		NULL AS return_confirmed_by,
+		jsonb_agg(
+			jsonb_build_object(
+				'equipmentTypeId', equipment_type.equipment_type_id,
+				'borrowRequestItemId', borrow_request_item.borrow_request_item_id,
+				'name', equipment_type.name,
+				'brand', equipment_type.brand,
+				'model', equipment_type.model,
+				'imageUrl', equipment_type.image_url,
+				'quantity', borrow_request_item.quantity
+			)
+		) AS equipments,
+		borrow_request.borrow_request_id,
+		borrow_request.created_at AS borrowed_at,
+		borrow_request.location,
+		borrow_request.purpose,
+		borrow_request.expected_return_at,
+		latest_return_data.created_at AS actual_return_at,
+		jsonb_build_object(
+			'id', borrow_request_status.borrow_request_status_id,
+			'code', borrow_request_status.code,
+			'label', borrow_request_status.label
+		) AS status,
+		borrow_request.remarks,
+		CASE 
+			WHEN anomaly_result.anomaly_result_id IS NULL THEN NULL
+			ELSE jsonb_build_object(
+				'borrowRequestId', anomaly_result.borrow_request_id,
+				'score', anomaly_result.score,
+				'isAnomaly', anomaly_result.is_anomaly,
+				'isFalsePositive', anomaly_result.is_false_positive
+			)
+		END AS anomalyResult,
+		CASE 
+			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
+			ELSE jsonb_build_object(
+				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
+				'expiresAt', borrow_request_otp.expires_at
+			)
+		END AS otp
+	FROM borrow_request
+	JOIN borrow_request_status USING (borrow_request_status_id)
+	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
+	JOIN person ON person.person_id = borrow_request.requested_by
+	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
+	-- LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
+	LEFT JOIN anomaly_result ON anomaly_result.borrow_request_id = borrow_request.borrow_request_id
+	LEFT JOIN borrow_request_otp ON borrow_request_otp.borrow_request_id = borrow_request.borrow_request_id
+	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
+	WHERE borrow_request.borrow_request_id = $1
+	GROUP BY 
+		person.person_id,
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		person_borrow_reviewer.person_id,
+		person_borrow_reviewer.first_name,
+		person_borrow_reviewer.middle_name,
+		person_borrow_reviewer.last_name,
+		person_borrow_reviewer.avatar_url,
+		borrow_request.borrow_request_id,
+		borrow_request_status.borrow_request_status_id,
+		latest_return_data.created_at,
+		anomaly_result.anomaly_result_id,
+		borrow_request_otp.borrow_request_otp_id
+	`
+
+	var req borrowTransaction
+	row := r.querier.QueryRow(ctx, query, id)
+	if err := row.Scan(
+		&req.Borrower,
+		&req.BorrowReviewedBy,
+		&req.ReturnConfirmedBy,
+		&req.Equipments,
+		&req.BorrowRequestID,
+		&req.BorrowedAt,
+		&req.Location,
+		&req.Purpose,
+		&req.ExpectedReturnAt,
+		&req.ActualReturnAt,
+		&req.Status,
+		&req.Remarks,
+		&req.AnomalyResult,
+		&req.OTP,
+	); err != nil {
+		return borrowTransaction{}, err
+	}
+
+	return req, nil
+}
+
+func (r *repository) getBorrowRequestByOTP(ctx context.Context, otp string) (borrowTransaction, error) {
+	query := `
+	WITH latest_return_data AS (
+		SELECT 
+			borrow_request_id,
+			return_request_id,
+			created_at
+		FROM return_request
+		WHERE (borrow_request_id, created_at) IN (
+			SELECT borrow_request_id, MAX(created_at)
+			FROM return_request
+			GROUP BY borrow_request_id
+		)
+	)
+	SELECT 
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS borrower,
+		CASE
+		  WHEN person_borrow_reviewer.person_id IS NULL THEN NULL
+		  ELSE jsonb_build_object(
+			'id', person_borrow_reviewer.person_id,
+			'firstName', person_borrow_reviewer.first_name,
+			'middleName', person_borrow_reviewer.middle_name,
+			'lastName', person_borrow_reviewer.last_name,
+			'avatarUrl', person_borrow_reviewer.avatar_url
+		  ) 
+		END AS borrow_reviewed_by,
+		NULL AS return_confirmed_by,
+		jsonb_agg(
+			jsonb_build_object(
+				'equipmentTypeId', equipment_type.equipment_type_id,
+				'borrowRequestItemId', borrow_request_item.borrow_request_item_id,
+				'name', equipment_type.name,
+				'brand', equipment_type.brand,
+				'model', equipment_type.model,
+				'imageUrl', equipment_type.image_url,
+				'quantity', borrow_request_item.quantity
+			)
+		) AS equipments,
+		borrow_request.borrow_request_id,
+		borrow_request.created_at AS borrowed_at,
+		borrow_request.location,
+		borrow_request.purpose,
+		borrow_request.expected_return_at,
+		latest_return_data.created_at AS actual_return_at,
+		jsonb_build_object(
+			'id', borrow_request_status.borrow_request_status_id,
+			'code', borrow_request_status.code,
+			'label', borrow_request_status.label
+		) AS status,
+		borrow_request.remarks,
+		CASE 
+			WHEN anomaly_result.anomaly_result_id IS NULL THEN NULL
+			ELSE jsonb_build_object(
+				'borrowRequestId', anomaly_result.borrow_request_id,
+				'score', anomaly_result.score,
+				'isAnomaly', anomaly_result.is_anomaly,
+				'isFalsePositive', anomaly_result.is_false_positive
+			)
+		END AS anomalyResult,
+		CASE 
+			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
+			ELSE jsonb_build_object(
+				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
+				'expiresAt', borrow_request_otp.expires_at
+			)
+		END AS otp
+	FROM borrow_request
+	JOIN borrow_request_status USING (borrow_request_status_id)
+	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
+	JOIN person ON person.person_id = borrow_request.requested_by
+	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
+	-- LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
+	LEFT JOIN anomaly_result ON anomaly_result.borrow_request_id = borrow_request.borrow_request_id
+	JOIN borrow_request_otp 
+		ON borrow_request_otp.borrow_request_id = borrow_request.borrow_request_id
+	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
+	WHERE borrow_request_otp.code = $1
+	GROUP BY 
+		person.person_id,
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		person_borrow_reviewer.person_id,
+		person_borrow_reviewer.first_name,
+		person_borrow_reviewer.middle_name,
+		person_borrow_reviewer.last_name,
+		person_borrow_reviewer.avatar_url,
+		borrow_request.borrow_request_id,
+		borrow_request_status.borrow_request_status_id,
+		latest_return_data.created_at,
+		anomaly_result.anomaly_result_id,
+		borrow_request_otp.borrow_request_otp_id
+	`
+
+	var req borrowTransaction
+	row := r.querier.QueryRow(ctx, query, otp)
+	if err := row.Scan(
+		&req.Borrower,
+		&req.BorrowReviewedBy,
+		&req.ReturnConfirmedBy,
+		&req.Equipments,
+		&req.BorrowRequestID,
+		&req.BorrowedAt,
+		&req.Location,
+		&req.Purpose,
+		&req.ExpectedReturnAt,
+		&req.ActualReturnAt,
+		&req.Status,
+		&req.Remarks,
+		&req.AnomalyResult,
+		&req.OTP,
+	); err != nil {
+		return borrowTransaction{}, err
+	}
+
+	return req, nil
+}
+
 type confirmReturnRequest struct {
-	ReturnRequestID string `json:"returnRequestId"`
-	ReviewedBy      string `json:"reviewedBy"`
+	ReturnRequestID string  `json:"returnRequestId"`
+	ReviewedBy      string  `json:"reviewedBy"`
+	Remarks         *string `json:"remarks"`
 }
 
 var errReturnRequestAlreadyConfirmed = fmt.Errorf("return request is already confirmed")
@@ -987,6 +1623,7 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 	}
 	defer tx.Rollback(ctx)
 
+	// TODO: Fix partial return bug
 	// Check if any return_transaction already exists for this return_request's items
 	checkQuery := `
 	SELECT EXISTS(
@@ -1003,14 +1640,13 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 		return confirmReturnRequest{}, errReturnRequestAlreadyConfirmed
 	}
 
-	updateQuery := `
-	UPDATE return_request
-	SET reviewed_by = $1
-	WHERE return_request_id = $2
-	RETURNING borrow_request_id
+	borrowRequestQuery := `
+	SELECT borrow_request_id 
+	FROM return_request
+	WHERE return_request_id = $1
 	`
 	var borrowRequestID string
-	if err := tx.QueryRow(ctx, updateQuery, arg.ReviewedBy, arg.ReturnRequestID).Scan(&borrowRequestID); err != nil {
+	if err := tx.QueryRow(ctx, borrowRequestQuery, arg.ReturnRequestID).Scan(&borrowRequestID); err != nil {
 		return confirmReturnRequest{}, err
 	}
 
@@ -1083,6 +1719,21 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 		if _, err := tx.Exec(ctx, transactionQuery, item.returnRequestItemID, item.borrowRequestItemID, item.quantity); err != nil {
 			return confirmReturnRequest{}, err
 		}
+
+		updateEquipmentQuery := `
+        UPDATE equipment
+        SET equipment_status_id = $1
+        WHERE equipment_id IN (
+            SELECT bt.equipment_id
+            FROM borrow_transaction bt
+            JOIN return_transaction rt ON bt.borrow_transaction_id = rt.borrow_transaction_id
+            WHERE rt.return_request_item_id = $2
+        )
+        `
+
+		if _, err := tx.Exec(ctx, updateEquipmentQuery, available, item.returnRequestItemID); err != nil {
+			return confirmReturnRequest{}, err
+		}
 	}
 
 	// Check if all items in the borrow_request are fully returned
@@ -1109,10 +1760,10 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 	if isAllReturned {
 		updateStatusQuery := `
 		UPDATE borrow_request
-		SET status = $1
+		SET borrow_request_status_id = $1
 		WHERE borrow_request_id = $2
 		`
-		if _, err := tx.Exec(ctx, updateStatusQuery, fulfilled, borrowRequestID); err != nil {
+		if _, err := tx.Exec(ctx, updateStatusQuery, returned, borrowRequestID); err != nil {
 			return confirmReturnRequest{}, err
 		}
 	}
@@ -1130,6 +1781,7 @@ type returnRequest struct {
 	Borrower         user.BasicInfo `json:"borrower"`
 	Equipments       []equipment    `json:"equipments"`
 	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
+	OTP              OTP            `json:"otp"`
 }
 
 type getReturnRequestParams struct {
@@ -1139,6 +1791,90 @@ type getReturnRequestParams struct {
 }
 
 func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequestParams) ([]returnRequest, error) {
+	query := `
+	SELECT 
+		return_request.return_request_id,
+		return_request.created_at,
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS borrower,
+		jsonb_agg(
+			jsonb_build_object(
+				'returnRequestItemId', return_request_item.return_request_item_id,
+				'id', equipment_type.equipment_type_id,
+				'name', equipment_type.name,
+				'brand', equipment_type.brand,
+				'model', equipment_type.model,
+				'imageUrl', equipment_type.image_url,
+				'quantity', return_request_item.quantity
+			)
+		) AS equipments,
+		borrow_request.expected_return_at,
+		jsonb_build_object(
+			'code', return_request_otp.code,
+			'createdAt', return_request_otp.created_at,
+			'expiresAt', return_request_otp.expires_at
+		) AS otp
+	FROM return_request
+	JOIN return_request_otp USING (return_request_id)
+	JOIN borrow_request ON borrow_request.borrow_request_id = return_request.borrow_request_id
+	JOIN person ON person.person_id = borrow_request.requested_by
+	JOIN return_request_item ON return_request_item.return_request_id = return_request.return_request_id
+	JOIN borrow_request_item ON borrow_request_item.borrow_request_item_id = return_request_item.borrow_request_item_id
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
+	WHERE NOT EXISTS (
+		SELECT 1 
+		FROM return_transaction
+		WHERE return_transaction.return_request_item_id = return_request_item.return_request_item_id
+	)
+	`
+
+	var args []any
+	if params.userID != nil && *params.userID != "" {
+		query += " AND person.person_id = $1"
+		args = append(args, *params.userID)
+	}
+
+	if params.category != nil && *params.category != "" {
+		query += " AND equipment_type.name = $2"
+		args = append(args, *params.category)
+	}
+
+	query += `
+	GROUP BY 
+		return_request.return_request_id,
+		return_request.created_at,
+		person.person_id,
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		borrow_request.expected_return_at,
+		return_request_otp.return_request_otp_id
+	`
+
+	if params.sort != nil && *params.sort != "" {
+		query += fmt.Sprintf(" ORDER BY borrow_request.expected_return_at %s", *params.sort)
+	} else {
+		query += " ORDER BY borrow_request.expected_return_at DESC"
+	}
+
+	rows, err := r.querier.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	returnRequests, err := pgx.CollectRows(rows, pgx.RowToStructByName[returnRequest])
+	if err != nil {
+		return nil, err
+	}
+	return returnRequests, nil
+}
+
+func (r *repository) getReturnRequestByID(ctx context.Context, id string) (returnRequest, error) {
 	query := `
 	SELECT 
 		return_request.return_request_id,
@@ -1172,21 +1908,7 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 		SELECT 1 
 		FROM return_transaction
 		WHERE return_transaction.return_request_item_id = return_request_item.return_request_item_id
-	)
-	`
-
-	var args []any
-	if params.userID != nil && *params.userID != "" {
-		query += " AND person.person_id = $1"
-		args = append(args, *params.userID)
-	}
-
-	if params.category != nil && *params.category != "" {
-		query += " AND equipment_type.name = $2"
-		args = append(args, *params.category)
-	}
-
-	query += `
+	) AND return_request.return_request_id = $1
 	GROUP BY 
 		return_request.return_request_id,
 		return_request.created_at,
@@ -1198,21 +1920,92 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 		borrow_request.expected_return_at
 	`
 
-	if params.sort != nil && *params.sort != "" {
-		query += fmt.Sprintf(" ORDER BY borrow_request.expected_return_at %s", *params.sort)
-	} else {
-		query += " ORDER BY borrow_request.expected_return_at DESC"
+	var req returnRequest
+	row := r.querier.QueryRow(ctx, query, id)
+	if err := row.Scan(
+		&req.ReturnRequestID,
+		&req.CreatedAt,
+		&req.Borrower,
+		&req.Equipments,
+		&req.ExpectedReturnAt,
+	); err != nil {
+		return returnRequest{}, err
 	}
 
-	rows, err := r.querier.Query(ctx, query, args...)
-	if err != nil {
-		return nil, err
+	return req, nil
+}
+
+func (r *repository) getReturnRequestByOTP(ctx context.Context, otp string) (returnRequest, error) {
+	query := `
+	SELECT 
+		return_request.return_request_id,
+		return_request.created_at,
+		jsonb_build_object(
+			'id', person.person_id,
+			'firstName', person.first_name,
+			'middleName', person.middle_name,
+			'lastName', person.last_name,
+			'avatarUrl', person.avatar_url
+		) AS borrower,
+		jsonb_agg(
+			jsonb_build_object(
+				'returnRequestItemId', return_request_item.return_request_item_id,
+				'id', equipment_type.equipment_type_id,
+				'name', equipment_type.name,
+				'brand', equipment_type.brand,
+				'model', equipment_type.model,
+				'imageUrl', equipment_type.image_url,
+				'quantity', return_request_item.quantity
+			)
+		) AS equipments,
+		borrow_request.expected_return_at
+	FROM return_request
+	JOIN borrow_request ON borrow_request.borrow_request_id = return_request.borrow_request_id
+	JOIN person ON person.person_id = borrow_request.requested_by
+	JOIN return_request_item ON return_request_item.return_request_id = return_request.return_request_id
+	JOIN borrow_request_item ON borrow_request_item.borrow_request_item_id = return_request_item.borrow_request_item_id
+	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
+	JOIN return_request_otp 
+		ON return_request_otp.return_request_id = return_request.return_request_id
+	WHERE return_request_otp.code = $1
+	GROUP BY 
+		return_request.return_request_id,
+		return_request.created_at,
+		person.person_id,
+		person.first_name,
+		person.middle_name,
+		person.last_name,
+		person.avatar_url,
+		borrow_request.expected_return_at,
+		return_request_otp.return_request_otp_id
+	`
+
+	var req returnRequest
+	row := r.querier.QueryRow(ctx, query, otp)
+	if err := row.Scan(
+		&req.ReturnRequestID,
+		&req.CreatedAt,
+		&req.Borrower,
+		&req.Equipments,
+		&req.ExpectedReturnAt,
+	); err != nil {
+		return returnRequest{}, err
 	}
-	returnRequests, err := pgx.CollectRows(rows, pgx.RowToStructByName[returnRequest])
-	if err != nil {
-		return nil, err
-	}
-	return returnRequests, nil
+
+	return req, nil
+}
+
+type anomalyResult struct {
+	BorrowRequestID string  `json:"borrowRequestId"`
+	Score           float32 `json:"score"`
+	IsAnomaly       bool    `json:"isAnomaly"`
+	IsFalsePositive *bool   `json:"isFalsePositive"`
+}
+
+type OTP struct {
+	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"createdAt"`
+	ExpiresAt time.Time `json:"expiresAt"`
 }
 
 type borrowTransaction struct {
@@ -1223,30 +2016,40 @@ type borrowTransaction struct {
 	Location        string              `json:"location"`
 	Purpose         string              `json:"purpose"`
 
-	ExpectedReturnAt  time.Time           `json:"expectedReturnAt"`
-	ActualReturnAt    *time.Time          `json:"actualReturnAt"`
-	Status            borrowRequestStatus `json:"status"`
-	BorrowReviewedBy  *user.BasicInfo     `json:"borrowReviewedBy"`
-	ReturnConfirmedBy *user.BasicInfo     `json:"returnConfirmedBy"`
-	Remarks           *string             `json:"remarks"`
+	ExpectedReturnAt  time.Time                 `json:"expectedReturnAt"`
+	ActualReturnAt    *time.Time                `json:"actualReturnAt"`
+	Status            borrowRequestStatusDetail `json:"status"`
+	BorrowReviewedBy  *user.BasicInfo           `json:"borrowReviewedBy"`
+	ReturnConfirmedBy *user.BasicInfo           `json:"returnConfirmedBy"`
+	Remarks           *string                   `json:"remarks"`
+
+	OTP *OTP `json:"otp"`
+
+	AnomalyResult *anomalyResult `json:"anomalyResult"`
 }
 
 type borrowHistoryParams struct {
 	userID   *string
-	status   *borrowRequestStatus
+	status   *string
 	sort     *api.Sort
 	sortBy   *string
 	category *string
+	search   *string
 }
 
 func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowTransaction, error) {
+	_, err := r.querier.Exec(ctx, "SET jit = off")
+	if err != nil {
+		return nil, err
+	}
+	defer r.querier.Exec(ctx, "RESET jit")
+
 	query := `
 	WITH latest_return_data AS (
 		SELECT 
 			borrow_request_id,
 			return_request_id,
-			created_at,
-			reviewed_by
+			created_at
 		FROM return_request
 		WHERE (borrow_request_id, created_at) IN (
 			SELECT borrow_request_id, MAX(created_at)
@@ -1272,16 +2075,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			'avatarUrl', person_borrow_reviewer.avatar_url
 		  ) 
 		END AS borrow_reviewed_by,
-		CASE
-		  WHEN person_return_reviewer.person_id IS NULL THEN NULL
-		  ELSE jsonb_build_object(
-			'id', person_return_reviewer.person_id,
-			'firstName', person_return_reviewer.first_name,
-			'middleName', person_return_reviewer.middle_name,
-			'lastName', person_return_reviewer.last_name,
-			'avatarUrl', person_return_reviewer.avatar_url
-		  )
-		END AS return_confirmed_by,
+		NULL AS return_confirmed_by,
 		jsonb_agg(
 			jsonb_build_object(
 				'equipmentTypeId', equipment_type.equipment_type_id,
@@ -1299,13 +2093,37 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		borrow_request.purpose,
 		borrow_request.expected_return_at,
 		latest_return_data.created_at AS actual_return_at,
-		borrow_request.status,
-		borrow_request.remarks
+		jsonb_build_object(
+			'id', borrow_request_status.borrow_request_status_id,
+			'code', borrow_request_status.code,
+			'label', borrow_request_status.label
+		) AS status,
+		borrow_request.remarks,
+		CASE 
+			WHEN anomaly_result.anomaly_result_id IS NULL THEN NULL
+			ELSE jsonb_build_object(
+				'borrowRequestId', anomaly_result.borrow_request_id,
+				'score', anomaly_result.score,
+				'isAnomaly', anomaly_result.is_anomaly,
+				'isFalsePositive', anomaly_result.is_false_positive
+			)
+		END AS anomalyResult,
+		CASE 
+			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
+			ELSE jsonb_build_object(
+				'code', borrow_request_otp.code,
+				'createdAt', borrow_request_otp.created_at,
+				'expiresAt', borrow_request_otp.expires_at
+			)
+		END AS otp
 	FROM borrow_request
+	JOIN borrow_request_status USING (borrow_request_status_id)
 	LEFT JOIN latest_return_data ON latest_return_data.borrow_request_id = borrow_request.borrow_request_id
 	JOIN person ON person.person_id = borrow_request.requested_by
 	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
-	LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
+	-- LEFT JOIN person person_return_reviewer ON person_return_reviewer.person_id = latest_return_data.reviewed_by
+	LEFT JOIN anomaly_result ON anomaly_result.borrow_request_id = borrow_request.borrow_request_id
+	LEFT JOIN borrow_request_otp ON borrow_request_otp.borrow_request_id = borrow_request.borrow_request_id
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
 	WHERE TRUE
@@ -1321,14 +2139,44 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	}
 
 	if params.status != nil && *params.status != "" {
-		query += fmt.Sprintf(" AND borrow_request.status = $%d", argIdx)
-		args = append(args, *params.status)
+		status := stringToBorrowRequestStatus[*params.status]
+		query += fmt.Sprintf(" AND borrow_request.borrow_request_status_id = $%d", argIdx)
+		args = append(args, status)
 		argIdx++
 	}
 
 	if params.category != nil && *params.category != "" {
 		query += fmt.Sprintf(" AND equipment_type.name = $%d", argIdx)
 		args = append(args, *params.category)
+		argIdx++
+	}
+
+	if params.search != nil && *params.search != "" {
+		searchTerm := "%" + strings.ToLower(*params.search) + "%"
+		query += fmt.Sprintf(` 
+		AND (
+			LOWER(equipment_type.name) LIKE $%d 
+			OR LOWER(equipment_type.brand) LIKE $%d 
+			OR LOWER(equipment_type.model) LIKE $%d
+			OR LOWER(person.first_name) LIKE $%d
+			OR LOWER(person.middle_name) LIKE $%d
+			OR LOWER(person.last_name) LIKE $%d
+			OR LOWER(person_borrow_reviewer.first_name) LIKE $%d
+			OR LOWER(person_borrow_reviewer.middle_name) LIKE $%d
+			OR LOWER(person_borrow_reviewer.last_name) LIKE $%d
+		)
+		`,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+			argIdx,
+		)
+		args = append(args, searchTerm)
 		argIdx++
 	}
 
@@ -1344,17 +2192,14 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		person_borrow_reviewer.middle_name,
 		person_borrow_reviewer.last_name,
 		person_borrow_reviewer.avatar_url,
-		person_return_reviewer.person_id,
-		person_return_reviewer.first_name,
-		person_return_reviewer.middle_name,
-		person_return_reviewer.last_name,
-		person_return_reviewer.avatar_url,
 		borrow_request.borrow_request_id,
+		borrow_request_status.borrow_request_status_id,
 		latest_return_data.created_at,
-		latest_return_data.reviewed_by
+		anomaly_result.anomaly_result_id,
+		borrow_request_otp.borrow_request_otp_id
 	`
 
-	sortByColumn := "borrow_request.expected_return_at" // default
+	sortByColumn := "borrow_request.created_at"
 	if params.sortBy != nil {
 		switch *params.sortBy {
 		case "borrowedAt":
@@ -1364,11 +2209,11 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		case "returnedAt":
 			sortByColumn = "latest_return_data.created_at"
 		case "status":
-			sortByColumn = "borrow_request.status"
+			sortByColumn = "borrow_request.borrow_request_status_id"
 		}
 	}
 
-	sortDirection := "ASC"
+	sortDirection := "DESC"
 	if params.sort != nil && *params.sort != "" {
 		sortDirection = string(*params.sort)
 	}
@@ -1394,15 +2239,15 @@ type borrowedItem struct {
 	Location        string              `json:"location"`
 	Purpose         string              `json:"purpose"`
 
-	ExpectedReturnAt time.Time           `json:"expectedReturnAt"`
-	Status           borrowRequestStatus `json:"status"`
-	BorrowReviewedBy user.BasicInfo      `json:"borrowReviewedBy"`
-	Remarks          *string             `json:"remarks"`
+	ExpectedReturnAt time.Time                 `json:"expectedReturnAt"`
+	Status           borrowRequestStatusDetail `json:"status"`
+	BorrowReviewedBy user.BasicInfo            `json:"borrowReviewedBy"`
+	Remarks          *string                   `json:"remarks"`
 }
 
 type borrowedItemParams struct {
 	userID   *string
-	status   *borrowRequestStatus
+	status   *string
 	sort     *api.Sort
 	category *string
 }
@@ -1460,18 +2305,23 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 		borrow_request.location,
 		borrow_request.purpose,
 		borrow_request.expected_return_at,
-		borrow_request.status,
+		jsonb_build_object(
+			'id', borrow_request_status.borrow_request_status_id,
+			'code', borrow_request_status.code,
+			'label', borrow_request_status.label
+		) AS status,
 		borrow_request.remarks
 	FROM borrow_request
+	JOIN borrow_request_status USING (borrow_request_status_id)
 	JOIN person ON person.person_id = borrow_request.requested_by
 	JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
 	JOIN pending_items ON pending_items.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = pending_items.equipment_type_id
-	WHERE borrow_request.status IN ('approved', 'fulfilled')
+	WHERE borrow_request.borrow_request_status_id = $1
 	`
 
-	var args []any
-	argIdx := 1
+	var args []any = []any{claimed}
+	argIdx := 2
 
 	if params.userID != nil && *params.userID != "" {
 		query += fmt.Sprintf(" AND borrow_request.requested_by = $%d", argIdx)
@@ -1480,8 +2330,9 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 	}
 
 	if params.status != nil && *params.status != "" {
-		query += fmt.Sprintf(" AND borrow_request.status = $%d", argIdx)
-		args = append(args, *params.status)
+		status := stringToBorrowRequestStatus[*params.status]
+		query += fmt.Sprintf(" AND borrow_request.borrow_request_status_id = $%d", argIdx)
+		args = append(args, status)
 		argIdx++
 	}
 
@@ -1503,7 +2354,8 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 		person_borrow_reviewer.middle_name,
 		person_borrow_reviewer.last_name,
 		person_borrow_reviewer.avatar_url,
-		borrow_request.borrow_request_id
+		borrow_request.borrow_request_id,
+		borrow_request_status.borrow_request_status_id
 	`
 
 	if params.sort != nil && *params.sort != "" {
@@ -1521,4 +2373,24 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 		return nil, err
 	}
 	return history, nil
+}
+
+func (r *repository) createAnomalyResult(ctx context.Context, arg anomalyResult) error {
+	query := `
+	INSERT INTO anomaly_result (score, is_anomaly, is_false_positive, borrow_request_id)
+	VALUES ($1, $2, $3, $4)
+	`
+
+	if _, err := r.querier.Exec(
+		ctx,
+		query,
+		arg.Score,
+		arg.IsAnomaly,
+		arg.IsFalsePositive,
+		arg.BorrowRequestID,
+	); err != nil {
+		return err
+	}
+
+	return nil
 }

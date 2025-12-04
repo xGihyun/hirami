@@ -1,11 +1,27 @@
-import { LabelLarge, LabelSmall } from "@/components/typography";
+import {
+	Caption,
+	H1,
+	H2,
+	LabelLarge,
+	LabelSmall,
+} from "@/components/typography";
 import { Badge } from "@/components/ui/badge";
 import { BACKEND_URL } from "@/lib/api";
 import type { Equipment } from "@/lib/equipment";
 import type { ReturnRequest } from "@/lib/equipment/return";
-import { cn } from "@/lib/utils";
+import { cn, getRemainingMs } from "@/lib/utils";
 import { format } from "date-fns";
 import type { JSX } from "react";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogDescription,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import { QRCodeSVG } from "qrcode.react";
+import { Timer } from "@ark-ui/react/timer";
 
 type Props = {
 	returnRequests: ReturnRequest[];
@@ -18,11 +34,57 @@ export function ReturnRequestList(props: Props): JSX.Element {
 				<div key={request.id} className="space-y-3.5">
 					{request.equipments.map((equipment) => {
 						return (
-							<ReturningItem
-								key={equipment.id}
-								returnRequest={request}
-								equipment={equipment}
-							/>
+							<Dialog key={equipment.id}>
+								<DialogTrigger key={equipment.id} asChild>
+									<button className="w-full text-start">
+										<ReturningItem
+											returnRequest={request}
+											equipment={equipment}
+										/>
+									</button>
+								</DialogTrigger>
+								<DialogContent>
+									<DialogHeader>
+										<DialogTitle>Scan QR Code</DialogTitle>
+										<DialogDescription>
+											Show this QR Code to the equipment manager to confirm your
+											equipment return.
+										</DialogDescription>
+									</DialogHeader>
+
+									<section className="space-y-8">
+										<div className="space-y-2">
+											<QRCodeSVG
+												value={request.otp.code}
+												className="size-64 mx-auto"
+												bgColor="transparent"
+											/>
+
+											<H2 className="text-center">{request.otp.code}</H2>
+										</div>
+
+										<div className="mx-auto text-center content-center space-y-2">
+											<Caption>Time left until OTP refreshes</Caption>
+
+											<Timer.Root
+												countdown
+												autoStart
+												startMs={getRemainingMs(
+													new Date(request.otp.expiresAt),
+												)}
+											>
+												<H1>
+													<Timer.Area className="flex justify-center">
+														<Timer.Item type="minutes" />
+														<Timer.Separator>:</Timer.Separator>
+														<Timer.Item type="seconds" />
+													</Timer.Area>
+												</H1>
+											</Timer.Root>
+										</div>
+									</section>
+								</DialogContent>
+							</Dialog>
 						);
 					})}
 				</div>

@@ -39,6 +39,12 @@ input[type="time"] {
   font-display: swap;
 }
 
+@font-face {
+  font-family: open-sans-bold;
+  src: url("/fonts/Open_Sans/OpenSans-Bold.ttf");
+  font-display: swap;
+}
+
 body {
   @apply m-0 leading-6;
   font-family:
@@ -190,6 +196,7 @@ code {
   --font-montserrat-semibold: montserrat-semibold, sans-serif;
   --font-montserrat-medium: montserrat-medium, sans-serif;
   --font-open-sans: open-sans, sans-serif;
+  --font-open-sans-bold: open-sans-bold, sans-serif;
 
   --shadow-item:  0 4px 4px 0 rgba(0, 0, 0, 0.25);
 }

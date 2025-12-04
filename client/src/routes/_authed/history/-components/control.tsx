@@ -1,11 +1,4 @@
 import type { JSX } from "react";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button.tsx";
 import { IconArrowDownUp } from "@/lib/icons.ts";
@@ -14,36 +7,13 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { HistorySearch } from "./history-search";
 
-type Props = {
-	equipmentNames: string[];
-};
-
-export function Control(props: Props): JSX.Element {
+export function Control(): JSX.Element {
 	const navigate = useNavigate({ from: "/history" });
 	const search = useSearch({ from: "/_authed/history/" });
-
-	async function handleChange(value: string): Promise<void> {
-		if (value === "All") {
-			await navigate({
-				search: (prev) => ({
-					sort: prev.sort,
-				}),
-			});
-			return;
-		}
-
-		await navigate({
-			search: (prev) => ({
-				...prev,
-				category: value,
-			}),
-		});
-	}
 
 	type SortField = "borrowedAt" | "returnedAt" | "status";
 
@@ -70,23 +40,7 @@ export function Control(props: Props): JSX.Element {
 
 	return (
 		<div className="flex w-full gap-5">
-			<Select value={search.category || "All"} onValueChange={handleChange}>
-				<SelectTrigger className="w-full">
-					<SelectValue placeholder="Select category" />
-				</SelectTrigger>
-
-				<SelectContent>
-					<SelectItem value="All">All</SelectItem>
-
-					{props.equipmentNames.map((name) => {
-						return (
-							<SelectItem key={name} value={name}>
-								{name}
-							</SelectItem>
-						);
-					})}
-				</SelectContent>
-			</Select>
+			<HistorySearch />
 
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>

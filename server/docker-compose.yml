@@ -1,5 +1,9 @@
 name: hirami
 
+networks:
+  hirami-net:
+    driver: bridge
+
 services:
   postgres:
     image: postgres:latest
@@ -12,6 +16,13 @@ services:
       - "5432:5432"
     volumes:
       - hirami-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hirami"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hirami-net
 
   valkey:
     image: valkey/valkey-bundle:latest
@@ -20,6 +31,13 @@ services:
       - "6379:6379"
     volumes:
       - hirami-valkey:/data
+    networks:
+      - hirami-net
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   mailpit:
     image: axllent/mailpit
@@ -30,9 +48,11 @@ services:
     ports:
       - 8025:8025
       - 1025:1025
+    networks:
+      - hirami-net
 
   server:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     container_name: hirami-server
@@ -41,8 +61,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - postgres
-      - valkey
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
     volumes:
       - .:/app
     command: go run .
@@ -52,6 +74,8 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+    networks:
+      - hirami-net
 
   seed:
     build: .
@@ -63,6 +87,22 @@ services:
     environment:
       - HOST=server
       - PORT=3002
+    networks:
+      - hirami-net
+
+  ml:
+    build:
+      context: ../ml
+      dockerfile: Dockerfile
+    container_name: hirami-ml
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../ml:/app
+      - /app/.venv
+    command: uv run uvicorn main:app --host 0.0.0.0
+    networks:
+      - hirami-net
 
 volumes:
   hirami-pg:

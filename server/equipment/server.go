@@ -1,9 +1,11 @@
 package equipment
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,16 +31,23 @@ func NewServer(repo Repository, valkeyClient valkey.Client) *Server {
 func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /equipments", api.Handler(s.createEquipment))
 	mux.Handle("GET /equipments", api.Handler(s.getAll))
+	mux.Handle("GET /equipments/{equipmentTypeId}", api.Handler(s.getEquipmentByID))
 	mux.Handle("GET /equipment-names", api.Handler(s.getEquipmentNames))
 	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
+	mux.Handle("POST /equipments/{equipmentTypeId}/reallocate", api.Handler(s.reallocate))
 
 	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
+	mux.Handle("PATCH /borrow-requests/{id}", api.Handler(s.updateBorrowRequest))
 	mux.Handle("PATCH /review-borrow-requests", api.Handler(s.reviewBorrowRequest))
 	mux.Handle("GET /borrow-requests", api.Handler(s.getBorrowRequests))
+	mux.Handle("GET /borrow-requests/{id}", api.Handler(s.getBorrowRequestByID))
+	mux.Handle("GET /borrow-requests/otp/{code}", api.Handler(s.getBorrowRequestByOTP))
 
 	mux.Handle("POST /return-requests", api.Handler(s.createReturnRequest))
 	mux.Handle("PATCH /return-requests/{id}", api.Handler(s.confirmReturnRequest))
 	mux.Handle("GET /return-requests", api.Handler(s.getReturnRequests))
+	mux.Handle("GET /return-requests/{id}", api.Handler(s.getReturnRequestByID))
+	mux.Handle("GET /return-requests/otp/{code}", api.Handler(s.getReturnRequestByOTP))
 
 	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
 	mux.Handle("GET /borrowed-items", api.Handler(s.getBorrowedItems))
@@ -180,7 +189,7 @@ func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
 	name := r.URL.Query().Get("name")
-	status := equipmentStatus(r.URL.Query().Get("status"))
+	status := r.URL.Query().Get("status")
 	search := r.URL.Query().Get("search")
 	params := getEquipmentParams{
 		name:   &name,
@@ -200,6 +209,26 @@ func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 		Code:    http.StatusOK,
 		Message: "Successfully fetched equipments.",
 		Data:    equipments,
+	}
+}
+
+func (s *Server) getEquipmentByID(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	equipmentTypeID := r.PathValue("equipmentTypeId")
+	equipment, err := s.repository.getEquipmentTypeByID(ctx, equipmentTypeID)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get equipment: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get equipments.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched equipment.",
+		Data:    equipment,
 	}
 }
 
@@ -225,18 +254,72 @@ func (s *Server) getEquipmentNames(w http.ResponseWriter, r *http.Request) api.R
 func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	var data updateRequest
-
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&data); err != nil {
+	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		return api.Response{
-			Error:   fmt.Errorf("update equipment: %w", err),
+			Error:   fmt.Errorf("create equipment: %w", err),
 			Code:    http.StatusBadRequest,
-			Message: "Invalid update equipment request.",
+			Message: "Invalid create equipment request.",
 		}
 	}
 
-	data.EquipmentTypeID = r.PathValue("equipmentTypeId")
+	var imageURL *string
+	file, header, err := r.FormFile("image")
+	if err == nil {
+		defer file.Close()
+
+		if header.Size > maxImageSize {
+			return api.Response{
+				Error:   fmt.Errorf("create equipment: image size exceeds 5MB limit"),
+				Code:    http.StatusBadRequest,
+				Message: "Image size must not exceed 5MB.",
+			}
+		}
+
+		contentType := header.Header.Get("Content-Type")
+		if contentType != "image/jpeg" && contentType != "image/jpg" && contentType != "image/png" {
+			return api.Response{
+				Error:   fmt.Errorf("create equipment: invalid image type %s", contentType),
+				Code:    http.StatusBadRequest,
+				Message: "Image must be in JPG or PNG format.",
+			}
+		}
+
+		uploadedURL, err := api.UploadFile(file, header, "equipments")
+		if err != nil {
+			return api.Response{
+				Error:   fmt.Errorf("create equipment: %w", err),
+				Code:    http.StatusInternalServerError,
+				Message: "Failed to upload equipment image.",
+			}
+		}
+		imageURL = &uploadedURL
+	} else if err != http.ErrMissingFile {
+		return api.Response{
+			Error:   fmt.Errorf("create equipment: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid image upload.",
+		}
+	}
+
+	var (
+		brand *string
+		model *string
+	)
+	if brandValue := strings.TrimSpace(r.FormValue("brand")); brandValue != "" {
+		brand = &brandValue
+	}
+	if modelValue := strings.TrimSpace(r.FormValue("model")); modelValue != "" {
+		model = &modelValue
+	}
+
+	data := updateRequest{
+		EquipmentTypeID: r.PathValue("equipmentTypeId"),
+		Name:            strings.TrimSpace(r.FormValue("name")),
+		Brand:           brand,
+		Model:           model,
+		ImageURL:        imageURL,
+	}
+
 	if err := s.repository.update(ctx, data); err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("update equipments: %w", err),
@@ -248,6 +331,56 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully updated equipments.",
+	}
+}
+
+func (s *Server) reallocate(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	var data reallocateRequest
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("reallocate: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid reallocate request.",
+		}
+	}
+
+	err := s.repository.reallocate(ctx, data)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("reallocate: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to rellocate.",
+		}
+	}
+
+	eventRes := sse.EventResponse{
+		Event: "equipment:reallocate",
+	}
+	jsonData, err := json.Marshal(eventRes)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("reallocate: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to reallocate.",
+		}
+	}
+
+	pubCmd := s.valkeyClient.B().Publish().Channel("equipment").Message(string(jsonData)).Build()
+	if res := s.valkeyClient.Do(ctx, pubCmd); res.Error() != nil {
+		return api.Response{
+			Error:   fmt.Errorf("reallocate: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to reallocate.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully reallocated equipments.",
 	}
 }
 
@@ -290,6 +423,12 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
+	go func() {
+		if err := s.detectAnomaly(context.Background(), res); err != nil {
+			slog.Error(err.Error())
+		}
+	}()
+
 	eventRes := sse.EventResponse{
 		Event: "equipment:create",
 		Data:  res,
@@ -315,6 +454,67 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	return api.Response{
 		Code:    http.StatusOK,
 		Message: "Successfully created borrow request.",
+		Data:    res,
+	}
+}
+
+func (s *Server) updateBorrowRequest(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	var data updateBorrowRequest
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&data); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid update borrow request.",
+		}
+	}
+
+	borrowRequestID := r.PathValue("id")
+	if data.BorrowRequestID != borrowRequestID {
+		return api.Response{
+			Error:   fmt.Errorf("borrow request ID mismatch: path=%s, body=%s", borrowRequestID, data.BorrowRequestID),
+			Code:    http.StatusBadRequest,
+			Message: "Borrow request ID in URL does not match ID in request body.",
+		}
+	}
+
+	res, err := s.repository.updateBorrowRequest(ctx, data)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update borrow request.",
+		}
+	}
+
+	eventRes := sse.EventResponse{
+		Event: "borrow-request:update",
+		Data:  res,
+	}
+	jsonData, err := json.Marshal(eventRes)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update borrow request.",
+		}
+	}
+
+	pubCmd := s.valkeyClient.B().Publish().Channel("equipment").Message(string(jsonData)).Build()
+	if res := s.valkeyClient.Do(ctx, pubCmd); res.Error() != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update borrow request.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully updated borrow request.",
 		Data:    res,
 	}
 }
@@ -360,7 +560,7 @@ func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: "borrow-request:review",
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -412,7 +612,7 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 			}
 		}
 
-		if errors.Is(err, errBorrowRequestNotApproved) {
+		if errors.Is(err, errInvalidBorrowRequestStatus) {
 			return api.Response{
 				Error:   fmt.Errorf("create return request: %w", err),
 				Code:    http.StatusBadRequest,
@@ -483,6 +683,46 @@ func (s *Server) getBorrowRequests(w http.ResponseWriter, r *http.Request) api.R
 	}
 }
 
+func (s *Server) getBorrowRequestByID(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	borrowRequestID := r.PathValue("id")
+	borrowRequests, err := s.repository.getBorrowRequestByID(ctx, borrowRequestID)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get borrow requests: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get borrow requests.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched borrow requests.",
+		Data:    borrowRequests,
+	}
+}
+
+func (s *Server) getBorrowRequestByOTP(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	code := r.PathValue("code")
+	req, err := s.repository.getBorrowRequestByOTP(ctx, code)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get borrow request by OTP: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get borrow request by OTP.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched borrow request.",
+		Data:    req,
+	}
+}
+
 func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
@@ -524,7 +764,7 @@ func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) ap
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: "return-request:confirm",
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -579,20 +819,62 @@ func (s *Server) getReturnRequests(w http.ResponseWriter, r *http.Request) api.R
 	}
 }
 
+func (s *Server) getReturnRequestByID(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	returnRequestID := r.PathValue("id")
+	returnRequest, err := s.repository.getReturnRequestByID(ctx, returnRequestID)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get return request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get return requests.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched return request.",
+		Data:    returnRequest,
+	}
+}
+
+func (s *Server) getReturnRequestByOTP(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	code := r.PathValue("code")
+	req, err := s.repository.getReturnRequestByOTP(ctx, code)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get return request by OTP: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get return request by OTP.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched return request.",
+		Data:    req,
+	}
+}
+
 func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
 	userID := r.URL.Query().Get("userId")
-	status := borrowRequestStatus(r.URL.Query().Get("status"))
+	status := r.URL.Query().Get("status")
 	sort := api.Sort(r.URL.Query().Get("sort"))
 	sortBy := r.URL.Query().Get("sortBy")
 	category := r.URL.Query().Get("category")
+	search := r.URL.Query().Get("search")
 	params := borrowHistoryParams{
 		userID:   &userID,
 		status:   &status,
 		sort:     &sort,
 		sortBy:   &sortBy,
 		category: &category,
+		search:   &search,
 	}
 	history, err := s.repository.getBorrowHistory(ctx, params)
 	if err != nil {
@@ -614,7 +896,7 @@ func (s *Server) getBorrowedItems(w http.ResponseWriter, r *http.Request) api.Re
 	ctx := r.Context()
 
 	userID := r.URL.Query().Get("userId")
-	status := borrowRequestStatus(r.URL.Query().Get("status"))
+	status := r.URL.Query().Get("status")
 	sort := api.Sort(r.URL.Query().Get("sort"))
 	category := r.URL.Query().Get("category")
 	params := borrowedItemParams{

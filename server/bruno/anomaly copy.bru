@@ -1,0 +1,43 @@
+meta {
+  name: anomaly copy
+  type: http
+  seq: 23
+}
+
+post {
+  url: http://localhost:8000/anomalies
+  body: json
+  auth: inherit
+}
+
+body:json {
+  [
+    {
+      "borrowRequestId": "req-005",
+      "borrowedAt": "2024-01-19T11:00:00",
+      "expectedReturnAt": "2024-01-20T12:00:00",
+      "borrower": {
+        "userId": "user5",
+        "name": "Alice Williams"
+      },
+      "equipments": [
+        {
+          "equipmentTypeId": "laptop",
+          "quantity": 1
+        }
+      ],
+      "location": "Library",
+      "purpose": "Research",
+      "borrowReviewedBy": {
+        "userId": "admin2",
+        "name": "Admin Jones"
+      },
+      "status": "active"
+    }
+  ]
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,12 +1,77 @@
-import { keepPreviousData, queryOptions } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 import { BACKEND_URL, type ApiResponse } from "../api";
 import type { Borrower } from "./borrow";
-// import { fetch } from '@tauri-apps/plugin-http';
+
+export const DEFAULT_EQUIPMENT_IMAGE =
+	"https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 
 export enum EquipmentStatus {
 	Available = "available",
+	Reserved = "reserved",
 	Borrowed = "borrowed",
+	Damaged = "damaged",
+	Lost = "lost",
+	Maintenance = "maintenance",
+	Disposed = "disposed",
 }
+
+export const equipmentStatuses: EquipmentStatusDetail[] = [
+	{
+		id: 1,
+		code: EquipmentStatus.Available,
+		label: "Available",
+	},
+	{
+		id: 2,
+		code: EquipmentStatus.Reserved,
+		label: "Reserved",
+	},
+	{
+		id: 3,
+		code: EquipmentStatus.Borrowed,
+		label: "Borrowed",
+	},
+	{
+		id: 4,
+		code: EquipmentStatus.Damaged,
+		label: "Damaged",
+	},
+	{
+		id: 5,
+		code: EquipmentStatus.Lost,
+		label: "Lost",
+	},
+	{
+		id: 6,
+		code: EquipmentStatus.Maintenance,
+		label: "Maintenance",
+	},
+	{
+		id: 7,
+		code: EquipmentStatus.Disposed,
+		label: "Disposed",
+	},
+];
+
+export type EquipmentStatusDetail = {
+	id: number;
+	code: EquipmentStatus;
+	label: string;
+};
+
+export type EquipmentStatusQuantity = {
+	quantity: number;
+	status: EquipmentStatusDetail;
+};
+
+export type EquipmentType = {
+	id: string;
+	name: string;
+	brand?: string;
+	model?: string;
+	imageUrl?: string;
+	statusQuantity: EquipmentStatusQuantity[];
+};
 
 export type Equipment = {
 	id: string;
@@ -15,7 +80,7 @@ export type Equipment = {
 	model?: string;
 	imageUrl?: string;
 	quantity: number;
-	status: EquipmentStatus;
+	status: EquipmentStatusDetail;
 	borrower?: Borrower;
 };
 
@@ -49,7 +114,26 @@ export const equipmentsQuery = (params: GetEquipmentParams) =>
 	queryOptions({
 		queryKey: ["equipments", params],
 		queryFn: () => getEquipments(params),
-		placeholderData: keepPreviousData,
+	});
+
+async function getEquipmentType(id: string): Promise<EquipmentType> {
+	const url = new URL(`${BACKEND_URL}/equipments/${id}`);
+	const response = await fetch(url.toString(), {
+		method: "GET",
+	});
+
+	const result: ApiResponse<EquipmentType> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result.data;
+}
+
+export const equipmentTypeQuery = (id: string) =>
+	queryOptions({
+		queryKey: ["equipments", id],
+		queryFn: () => getEquipmentType(id),
 	});
 
 async function getEquipmentNames(): Promise<string[]> {
@@ -70,5 +154,20 @@ export const equipmentNamesQuery = () =>
 	queryOptions({
 		queryKey: ["equipment-names"],
 		queryFn: () => getEquipmentNames(),
-		placeholderData: keepPreviousData,
 	});
+
+type EquipmentBorrower = {
+	quantity: number;
+	borrower: Borrower;
+	expectedReturnAt: string;
+};
+
+export type EquipmentWithBorrower = {
+	id: string;
+	name: string;
+	brand?: string;
+	model?: string;
+	imageUrl?: string;
+	quantity: number;
+	borrowers: EquipmentBorrower[];
+};
