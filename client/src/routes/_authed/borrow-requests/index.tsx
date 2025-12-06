@@ -4,13 +4,9 @@ import {
 	type BorrowTransaction,
 	type ReviewBorrowRequest,
 	type ReviewBorrowResponse,
-    type UpdateBorrowResponse,
+	type UpdateBorrowResponse,
 } from "@/lib/equipment/borrow";
-import {
-	useMutation,
-	useQuery,
-	useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type JSX } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -245,10 +241,7 @@ function RouteComponent(): JSX.Element {
 										{anomalyResult &&
 										anomalyResult.isAnomaly &&
 										SHOW_ANOMALY ? (
-											<Badge
-												className="mt-1 mx-auto block"
-												variant="destructive"
-											>
+											<Badge className="mt-1" variant="destructive">
 												Anomaly
 											</Badge>
 										) : null}
@@ -337,15 +330,23 @@ function BorrowRequestReviewContent(
 					</TitleSmall>
 				</DrawerTitle>
 
-				<div className="text-muted">
-					<Caption>
+				<div>
+					<Caption className="text-muted">
 						Requested on {format(request.borrowedAt, "MMMM d, yyyy - hh:mm a")}
 					</Caption>
 
-					<Caption>
+					<Caption className="text-muted">
 						Will return on{" "}
 						{format(request.expectedReturnAt, "MMMM d, yyyy - hh:mm a")}
 					</Caption>
+
+					{props.selectedRequest.anomalyResult &&
+					props.selectedRequest.anomalyResult.isAnomaly &&
+					SHOW_ANOMALY ? (
+						<Badge className="mt-1" variant="destructive">
+							Anomaly
+						</Badge>
+					) : null}
 				</div>
 			</DrawerHeader>
 
