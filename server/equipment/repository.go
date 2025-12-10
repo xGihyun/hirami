@@ -132,7 +132,7 @@ type equipment struct {
 type equipmentWithBorrower struct {
 	equipment
 
-	Borrower *user.BasicInfo `json:"borrower"`
+	Borrowers []user.BasicInfo `json:"borrowers"`
 }
 
 type getEquipmentParams struct {
@@ -260,7 +260,10 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 			'label', label
 		) AS status,
 		COUNT(equipment_id) AS quantity,
-		borrower
+        COALESCE(
+            jsonb_agg(DISTINCT borrower) FILTER (WHERE borrower IS NOT NULL), 
+            '[]'::jsonb
+        ) AS borrowers
 	FROM equipment_with_status
 	WHERE TRUE
 	`
@@ -289,7 +292,7 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 	}
 
 	query += ` 
-	GROUP BY equipment_type_id, name, brand, model, image_url, status, borrower, equipment_status_id
+	GROUP BY equipment_type_id, name, brand, model, image_url, status, equipment_status_id
 	ORDER BY equipment_status_id
 	`
 
