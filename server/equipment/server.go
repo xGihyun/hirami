@@ -50,6 +50,8 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /return-requests/otp/{code}", api.Handler(s.getReturnRequestByOTP))
 
 	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
+
+	// TODO: Update endpoint to /users/{userId}/borrowed-equipments
 	mux.Handle("GET /borrowed-items", api.Handler(s.getBorrowedItems))
 }
 

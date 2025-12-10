@@ -129,6 +129,7 @@ type equipment struct {
 	Status          equipmentStatusDetail `json:"status,omitzero"`
 }
 
+// TODO: Avoid struct embedding
 type equipmentWithBorrower struct {
 	equipment
 
@@ -524,14 +525,11 @@ type createBorrowRequest struct {
 	RequestedBy      string                `json:"requestedBy"`
 }
 
+// TODO: Delete this and use the base `equipment` instead
 type borrowedEquipment struct {
-	BorrowRequestItemID string  `json:"borrowRequestItemId"`
-	EquipmentTypeID     string  `json:"equipmentTypeId"`
-	Name                string  `json:"name"`
-	Brand               *string `json:"brand"`
-	Model               *string `json:"model"`
-	ImageURL            *string `json:"imageUrl"`
-	Quantity            uint    `json:"quantity"`
+	equipment
+
+	BorrowRequestItemID string `json:"borrowRequestItemId"`
 }
 
 type createBorrowResponse struct {
@@ -2012,12 +2010,14 @@ type OTP struct {
 }
 
 type borrowTransaction struct {
-	BorrowRequestID string              `json:"borrowRequestId"`
-	BorrowedAt      time.Time           `json:"borrowedAt"`
-	Borrower        user.BasicInfo      `json:"borrower"`
-	Equipments      []borrowedEquipment `json:"equipments"`
-	Location        string              `json:"location"`
-	Purpose         string              `json:"purpose"`
+	BorrowRequestID string `json:"borrowRequestId"`
+	// TODO: change to `requestedAt` since this is the time when the request was made.
+	// Not when the item(s) were received.
+	BorrowedAt time.Time      `json:"borrowedAt"`
+	Borrower   user.BasicInfo `json:"borrower"`
+	Equipments []equipment    `json:"equipments"`
+	Location   string         `json:"location"`
+	Purpose    string         `json:"purpose"`
 
 	ExpectedReturnAt  time.Time                 `json:"expectedReturnAt"`
 	ActualReturnAt    *time.Time                `json:"actualReturnAt"`
@@ -2078,11 +2078,13 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			'avatarUrl', person_borrow_reviewer.avatar_url
 		  ) 
 		END AS borrow_reviewed_by,
+
+		-- TODO: Implement this
 		NULL AS return_confirmed_by,
+
 		jsonb_agg(
 			jsonb_build_object(
-				'equipmentTypeId', equipment_type.equipment_type_id,
-				'borrowRequestItemId', borrow_request_item.borrow_request_item_id,
+				'id', equipment_type.equipment_type_id,
 				'name', equipment_type.name,
 				'brand', equipment_type.brand,
 				'model', equipment_type.model,
