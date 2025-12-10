@@ -13,8 +13,9 @@ import { UserRole } from "@/lib/user";
 
 export const Route = createFileRoute("/_authed")({
 	component: RouteComponent,
-	beforeLoad: ({ context }) => {
-		if (!context.auth.user) {
+	beforeLoad: async ({ context }) => {
+		const session = await context.auth.validateSession();
+		if (session === null) {
 			throw redirect({ to: "/onboarding" });
 		}
 	},
