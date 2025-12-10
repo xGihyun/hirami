@@ -21,17 +21,6 @@ export type BorrowedEquipment = {
 	quantity: number;
 };
 
-export type BorrowRequest = {
-	id: string;
-	createdAt: string;
-	borrower: Borrower;
-	equipments: BorrowedEquipment[];
-	location: string;
-	purpose: string;
-	expectedReturnAt: string;
-	status: BorrowRequestStatus;
-};
-
 async function getBorrowRequests(): Promise<BorrowTransaction[]> {
 	const response = await fetch(`${BACKEND_URL}/borrow-requests`, {
 		method: "GET",
