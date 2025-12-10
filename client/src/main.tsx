@@ -11,6 +11,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./auth.tsx";
 import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
 
+import "@/lib/zod.ts";
+
 const queryClient = new QueryClient();
 
 // Create a new router instance
@@ -70,7 +72,7 @@ function handleDeepLink(url: string): void {
 // const startUrls = await getCurrent();
 // console.log("Initial deep link check:", startUrls);
 // if (startUrls && startUrls.length > 0) {
-	// handleDeepLink(startUrls[0]);
+// handleDeepLink(startUrls[0]);
 // }
 
 await onOpenUrl((urls) => {

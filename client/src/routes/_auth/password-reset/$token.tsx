@@ -41,7 +41,7 @@ const formSchema = z
 		token: z.string().nonempty(),
 		newPassword: z
 			.string()
-			.nonempty({ error: "This field must not be left blank." })
+			.nonempty()
 			.min(8, "Password requirements not met.")
 			.refine(hasUppercase, "Password requirements not met.")
 			.refine(hasLowercase, "Password requirements not met.")
@@ -49,7 +49,7 @@ const formSchema = z
 			.refine(hasSpecialChar, "Password requirements not met."),
 		confirmPassword: z
 			.string()
-			.nonempty({ error: "This field must not be left blank." }),
+			.nonempty(),
 	})
 	.refine((data) => data.newPassword === data.confirmPassword, {
 		message: "Password and Confirm Password do not match",

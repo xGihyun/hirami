@@ -1,8 +1,6 @@
 import {
 	DisplayLarge,
-	LabelLarge,
 	LabelMedium,
-	LabelSmall,
 	TitleSmall,
 } from "@/components/typography";
 import { Button } from "@/components/ui/button";
@@ -16,7 +14,6 @@ import {
 import type { JSX } from "react";
 import z from "zod";
 import { Onboarding } from "./-components/onboarding";
-import { openPath } from "@tauri-apps/plugin-opener";
 
 const searchSchema = z.object({
 	step: z.number().optional(),
@@ -47,10 +44,6 @@ function RouteComponent(): JSX.Element {
 }
 
 function Welcome(): JSX.Element {
-	// async function handleOpen(): Promise<void> {
-	// 	await openPath("Hirami - Privacy Policy and T&C.pdf");
-	// }
-
 	return (
 		<div className="h-full w-full flex flex-col justify-center items-center">
 			<div className="w-full space-y-20">

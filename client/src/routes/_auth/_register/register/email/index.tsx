@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_auth/_register/register/email/")({
 const formSchema = z.object({
 	email: z
 		.string()
-		.nonempty({ error: "This field must not be left blank." })
+		.nonempty()
 		.email({ error: "Invalid email format." }),
 });
 

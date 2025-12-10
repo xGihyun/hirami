@@ -8,14 +8,10 @@ const borrowEquipmentItemSchema = z.object({
 
 export const borrowRequestSchema = z.object({
 	equipments: z.array(borrowEquipmentItemSchema),
-	location: z
-		.string()
-		.nonempty({ error: "This field must not be left blank." }),
-	purpose: z.string().nonempty({ error: "This field must not be left blank." }),
+	location: z.string().nonempty(),
+	purpose: z.string().nonempty(),
 	expectedReturnAt: z.date(),
-	requestedBy: z
-		.string()
-		.nonempty({ error: "This field must not be left blank." }),
+	requestedBy: z.string().nonempty(),
 });
 
 export type BorrowRequestSchema = z.infer<typeof borrowRequestSchema>;

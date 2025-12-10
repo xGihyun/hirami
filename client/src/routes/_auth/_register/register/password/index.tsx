@@ -37,15 +37,13 @@ const formSchema = z
 	.object({
 		password: z
 			.string()
-			.nonempty({ error: "This field must not be left blank." })
+			.nonempty()
 			.min(8, "Password requirements not met.")
 			.refine(hasUppercase, "Password requirements not met.")
 			.refine(hasLowercase, "Password requirements not met.")
 			.refine(hasNumber, "Password requirements not met.")
 			.refine(hasSpecialChar, "Password requirements not met."),
-		confirmPassword: z
-			.string()
-			.nonempty({ error: "This field must not be left blank." }),
+		confirmPassword: z.string().nonempty(),
 	})
 	.refine((data) => data.password === data.confirmPassword, {
 		message: "Password and Confirm Password do not match",

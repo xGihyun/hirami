@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_auth/password-reset/")({
 const formSchema = z.object({
 	email: z
 		.string()
-		.nonempty({ error: "This field must not be left blank." })
+		.nonempty()
 		.email({ error: "Invalid email format." }),
 });
 

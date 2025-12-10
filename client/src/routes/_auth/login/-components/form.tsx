@@ -31,11 +31,11 @@ import { FullScreenLoading } from "@/components/loading";
 const formSchema = z.object({
 	email: z
 		.string()
-		.nonempty({ error: "This field must not be left blank." })
+		.nonempty()
 		.email({ error: "Invalid email format." }),
 	password: z
 		.string()
-		.nonempty({ error: "This field must not be left blank." }),
+		.nonempty(),
 });
 
 type LoginResponse = {

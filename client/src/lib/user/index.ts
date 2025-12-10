@@ -91,11 +91,11 @@ export const editUserSchema = z.object({
 	email: z.email().optional(),
 	firstName: z
 		.string()
-		.nonempty({ error: "This field must not be left blank." }),
+		.nonempty(),
 	middleName: z.string().optional(),
 	lastName: z
 		.string()
-		.nonempty({ error: "This field must not be left blank." }),
+		.nonempty(),
 	role: z.enum(UserRole),
 	avatar: z
 		.instanceof(File)
