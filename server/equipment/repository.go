@@ -129,10 +129,11 @@ type equipment struct {
 	Status          equipmentStatusDetail `json:"status,omitzero"`
 }
 
-// TODO: Avoid struct embedding
 type equipmentWithBorrower struct {
-	equipment
+	Equipment equipment `json:"equipment"`
 
+	// TODO: Include the quantity (and other transaction details) of
+	// equipment borrowed, not just the borrower details
 	Borrowers []user.BasicInfo `json:"borrowers"`
 }
 
@@ -250,17 +251,19 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 		JOIN equipment_status ON equipment_status.equipment_status_id = equipment.equipment_status_id
 	)
 	SELECT
-		equipment_type_id,
-		name,
-		brand,
-		model,
-		image_url,
 		jsonb_build_object(
-			'id', equipment_status_id,
-			'code', code,
-			'label', label
-		) AS status,
-		COUNT(equipment_id) AS quantity,
+			'id', equipment_type_id,
+			'name', name,
+			'brand', brand,
+			'model', model,
+			'imageUrl', image_url,
+			'status', jsonb_build_object(
+			 	'id', equipment_status_id,
+			 	'code', code,
+			 	'label', label
+			 ),
+			'quantity', COUNT(equipment_id)
+		) AS equipment,
         COALESCE(
             jsonb_agg(DISTINCT borrower) FILTER (WHERE borrower IS NOT NULL), 
             '[]'::jsonb
@@ -293,7 +296,15 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 	}
 
 	query += ` 
-	GROUP BY equipment_type_id, name, brand, model, image_url, status, equipment_status_id
+	GROUP BY 
+		equipment_type_id,
+		name, 
+		brand,
+		model,
+		image_url,
+		equipment_status_id,
+		code,
+		label
 	ORDER BY equipment_status_id
 	`
 
