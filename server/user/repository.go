@@ -291,47 +291,6 @@ func (r *repository) getAll(ctx context.Context, params getParams) ([]user, erro
 //
 // User Management
 //
-// TODO: Add profile picture upload
-
-type createRequest struct {
-	Email      string  `json:"email"`
-	Password   string  `json:"password"`
-	FirstName  string  `json:"firstName"`
-	MiddleName *string `json:"middleName"`
-	LastName   string  `json:"lastName"`
-	Role       Role    `json:"role"`
-}
-
-func (r *repository) create(ctx context.Context, arg createRequest) error {
-	passwordHash, err := hashPassword(arg.Password)
-	if err != nil {
-		return err
-	}
-
-	query := `
-	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, person_role_id)
-	VALUES ($1, $2, $3, $4, $5, $6)
-	RETURNING person_id
-	`
-
-	var userID string
-
-	row := r.querier.QueryRow(
-		ctx,
-		query,
-		arg.Email,
-		passwordHash,
-		arg.FirstName,
-		arg.MiddleName,
-		arg.LastName,
-		arg.Role,
-	)
-	if err := row.Scan(&userID); err != nil {
-		return err
-	}
-
-	return nil
-}
 
 type UpdateRequest struct {
 	PersonID   string
