@@ -43,7 +43,7 @@ func (s *Server) detectAnomaly(ctx context.Context, arg createBorrowResponse) er
 	}
 	defer resp.Body.Close()
 
-	var anomalyRes []anomalyResult
+	var anomalyRes []anomaly
 	if err := json.NewDecoder(resp.Body).Decode(&anomalyRes); err != nil {
 		return err
 	}
