@@ -142,9 +142,6 @@ type activeBorrowRequest struct {
 
 type equipmentWithBorrower struct {
 	Equipment equipment `json:"equipment"`
-
-	// TODO: Include the quantity (and other transaction details) of
-	// equipment borrowed, not just the borrower details
 	Requests []activeBorrowRequest `json:"requests"`
 }
 
