@@ -1277,15 +1277,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 			) 
 		END AS review,
 
-		jsonb_agg( 
-			jsonb_build_object(
-				'id', all_return_confirmation.return_request_item_id,
-				'confirmedBy', all_return_confirmation.confirmed_by,
-				'confirmedAt', all_return_confirmation.created_at,
-				'equipments', all_return_confirmation.equipments,
-				'remarks', all_return_confirmation.remarks
-			)
-		) AS return_confirmations,
+		COALESCE(return_confirmation_agg.return_confirmations, '[]'::jsonb) AS return_confirmations,
 
 		jsonb_agg(
 			jsonb_build_object(
@@ -1334,7 +1326,19 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 	LEFT JOIN borrow_request_otp ON borrow_request_otp.borrow_request_id = borrow_request.borrow_request_id
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
-	LEFT JOIN all_return_confirmation ON all_return_confirmation.borrow_request_id = borrow_request.borrow_request_id
+	LEFT JOIN LATERAL (
+		SELECT jsonb_agg( 
+			jsonb_build_object(
+				'id', all_return_confirmation.return_request_item_id,
+				'confirmedBy', all_return_confirmation.confirmed_by,
+				'confirmedAt', all_return_confirmation.created_at,
+				'equipments', all_return_confirmation.equipments,
+				'remarks', all_return_confirmation.remarks
+			)
+		) AS return_confirmations
+		FROM all_return_confirmation
+		WHERE all_return_confirmation.borrow_request_id = borrow_request.borrow_request_id
+	) return_confirmation_agg ON TRUE
 	WHERE borrow_request.borrow_request_status_id = $1
 	GROUP BY 
 		person.person_id,
@@ -1351,7 +1355,8 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 		borrow_request_status.borrow_request_status_id,
 		latest_return_data.created_at,
 		anomaly_result.anomaly_result_id,
-		borrow_request_otp.borrow_request_otp_id
+		borrow_request_otp.borrow_request_otp_id,
+		return_confirmation_agg.return_confirmations
 	`
 
 	rows, err := r.querier.Query(ctx, query, pending)
@@ -2159,7 +2164,7 @@ type borrowRequest struct {
 	ReturnConfirmations []returnConfirmation `json:"returnConfirmations"`
 
 	OTP     *OTP    `json:"otp"`
-	Anomaly anomaly `json:"anomaly"`
+	Anomaly *anomaly `json:"anomaly"`
 }
 
 type borrowHistoryParams struct {
@@ -2253,15 +2258,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			) 
 		END AS review,
 
-		jsonb_agg( 
-			jsonb_build_object(
-				'id', all_return_confirmation.return_request_item_id,
-				'confirmedBy', all_return_confirmation.confirmed_by,
-				'confirmedAt', all_return_confirmation.created_at,
-				'equipments', all_return_confirmation.equipments,
-				'remarks', all_return_confirmation.remarks
-			)
-		) AS return_confirmations,
+		COALESCE(return_confirmation_agg.return_confirmations, '[]'::jsonb) AS return_confirmations,
 
 		jsonb_agg(
 			jsonb_build_object(
@@ -2310,7 +2307,19 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	LEFT JOIN borrow_request_otp ON borrow_request_otp.borrow_request_id = borrow_request.borrow_request_id
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
-	LEFT JOIN all_return_confirmation ON all_return_confirmation.borrow_request_id = borrow_request.borrow_request_id
+	LEFT JOIN LATERAL (
+		SELECT jsonb_agg( 
+			jsonb_build_object(
+				'id', all_return_confirmation.return_request_item_id,
+				'confirmedBy', all_return_confirmation.confirmed_by,
+				'confirmedAt', all_return_confirmation.created_at,
+				'equipments', all_return_confirmation.equipments,
+				'remarks', all_return_confirmation.remarks
+			)
+		) AS return_confirmations
+		FROM all_return_confirmation
+		WHERE all_return_confirmation.borrow_request_id = borrow_request.borrow_request_id
+	) return_confirmation_agg ON TRUE
 	WHERE TRUE
 	`
 
@@ -2381,7 +2390,8 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		borrow_request_status.borrow_request_status_id,
 		latest_return_data.created_at,
 		anomaly_result.anomaly_result_id,
-		borrow_request_otp.borrow_request_otp_id
+		borrow_request_otp.borrow_request_otp_id,
+		return_confirmation_agg.return_confirmations
 	`
 
 	sortByColumn := "borrow_request.created_at"
