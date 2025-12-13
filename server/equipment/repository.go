@@ -129,12 +129,23 @@ type equipment struct {
 	Status          equipmentStatusDetail `json:"status,omitzero"`
 }
 
+type activeBorrowRequest struct {
+	BorrowRequestID  string                    `json:"id"`
+	RequestedAt      time.Time                 `json:"requestedAt"`
+	Borrower         user.BasicInfo            `json:"borrower"`
+	Location         string                    `json:"location"`
+	Purpose          string                    `json:"purpose"`
+	ExpectedReturnAt time.Time                 `json:"expectedReturnAt"`
+	Status           borrowRequestStatusDetail `json:"status"`
+	Review           borrowReview              `json:"review"`
+}
+
 type equipmentWithBorrower struct {
 	Equipment equipment `json:"equipment"`
 
 	// TODO: Include the quantity (and other transaction details) of
 	// equipment borrowed, not just the borrower details
-	Borrowers []user.BasicInfo `json:"borrowers"`
+	Requests []activeBorrowRequest `json:"requests"`
 }
 
 type getEquipmentParams struct {
@@ -145,135 +156,74 @@ type getEquipmentParams struct {
 
 func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]equipmentWithBorrower, error) {
 	query := `
-	WITH reserved_counts AS (
-		SELECT 
-			borrow_request_item.equipment_type_id,
-			SUM(borrow_request_item.quantity) AS reserved_quantity,
-			jsonb_build_object(
-				'id', person.person_id,
-				'firstName', person.first_name,
-				'middleName', person.middle_name,
-				'lastName', person.last_name,
-				'avatarUrl', person.avatar_url
-			) AS reserver
-		FROM borrow_request_item
-		JOIN borrow_request 
-			ON borrow_request.borrow_request_id = borrow_request_item.borrow_request_id
-		JOIN person ON person.person_id = borrow_request.requested_by
-		WHERE borrow_request.borrow_request_status_id = $1
-		GROUP BY 
-			borrow_request_item.equipment_type_id, 
-			person.person_id, 
-			person.first_name, 
-			person.middle_name,
-			person.last_name,
-			person.avatar_url
-	),
-	equipment_with_status AS (
-		SELECT
-			equipment_type.equipment_type_id,
-			equipment_type.name,
-			equipment_type.brand,
-			equipment_type.model,
-			equipment_type.image_url,
-			equipment.equipment_id,
-			equipment_status.equipment_status_id,
-			equipment_status.code,
-			equipment_status.label,
-			CASE
-				-- Get borrower info if equipment is borrowed
-				WHEN EXISTS (
-					SELECT 1 FROM borrow_transaction
-					WHERE borrow_transaction.equipment_id = equipment.equipment_id
-					AND NOT EXISTS (
-						SELECT 1 
-						FROM return_transaction 
-						WHERE return_transaction.borrow_transaction_id 
-							= borrow_transaction.borrow_transaction_id
-					)
-				) THEN (
-					SELECT jsonb_build_object(
-						'id', person.person_id,
-						'firstName', person.first_name,
-						'middleName', person.middle_name,
-						'lastName', person.last_name,
-						'avatarUrl', person.avatar_url
-					)
-					FROM borrow_transaction
-					JOIN borrow_request_item 
-						ON borrow_request_item.borrow_request_item_id 
-							= borrow_transaction.borrow_request_item_id
-					JOIN borrow_request ON borrow_request.borrow_request_id 
-						= borrow_request_item.borrow_request_id
-					JOIN person ON person.person_id = borrow_request.requested_by
-					WHERE borrow_transaction.equipment_id = equipment.equipment_id
-					AND NOT EXISTS (
-						SELECT 1 FROM return_transaction 
-						WHERE return_transaction.borrow_transaction_id 
-							= borrow_transaction.borrow_transaction_id
-					)
-					ORDER BY borrow_transaction.created_at DESC
-					LIMIT 1
-				)
-				-- Get reserver info if equipment is reserved
-				WHEN EXISTS (
-					SELECT 1 FROM reserved_counts
-					WHERE reserved_counts.equipment_type_id = equipment.equipment_type_id
-				)
-				AND (
-					SELECT COUNT(*)
-					FROM equipment e2
-					WHERE e2.equipment_type_id = equipment.equipment_type_id
-					AND e2.equipment_id <= equipment.equipment_id
-					AND NOT EXISTS (
-						SELECT 1 FROM borrow_transaction bt
-						WHERE bt.equipment_id = e2.equipment_id
-						AND NOT EXISTS (
-							SELECT 1 FROM return_transaction rt
-							WHERE rt.borrow_transaction_id = bt.borrow_transaction_id
-						)
-					)
-				) <= COALESCE((
-					SELECT reserved_quantity 
-					FROM reserved_counts 
-					WHERE reserved_counts.equipment_type_id = equipment.equipment_type_id
-				), 0)
-				THEN (
-					SELECT reserver
-					FROM reserved_counts
-					WHERE reserved_counts.equipment_type_id = equipment.equipment_type_id
-					LIMIT 1
-				)
-				ELSE NULL
-			END AS borrower
-		FROM equipment_type
-		JOIN equipment ON equipment.equipment_type_id = equipment_type.equipment_type_id
-		JOIN equipment_status ON equipment_status.equipment_status_id = equipment.equipment_status_id
-	)
-	SELECT
+	SELECT 
 		jsonb_build_object(
-			'id', equipment_type_id,
-			'name', name,
-			'brand', brand,
-			'model', model,
-			'imageUrl', image_url,
+			'id', equipment_type.equipment_type_id,
+			'name', equipment_type.name,
+			'brand', equipment_type.brand,
+			'model', equipment_type.model,
+			'imageUrl', equipment_type.image_url,
 			'status', jsonb_build_object(
-			 	'id', equipment_status_id,
-			 	'code', code,
-			 	'label', label
-			 ),
-			'quantity', COUNT(equipment_id)
+			 	'id', equipment_status.equipment_status_id,
+			 	'code', equipment_status.code,
+			 	'label', equipment_status.label
+			),
+			'quantity', COUNT(equipment.equipment_id)
 		) AS equipment,
-        COALESCE(
-            jsonb_agg(DISTINCT borrower) FILTER (WHERE borrower IS NOT NULL), 
-            '[]'::jsonb
-        ) AS borrowers
-	FROM equipment_with_status
-	WHERE TRUE
+		CASE 
+            WHEN equipment_status.equipment_status_id IN ($1, $2) 
+            THEN COALESCE(active_borrow_request.borrowers, '[]'::jsonb) 
+            ELSE '[]'::jsonb 
+        END AS requests
+	FROM equipment_type
+	JOIN equipment USING (equipment_type_id)
+	JOIN equipment_status USING (equipment_status_id)
+	LEFT JOIN LATERAL (
+		SELECT
+			jsonb_agg(
+				jsonb_build_object(
+					'id', borrow_request.borrow_request_id,
+					'requestedAt', borrow_request.created_at,
+					'borrower', jsonb_build_object(
+						'id', borrower.person_id,
+						'firstName', borrower.first_name,
+						'middleName', borrower.middle_name,
+						'lastName', borrower.last_name,
+						'avatarUrl', borrower.avatar_url
+					),
+					'location', borrow_request.location,
+					'purpose', borrow_request.purpose,
+					'expectedReturnAt', borrow_request.expected_return_at,
+					'status', jsonb_build_object(
+						'id', borrow_request_status.borrow_request_status_id,
+						'code', borrow_request_status.code,
+						'label', borrow_request_status.label
+					),
+					'review', jsonb_build_object(
+						'reviewedBy', jsonb_build_object(
+							'id', reviewer.person_id,
+							'firstName', reviewer.first_name,
+							'middleName', reviewer.middle_name,
+							'lastName', reviewer.last_name,
+							'avatarUrl', reviewer.avatar_url
+						),
+						'reviewedAt', borrow_request.reviewed_at,
+						'remarks', borrow_request.remarks
+					)
+				)
+			) AS borrowers
+		FROM borrow_request
+		JOIN person borrower ON borrower.person_id = borrow_request.requested_by
+		JOIN person reviewer ON reviewer.person_id = borrow_request.reviewed_by
+		JOIN borrow_request_status USING (borrow_request_status_id)
+		JOIN borrow_request_item USING (borrow_request_id)
+		WHERE borrow_request_status.borrow_request_status_id IN ($3, $4)
+			AND borrow_request_item.equipment_type_id = equipment_type.equipment_type_id
+	) AS active_borrow_request ON TRUE
 	`
 
-	var args []any = []any{approved}
-	argIdx := 2
+	var args []any = []any{reserved, borrowed, approved, claimed}
+	argIdx := len(args)
 
 	if params.name != nil && *params.name != "" {
 		names := strings.Split(*params.name, ",")
@@ -297,15 +247,15 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 
 	query += ` 
 	GROUP BY 
-		equipment_type_id,
-		name, 
-		brand,
-		model,
-		image_url,
-		equipment_status_id,
-		code,
-		label
-	ORDER BY equipment_status_id
+		equipment_type.equipment_type_id,
+		equipment_type.name, 
+		equipment_type.brand,
+		equipment_type.model,
+		equipment_type.image_url,
+		equipment_status.equipment_status_id,
+		equipment_status.code,
+		equipment_status.label,
+		active_borrow_request.borrowers
 	`
 
 	rows, err := r.querier.Query(ctx, query, args...)
