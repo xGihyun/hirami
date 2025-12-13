@@ -220,7 +220,7 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 	`
 
 	var args []any = []any{reserved, borrowed, approved, claimed}
-	argIdx := len(args)
+	argIdx := len(args) + 1
 
 	if params.name != nil && *params.name != "" {
 		names := strings.Split(*params.name, ",")
