@@ -50,8 +50,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 
 	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
 
-	// TODO: Update endpoint to /users/{userId}/borrowed-equipments
-	mux.Handle("GET /borrowed-items", api.Handler(s.getBorrowedItems))
+	mux.Handle("GET /users/{userId}/borrowed-equipments", api.Handler(s.getBorrowedItems))
 }
 
 const (
@@ -898,12 +897,12 @@ func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Re
 func (s *Server) getBorrowedItems(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	userID := r.URL.Query().Get("userId")
+	userID := r.PathValue("userId")
 	status := r.URL.Query().Get("status")
 	sort := api.Sort(r.URL.Query().Get("sort"))
 	category := r.URL.Query().Get("category")
 	params := borrowedItemParams{
-		userID:   &userID,
+		userID:   userID,
 		status:   &status,
 		sort:     &sort,
 		category: &category,
