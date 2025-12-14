@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -425,11 +424,13 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
-	go func() {
-		if err := s.detectAnomaly(context.Background(), res); err != nil {
-			slog.Error(err.Error())
+	if err := s.detectAnomaly(context.Background(), res); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create borrow request anomaly result.",
 		}
-	}()
+	}
 
 	eventRes := sse.EventResponse{
 		Event: "equipment:create",
