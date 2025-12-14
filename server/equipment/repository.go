@@ -484,20 +484,20 @@ type createBorrowRequest struct {
 }
 
 // TODO: Delete this and use the base `equipment` instead
-type borrowedEquipment struct {
-	equipment
-
-	BorrowRequestItemID string `json:"borrowRequestItemId"`
-}
+// type borrowedEquipment struct {
+// 	equipment
+//
+// 	BorrowRequestItemID string `json:"borrowRequestItemId"`
+// }
 
 type createBorrowResponse struct {
-	BorrowRequestID  string              `json:"borrowRequestId"`
-	CreatedAt        time.Time           `json:"createdAt"`
-	Borrower         user.BasicInfo      `json:"borrower"`
-	Equipments       []borrowedEquipment `json:"equipments"`
-	Location         string              `json:"location"`
-	Purpose          string              `json:"purpose"`
-	ExpectedReturnAt time.Time           `json:"expectedReturnAt"`
+	BorrowRequestID  string         `json:"borrowRequestId"`
+	CreatedAt        time.Time      `json:"createdAt"`
+	Borrower         user.BasicInfo `json:"borrower"`
+	Equipments       []equipment    `json:"equipments"`
+	Location         string         `json:"location"`
+	Purpose          string         `json:"purpose"`
+	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
 }
 
 var (
@@ -520,22 +520,16 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 
 	// Check availability for all equipment types
 	availabilityQuery := `
-	SELECT COUNT(equipment.equipment_id) AS available_quantity
+	SELECT COUNT(equipment_id) AS available_quantity
 	FROM equipment
-	WHERE equipment.equipment_type_id = $1
-	AND NOT EXISTS (
-		SELECT 1 FROM borrow_transaction
-		WHERE borrow_transaction.equipment_id = equipment.equipment_id
-		AND NOT EXISTS (
-			SELECT 1 FROM return_transaction 
-			WHERE return_transaction.borrow_transaction_id = borrow_transaction.borrow_transaction_id
-		)
-	)
+	WHERE equipment_type_id = $1 AND equipment_status_id = $2
 	`
 
 	for _, item := range arg.Equipments {
 		var availableQuantity uint
-		if err := r.querier.QueryRow(ctx, availabilityQuery, item.EquipmentTypeID).Scan(&availableQuantity); err != nil {
+
+		row := r.querier.QueryRow(ctx, availabilityQuery, item.EquipmentTypeID, available)
+		if err := row.Scan(&availableQuantity); err != nil {
 			return createBorrowResponse{}, err
 		}
 
@@ -571,8 +565,7 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		) AS borrower,
 		jsonb_agg(
 			jsonb_build_object(
-				'borrowRequestItemId', inserted_items.borrow_request_item_id,
-				'equipmentTypeId', equipment_type.equipment_type_id,
+				'id', equipment_type.equipment_type_id,
 				'name', equipment_type.name,
 				'brand', equipment_type.brand,
 				'model', equipment_type.model,
@@ -2420,7 +2413,7 @@ type borrowedItem struct {
 	BorrowRequestID string              `json:"borrowRequestId"`
 	BorrowedAt      time.Time           `json:"borrowedAt"`
 	Borrower        user.BasicInfo      `json:"borrower"`
-	Equipments      []borrowedEquipment `json:"equipments"`
+	Equipments      []equipment `json:"equipments"`
 	Location        string              `json:"location"`
 	Purpose         string              `json:"purpose"`
 
