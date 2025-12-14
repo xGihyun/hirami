@@ -1,11 +1,11 @@
 meta {
-  name: get-borrow-requests
+  name: get-borrowed-items
   type: http
-  seq: 16
+  seq: 25
 }
 
 get {
-  url: {{baseUrl}}/borrow-requests
+  url: {{baseUrl}}/users/{{userId}}/borrowed-equipments
   body: none
   auth: inherit
 }
