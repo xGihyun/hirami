@@ -141,8 +141,8 @@ type activeBorrowRequest struct {
 }
 
 type equipmentWithBorrower struct {
-	Equipment equipment `json:"equipment"`
-	Requests []activeBorrowRequest `json:"requests"`
+	Equipment equipment             `json:"equipment"`
+	Requests  []activeBorrowRequest `json:"requests"`
 }
 
 type getEquipmentParams struct {
@@ -2150,7 +2150,7 @@ type borrowRequest struct {
 	ActualReturnAt      *time.Time           `json:"actualReturnAt"`
 	ReturnConfirmations []returnConfirmation `json:"returnConfirmations"`
 
-	OTP     *OTP    `json:"otp"`
+	OTP     *OTP     `json:"otp"`
 	Anomaly *anomaly `json:"anomaly"`
 }
 
