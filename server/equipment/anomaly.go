@@ -54,7 +54,7 @@ func (s *Server) detectAnomaly(ctx context.Context, arg createBorrowResponse) er
 
 	// Send to SSE
 	eventRes := sse.EventResponse{
-		Event: "equipment:anomaly",
+		Event: eventEquipmentAnomaly,
 		Data:  anomalyRes[0],
 	}
 	jsonData, err = json.Marshal(eventRes)

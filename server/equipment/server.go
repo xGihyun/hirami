@@ -157,7 +157,7 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: eventEquipmentCreate,
 		Data:  equipment,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -358,7 +358,7 @@ func (s *Server) reallocate(w http.ResponseWriter, r *http.Request) api.Response
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:reallocate",
+		Event: eventEquipmentReallocate,
 	}
 	jsonData, err := json.Marshal(eventRes)
 	if err != nil {
@@ -431,8 +431,9 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
+	// TODO: Use the correct SSE event
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: eventEquipmentCreate,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -493,7 +494,7 @@ func (s *Server) updateBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "borrow-request:update",
+		Event: eventBorrowRequestUpdate,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -562,7 +563,7 @@ func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "borrow-request:review",
+		Event: eventBorrowRequestReview,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -638,7 +639,7 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: eventEquipmentCreate,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -766,7 +767,7 @@ func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) ap
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "return-request:confirm",
+		Event: eventReturnRequestConfirm,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
