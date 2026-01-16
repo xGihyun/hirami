@@ -20,6 +20,7 @@ import { LabelMedium } from "@/components/typography";
 import { CatalogCategories } from "./-components/catalog-categories";
 import { v4 as uuidv4 } from "uuid";
 import { ComponentLoading } from "@/components/loading";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
 
 const searchSchema = z.object({
 	categories: z.array(z.string()).optional().default([]),
@@ -90,21 +91,21 @@ function RouteComponent(): JSX.Element {
 		}
 
 		eventSource.addEventListener(
-			"equipment:create",
+			EquipmentServerEvent.EquipmentCreate,
 			handleEquipmentInvalidation,
 		);
 		eventSource.addEventListener(
-			"equipment:reallocate",
+			EquipmentServerEvent.EquipmentReallocate,
 			handleEquipmentRellocation,
 		);
 
 		return () => {
 			eventSource.removeEventListener(
-				"equipment:create",
+				EquipmentServerEvent.EquipmentCreate,
 				handleEquipmentInvalidation,
 			);
 			eventSource.removeEventListener(
-				"equipment:reallocate",
+				EquipmentServerEvent.EquipmentReallocate,
 				handleEquipmentRellocation,
 			);
 			eventSource.close();

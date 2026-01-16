@@ -38,6 +38,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
 
 const formSchema = z.object({
 	otp: z.string().max(7),
@@ -87,9 +88,9 @@ function RouteComponent(): JSX.Element {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
 		const handleEvent = () =>
 			queryClient.invalidateQueries(returnRequestsQuery({}));
-		eventSource.addEventListener("equipment:create", handleEvent);
+		eventSource.addEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
 		return () => {
-			eventSource.removeEventListener("equipment:create", handleEvent);
+			eventSource.removeEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
 			eventSource.close();
 		};
 	}, []);

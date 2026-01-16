@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
 
 export const Route = createFileRoute("/_authed")({
 	component: RouteComponent,
@@ -45,11 +46,10 @@ function RouteComponent(): JSX.Element {
 			});
 		}
 
-		const listenerType = "borrow-request:review";
-		eventSource.addEventListener(listenerType, handleEvent);
+		eventSource.addEventListener(EquipmentServerEvent.BorrowRequestReview, handleEvent);
 
 		return () => {
-			eventSource.removeEventListener(listenerType, handleEvent);
+			eventSource.removeEventListener(EquipmentServerEvent.BorrowRequestReview, handleEvent);
 			eventSource.close();
 		};
 	}, []);
