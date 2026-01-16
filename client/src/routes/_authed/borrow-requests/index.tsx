@@ -45,6 +45,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { QRCodeSVG } from "qrcode.react";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
 
 export const Route = createFileRoute("/_authed/borrow-requests/")({
 	component: RouteComponent,
@@ -121,16 +122,16 @@ function RouteComponent(): JSX.Element {
 			setIsReceived(res.status.code === BorrowRequestStatus.Claimed);
 		}
 
-		eventSource.addEventListener("equipment:create", handleEvent);
+		eventSource.addEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
 		eventSource.addEventListener(
-			"borrow-request:update",
+			EquipmentServerEvent.BorrowRequestUpdate,
 			handleBorrowRequestEvent,
 		);
 
 		return () => {
-			eventSource.removeEventListener("equipment:create", handleEvent);
+			eventSource.removeEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
 			eventSource.removeEventListener(
-				"borrow-request:update",
+				EquipmentServerEvent.BorrowRequestUpdate,
 				handleBorrowRequestEvent,
 			);
 			eventSource.close();

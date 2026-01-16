@@ -9,6 +9,7 @@ import z from "zod";
 import { Control } from "./-components/control";
 import { ManagerHistoryList } from "./-components/manager-history-list";
 import { ComponentLoading } from "@/components/loading";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
 
 const searchSchema = z.object({
 	category: z.string().optional(),
@@ -39,11 +40,12 @@ function RouteComponent() {
 			queryClient.invalidateQueries({ queryKey: ["borrow-history"] });
 		}
 
-		eventSource.addEventListener("equipment:create", handleEvent);
-		eventSource.addEventListener("equipment:anomaly", handleEvent);
+		eventSource.addEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
+		eventSource.addEventListener(EquipmentServerEvent.EquipmentAnomaly, handleEvent);
 
 		return () => {
-			eventSource.removeEventListener("equipment:create", handleEvent);
+			eventSource.removeEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
+			eventSource.removeEventListener(EquipmentServerEvent.EquipmentAnomaly, handleEvent);
 			eventSource.close();
 		};
 	}, []);

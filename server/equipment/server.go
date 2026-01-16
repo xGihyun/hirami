@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -50,7 +49,8 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /return-requests/otp/{code}", api.Handler(s.getReturnRequestByOTP))
 
 	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
-	mux.Handle("GET /borrowed-items", api.Handler(s.getBorrowedItems))
+
+	mux.Handle("GET /users/{userId}/borrowed-equipments", api.Handler(s.getBorrowedItems))
 }
 
 const (
@@ -157,7 +157,7 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: eventEquipmentCreate,
 		Data:  equipment,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -358,7 +358,7 @@ func (s *Server) reallocate(w http.ResponseWriter, r *http.Request) api.Response
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:reallocate",
+		Event: eventEquipmentReallocate,
 	}
 	jsonData, err := json.Marshal(eventRes)
 	if err != nil {
@@ -423,14 +423,17 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
-	go func() {
-		if err := s.detectAnomaly(context.Background(), res); err != nil {
-			slog.Error(err.Error())
+	if err := s.detectAnomaly(context.Background(), res); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create borrow request anomaly result.",
 		}
-	}()
+	}
 
+	// TODO: Use the correct SSE event
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: eventEquipmentCreate,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -491,7 +494,7 @@ func (s *Server) updateBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "borrow-request:update",
+		Event: eventBorrowRequestUpdate,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -560,7 +563,7 @@ func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "borrow-request:review",
+		Event: eventBorrowRequestReview,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -636,7 +639,7 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: eventEquipmentCreate,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -764,7 +767,7 @@ func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) ap
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "return-request:confirm",
+		Event: eventReturnRequestConfirm,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -895,12 +898,12 @@ func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Re
 func (s *Server) getBorrowedItems(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	userID := r.URL.Query().Get("userId")
+	userID := r.PathValue("userId")
 	status := r.URL.Query().Get("status")
 	sort := api.Sort(r.URL.Query().Get("sort"))
 	category := r.URL.Query().Get("category")
 	params := borrowedItemParams{
-		userID:   &userID,
+		userID:   userID,
 		status:   &status,
 		sort:     &sort,
 		category: &category,

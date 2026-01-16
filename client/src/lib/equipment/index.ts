@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { BACKEND_URL, type ApiResponse } from "../api";
-import type { Borrower } from "./borrow";
+import type { User } from "../user";
 
 export const DEFAULT_EQUIPMENT_IMAGE =
 	"https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
@@ -81,10 +81,16 @@ export type Equipment = {
 	imageUrl?: string;
 	quantity: number;
 	status: EquipmentStatusDetail;
-	borrower?: Borrower;
 };
 
-async function getEquipments(params: GetEquipmentParams): Promise<Equipment[]> {
+export type EquipmentWithBorrower = {
+	equipment: Equipment;
+	borrowers: User[];
+};
+
+async function getEquipments(
+	params: GetEquipmentParams,
+): Promise<EquipmentWithBorrower[]> {
 	const url = new URL(`${BACKEND_URL}/equipments`);
 	if (params.names && params.names.length > 0) {
 		url.searchParams.append("name", params.names.join(","));
@@ -97,7 +103,7 @@ async function getEquipments(params: GetEquipmentParams): Promise<Equipment[]> {
 		method: "GET",
 	});
 
-	const result: ApiResponse<Equipment[]> = await response.json();
+	const result: ApiResponse<EquipmentWithBorrower[]> = await response.json();
 	if (!response.ok) {
 		throw new Error(result.message);
 	}
@@ -155,19 +161,3 @@ export const equipmentNamesQuery = () =>
 		queryKey: ["equipment-names"],
 		queryFn: () => getEquipmentNames(),
 	});
-
-type EquipmentBorrower = {
-	quantity: number;
-	borrower: Borrower;
-	expectedReturnAt: string;
-};
-
-export type EquipmentWithBorrower = {
-	id: string;
-	name: string;
-	brand?: string;
-	model?: string;
-	imageUrl?: string;
-	quantity: number;
-	borrowers: EquipmentBorrower[];
-};

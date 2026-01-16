@@ -54,7 +54,7 @@ func main() {
 		Role:     &role,
 	}
 
-	if err := repo.Update(ctx, updateReq); err != nil {
+	if _, err := repo.Update(ctx, updateReq); err != nil {
 		slog.Error("Failed to update Equipment Manager role.")
 		return
 	}

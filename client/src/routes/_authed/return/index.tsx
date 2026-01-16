@@ -15,6 +15,7 @@ import { ComponentLoading } from "@/components/loading";
 import { LabelMedium } from "@/components/typography";
 import { BorrowedItemList } from "./-components/borrowed-item-list";
 import { Success } from "@/components/success";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
 
 const searchSchema = z.object({
 	tab: z.enum(ReturnTab).default(ReturnTab.BorrowedItems),
@@ -98,10 +99,10 @@ function RouteComponent(): JSX.Element {
 			setIsConfirmed(true);
 		}
 
-		eventSource.addEventListener("return-request:confirm", handleEvent);
+		eventSource.addEventListener(EquipmentServerEvent.ReturnRequestConfirm, handleEvent);
 
 		return () => {
-			eventSource.removeEventListener("return-request:confirm", handleEvent);
+			eventSource.removeEventListener(EquipmentServerEvent.ReturnRequestConfirm, handleEvent);
 			eventSource.close();
 		};
 	}, []);

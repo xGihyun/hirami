@@ -16,6 +16,7 @@ import { Control } from "./-components/control";
 import { HistoryList } from "./-components/history-list";
 import { ComponentLoading } from "@/components/loading";
 import { Success } from "@/components/success";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
 
 const searchSchema = z.object({
 	category: z.string().optional(),
@@ -54,15 +55,17 @@ function RouteComponent() {
 			queryClient.invalidateQueries(borrowHistoryQuery({}));
 		}
 
-		eventSource.addEventListener("borrow-request:review", handleEvent);
-		eventSource.addEventListener("equipment:anomaly", handleEvent);
+		eventSource.addEventListener(EquipmentServerEvent.BorrowRequestReview, handleEvent);
+		eventSource.addEventListener(EquipmentServerEvent.EquipmentAnomaly, handleEvent);
 		eventSource.addEventListener(
-			"borrow-request:update",
+			EquipmentServerEvent.BorrowRequestUpdate,
 			handleBorrowRequestEvent,
 		);
 
 		return () => {
-			eventSource.removeEventListener("borrow-request:review", handleEvent);
+			eventSource.removeEventListener(EquipmentServerEvent.BorrowRequestReview, handleEvent);
+			eventSource.removeEventListener(EquipmentServerEvent.EquipmentAnomaly, handleEvent);
+			eventSource.removeEventListener(EquipmentServerEvent.BorrowRequestUpdate, handleBorrowRequestEvent);
 			eventSource.close();
 		};
 	}, []);

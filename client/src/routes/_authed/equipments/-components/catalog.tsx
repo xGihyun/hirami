@@ -1,5 +1,10 @@
 import { LabelLarge, LabelMedium, LabelSmall } from "@/components/typography";
-import { EquipmentStatus, type Equipment } from "@/lib/equipment";
+import {
+	DEFAULT_EQUIPMENT_IMAGE,
+	EquipmentStatus,
+	type Equipment,
+	type EquipmentWithBorrower,
+} from "@/lib/equipment";
 import type { Dispatch, JSX, SetStateAction } from "react";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,7 +18,7 @@ import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 type Props = {
-	equipments: Equipment[];
+	equipments: EquipmentWithBorrower[];
 	selectedEquipments: SelectedEquipment[];
 	setSelectedEquipments: Dispatch<SetStateAction<SelectedEquipment[]>>;
 };
@@ -59,11 +64,11 @@ export function Catalog(props: Props): JSX.Element {
 	return (
 		<section className="pb-15 !mb-0">
 			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-				{props.equipments.map((equipment) => {
+				{props.equipments.map(({ equipment }) => {
 					const key = `${equipment.id}-${equipment.status.code}`;
 					const equipmentImage = equipment.imageUrl
 						? toImageUrl(equipment.imageUrl)
-						: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
+						: DEFAULT_EQUIPMENT_IMAGE;
 
 					const CardContent = (props: { className?: string }) => (
 						<Card
