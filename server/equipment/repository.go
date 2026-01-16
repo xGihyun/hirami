@@ -1667,7 +1667,7 @@ func (r *repository) getBorrowRequestByOTP(ctx context.Context, otp string) (bor
 	JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id
 	JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id
 	LEFT JOIN all_return_confirmation ON all_return_confirmation.borrow_request_id = borrow_request.borrow_request_id
-	WHERE borrow_request.borrow_request_id = $1
+	WHERE borrow_request_otp.code = $1
 	GROUP BY 
 		person.person_id,
 		person.first_name,

@@ -41,7 +41,7 @@ func (suite *TestSuite) SetupSuite() {
 	server := *NewServer(NewRepository(pgContainer.Pool), valkeyContainer.Client)
 
 	mux := http.NewServeMux()
-	mux.Handle("/equipments", api.Handler(server.createEquipment))
+	server.SetupRoutes(mux)
 
 	suite.httpServer = httptest.NewServer(mux)
 }
