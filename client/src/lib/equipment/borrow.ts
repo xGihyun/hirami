@@ -2,23 +2,11 @@ import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import { BACKEND_URL, Sort, type ApiResponse } from "../api";
 import type { UserBasicInfo } from "../user";
 import type { AnomalyResult } from "./anomaly";
+import type { Equipment } from ".";
 
-export type Borrower = {
+export type BorrowRequestItem = {
 	id: string;
-	firstName: string;
-	middleName?: string;
-	lastName: string;
-	avatarUrl?: string;
-};
-
-export type BorrowedEquipment = {
-	borrowRequestItemId: string;
-	equipmentTypeId: string;
-	name: string;
-	brand?: string;
-	model?: string;
-	imageUrl?: string;
-	quantity: number;
+    equipment: Equipment;
 };
 
 async function getBorrowRequests(): Promise<BorrowTransaction[]> {
@@ -98,21 +86,36 @@ export type OTP = {
 	expiresAt: string;
 };
 
+type BorrowReview = {
+    reviewedBy: UserBasicInfo;
+    reviewedAt: string;
+    remarks: string | null;
+}
+
+type ReturnConfirmation = {
+    id: string;
+    confirmedBy: UserBasicInfo;
+    confirmedAt: string;
+    equipments: Equipment[]; // TODO: Use correct type
+    remarks: string | null;
+}
+
 export type BorrowTransaction = {
-	borrowRequestId: string;
-	borrowedAt: string;
-	borrower: Borrower;
-	equipments: BorrowedEquipment[];
+	id: string;
+	requestedAt: string;
+	borrower: UserBasicInfo;
+	requestedItems: BorrowRequestItem[];
 	location: string;
 	purpose: string;
-	expectedReturnAt: string;
-	actualReturnAt?: string;
 	status: BorrowRequestStatusDetail;
-	borrowReviewedBy?: UserBasicInfo;
-	returnConfirmedBy?: UserBasicInfo;
-	remarks?: string;
-	anomalyResult?: AnomalyResult;
-	otp?: OTP;
+    review: BorrowReview | null;
+
+	expectedReturnAt: string;
+	actualReturnAt: string | null;
+	returnConfirmations: ReturnConfirmation[];
+
+	otp: OTP | null;
+	anomaly: AnomalyResult | null;
 };
 
 type GetBorrowHistoryParams = {
@@ -189,12 +192,9 @@ type GetBorrowedItemParams = {
 
 async function getBorrowedItems(
 	params: GetBorrowedItemParams,
-): Promise<BorrowTransaction[]> {
-	const url = new URL(`${BACKEND_URL}/borrowed-items`);
+): Promise<BorrowRequestItem[]> {
+	const url = new URL(`${BACKEND_URL}/users/${params.userId}/borrowed-equipments`);
 
-	if (params.userId) {
-		url.searchParams.append("userId", params.userId);
-	}
 	if (params.sort) {
 		url.searchParams.append("sort", params.sort);
 	}
@@ -206,7 +206,7 @@ async function getBorrowedItems(
 		method: "GET",
 	});
 
-	const result: ApiResponse<BorrowTransaction[]> = await response.json();
+	const result: ApiResponse<BorrowRequestItem[]> = await response.json();
 	if (!response.ok) {
 		throw new Error(result.message);
 	}

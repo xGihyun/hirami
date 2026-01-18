@@ -13,9 +13,9 @@ export function ManagerHistoryList(props: Props): JSX.Element {
 			{props.history.map((transaction) => {
 				return (
 					<Link
-						key={transaction.borrowRequestId}
+						key={transaction.id}
 						to="/history/$borrowRequestId"
-						params={{ borrowRequestId: transaction.borrowRequestId }}
+						params={{ borrowRequestId: transaction.id }}
 						className="block"
 					>
 						<ManagerHistoryItem transaction={transaction} />

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	borrowRequestByIdQuery,
-	type BorrowedEquipment,
+	type BorrowRequestItem,
 } from "@/lib/equipment/borrow";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { SHOW_ANOMALY, toImageUrl } from "@/lib/api";
@@ -35,7 +35,7 @@ function RouteComponent(): JSX.Element {
 	const borrower = borrowRequest.data.borrower;
 	const borrowerInitials = borrower.firstName[0] + borrower.lastName[0];
 	const transaction = borrowRequest.data;
-	const anomalyResult = borrowRequest.data.anomalyResult;
+	const anomalyResult = borrowRequest.data.anomaly;
 
 	return (
 		<div className="space-y-4 pb-15 !mb-0">
@@ -76,8 +76,8 @@ function RouteComponent(): JSX.Element {
 
 				<div>
 					<LabelSmall>
-						Borrowed On {format(transaction.borrowedAt, "h:mm a")} at{" "}
-						{format(transaction.borrowedAt, "MM/dd/yyyy")}
+						Borrowed On {format(transaction.requestedAt, "h:mm a")} at{" "}
+						{format(transaction.requestedAt, "MM/dd/yyyy")}
 					</LabelSmall>
 
 					<LabelSmall>
@@ -123,7 +123,7 @@ function RouteComponent(): JSX.Element {
 }
 
 type EquipmentProps = {
-	equipment: BorrowedEquipment;
+	equipment: BorrowRequestItem;
 	className?: string;
 };
 

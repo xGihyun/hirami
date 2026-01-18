@@ -34,7 +34,7 @@ type Repository interface {
 	getReturnRequestByOTP(ctx context.Context, otp string) (returnRequest, error)
 
 	getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowRequest, error)
-	getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]equipment, error)
+	getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]borrowRequestItem, error)
 
 	createAnomalyResult(ctx context.Context, arg anomaly) error
 
@@ -2452,16 +2452,19 @@ type borrowedItemParams struct {
 	category *string
 }
 
-func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]equipment, error) {
+func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]borrowRequestItem, error) {
 	query := `
 	SELECT
-		equipment_type.equipment_type_id,
-		equipment_type.name,
-		equipment_type.brand,
-		equipment_type.model,
-		equipment_type.image_url,
-		borrow_request_item.quantity,
-		equipment_status_agg.status
+		borrow_request_item.borrow_request_item_id,
+		jsonb_build_object(
+			'id', equipment_type.equipment_type_id,
+			'name', equipment_type.name,
+			'brand', equipment_type.brand,
+			'model', equipment_type.model,
+			'imageUrl', equipment_type.image_url,
+			'quantity', borrow_request_item.quantity
+			'status', equipment_status_agg.status
+		) AS equipment
 	FROM equipment_type
 	JOIN borrow_request_item USING (equipment_type_id)
 	JOIN borrow_request USING (borrow_request_id)
@@ -2506,7 +2509,7 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 	if err != nil {
 		return nil, err
 	}
-	history, err := pgx.CollectRows(rows, pgx.RowToStructByName[equipment])
+	history, err := pgx.CollectRows(rows, pgx.RowToStructByName[borrowRequestItem])
 	if err != nil {
 		return nil, err
 	}

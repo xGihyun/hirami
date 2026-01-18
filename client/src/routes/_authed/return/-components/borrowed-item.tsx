@@ -3,7 +3,7 @@ import { LabelLarge, LabelSmall } from "@/components/typography";
 import { Badge } from "@/components/ui/badge";
 import { BACKEND_URL } from "@/lib/api";
 import type {
-	BorrowedEquipment,
+	BorrowRequestItem,
 	BorrowTransaction,
 } from "@/lib/equipment/borrow";
 import { cn } from "@/lib/utils";
@@ -11,10 +11,10 @@ import { differenceInMinutes, format, isAfter } from "date-fns";
 import type { JSX } from "react";
 
 type Props = {
-	equipment: BorrowedEquipment;
+	item: BorrowRequestItem;
 	transaction: BorrowTransaction;
 	handleUpdateQuantity: (
-		equipment: BorrowedEquipment,
+		equipment: BorrowRequestItem,
 		newQuantity: number,
 	) => void;
 	className?: string;
@@ -27,8 +27,8 @@ enum DueStatus {
 }
 
 export function BorrowedItem(props: Props): JSX.Element {
-	const equipmentImage = props.equipment.imageUrl
-		? `${BACKEND_URL}${props.equipment.imageUrl}`
+	const equipmentImage = props.item.equipment.imageUrl
+		? `${BACKEND_URL}${props.item.equipment.imageUrl}`
 		: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 
 	function getDueStatus(returnDate: Date): DueStatus | null {
@@ -55,7 +55,6 @@ export function BorrowedItem(props: Props): JSX.Element {
 
 	return (
 		<div
-			key={props.equipment.borrowRequestItemId}
 			className={cn(
 				"flex items-center gap-2 justify-between bg-card rounded-2xl p-4 shadow-item",
 				props.className,
@@ -64,14 +63,14 @@ export function BorrowedItem(props: Props): JSX.Element {
 			<div className="flex items-center gap-2 w-full">
 				<img
 					src={equipmentImage}
-					alt={`${props.equipment.name} ${props.equipment.brand}`}
+					alt={`${props.item.equipment.name} ${props.item.equipment.brand}`}
 					className="size-16 object-cover"
 				/>
 
 				<div className="flex flex-col w-full">
 					<LabelLarge>
-						{props.equipment.brand}
-						{props.equipment.model ? ` ${props.equipment.model}` : null}
+						{props.item.equipment.brand}
+						{props.item.equipment.model ? ` ${props.item.equipment.model}` : null}
 					</LabelLarge>
 
 					<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground">
@@ -95,11 +94,11 @@ export function BorrowedItem(props: Props): JSX.Element {
 			<NumberInput
 				isDisabled={!props.isSelected}
 				className="w-40"
-				defaultValue={props.equipment.quantity}
-				maxValue={props.equipment.quantity}
+				defaultValue={props.item.equipment.quantity}
+				maxValue={props.item.equipment.quantity}
 				onClick={stopPropagation}
 				onPointerDown={stopPropagation}
-				onChange={(v) => props.handleUpdateQuantity(props.equipment, v)}
+				onChange={(v) => props.handleUpdateQuantity(props.item, v)}
 			/>
 		</div>
 	);

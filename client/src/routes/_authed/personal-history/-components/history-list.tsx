@@ -1,6 +1,6 @@
 import {
 	BorrowRequestStatus,
-	type BorrowedEquipment,
+	type BorrowRequestItem,
 	type BorrowTransaction,
 } from "@/lib/equipment/borrow";
 import { useState, type JSX } from "react";
@@ -22,7 +22,7 @@ type Props = {
 
 type Selected = {
 	transaction: BorrowTransaction;
-	equipment: BorrowedEquipment;
+	item: BorrowRequestItem;
 };
 
 export function HistoryList(props: Props): JSX.Element {
@@ -52,25 +52,25 @@ export function HistoryList(props: Props): JSX.Element {
 				<section className="space-y-2">
 					<img
 						src={
-							toImageUrl(selectedItem.equipment.imageUrl) ||
+							toImageUrl(selectedItem.item.equipment.imageUrl) ||
 							DEFAULT_EQUIPMENT_IMAGE
 						}
-						alt={`${selectedItem.equipment.name} ${selectedItem.equipment.brand}`}
+						alt={`${selectedItem.item.equipment.name} ${selectedItem.item.equipment.brand}`}
 						className="size-16 object-cover rounded-2xl mx-auto"
 					/>
 
 					<TitleSmall className="text-center">
-						{selectedItem.equipment.brand}{" "}
-						{selectedItem.equipment.model
-							? ` ${selectedItem.equipment.model}`
+						{selectedItem.item.equipment.brand}{" "}
+						{selectedItem.item.equipment.model
+							? ` ${selectedItem.item.equipment.model}`
 							: null}
 					</TitleSmall>
 
 					<div className="text-center text-muted">
 						<Caption>
 							Requested On{" "}
-							{format(selectedItem.transaction.borrowedAt, "h:mm a")} at{" "}
-							{format(selectedItem.transaction.borrowedAt, "MM/dd/yyyy")}
+							{format(selectedItem.transaction.requestedAt, "h:mm a")} at{" "}
+							{format(selectedItem.transaction.requestedAt, "MM/dd/yyyy")}
 						</Caption>
 
 						<Caption>
@@ -94,7 +94,7 @@ export function HistoryList(props: Props): JSX.Element {
 							readOnly
 							className="min-h-24"
 							placeholder="Remarks will show here if available"
-							value={selectedItem.transaction.remarks || undefined}
+							value={selectedItem.transaction.review?.remarks || undefined}
 						/>
 					</div>
 				</section>
@@ -140,18 +140,18 @@ export function HistoryList(props: Props): JSX.Element {
 		<section className="space-y-4">
 			{props.history.map((transaction) => {
 				return (
-					<div key={transaction.borrowRequestId} className="space-y-4">
-						{transaction.equipments.map((equipment, i) => {
+					<div key={transaction.id} className="space-y-4">
+						{transaction.requestedItems.map((item, i) => {
 							return (
 								<button
-									key={transaction.borrowRequestId + i}
+									key={transaction.id + i}
 									className="text-start w-full cursor-pointer"
-									onClick={() => setSelectedItem({ transaction, equipment })}
+									onClick={() => setSelectedItem({ transaction, item: item })}
 								>
 									<HistoryItem
 										transaction={transaction}
-										equipment={equipment}
-										key={equipment.borrowRequestItemId}
+										item={item}
+										key={item.id}
 									/>
 								</button>
 							);

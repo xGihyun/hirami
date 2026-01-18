@@ -63,7 +63,7 @@ function RouteComponent(): JSX.Element {
 	const historyEquipmentNames = Array.from(
 		new Set(
 			borrowHistoryAllCategory.data?.flatMap((history) =>
-				history.equipments.map((eq) => eq.name),
+				history.equipment.name
 			),
 		),
 	);

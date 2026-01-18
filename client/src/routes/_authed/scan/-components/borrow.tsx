@@ -1,7 +1,7 @@
 import {
 	BorrowRequestStatus,
 	updateBorrowRequest,
-	type BorrowedEquipment,
+	type BorrowRequestItem,
 	type BorrowTransaction,
 } from "@/lib/equipment/borrow";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -71,7 +71,7 @@ export function Borrow(props: Props): JSX.Element {
 				</DrawerTitle>
 				<DrawerDescription>
 					Requested on{" "}
-					{format(props.transaction.borrowedAt, "MMM d, yyyy - hh:mm a")}
+					{format(props.transaction.requestedAt, "MMM d, yyyy - hh:mm a")}
 				</DrawerDescription>
 			</DrawerHeader>
 			<div className="px-4 py-4 overflow-y-auto space-y-4">
@@ -81,7 +81,7 @@ export function Borrow(props: Props): JSX.Element {
 					<Button
 						onClick={() =>
 							mutation.mutate({
-								id: props.transaction.borrowRequestId,
+								id: props.transaction.id,
 								status: BorrowRequestStatus.Claimed,
 							})
 						}
@@ -97,7 +97,7 @@ export function Borrow(props: Props): JSX.Element {
 	);
 }
 
-function EquipmentList({ equipments }: { equipments: BorrowedEquipment[] }) {
+function EquipmentList({ equipments }: { equipments: BorrowRequestItem[] }) {
 	return (
 		<div className="space-y-2.5">
 			{equipments.map((equipment) => {

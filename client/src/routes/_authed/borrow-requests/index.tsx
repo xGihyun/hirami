@@ -101,7 +101,7 @@ function RouteComponent(): JSX.Element {
 		remarks?: string,
 	): Promise<void> {
 		const payload: ReviewBorrowRequest = {
-			id: request.borrowRequestId,
+			id: request.id,
 			status: status,
 			reviewedBy: reviewedBy.id,
 			remarks: remarks,
@@ -214,10 +214,10 @@ function RouteComponent(): JSX.Element {
 					{borrowRequests.data?.map((request) => {
 						const borrowerInitials = `${request.borrower.firstName[0]}${request.borrower.lastName[0]}`;
 						const borrowerName = `${request.borrower.firstName} ${request.borrower.lastName}`;
-						const requestedAt = `${format(request.borrowedAt, "h:mm a")} at ${format(request.borrowedAt, "MM/dd/yyyy")}`;
-						const anomalyResult = request.anomalyResult;
+						const requestedAt = `${format(request.requestedAt, "h:mm a")} at ${format(request.requestedAt, "MM/dd/yyyy")}`;
+						const anomalyResult = request.anomaly;
 						return (
-							<DrawerTrigger asChild key={request.borrowRequestId}>
+							<DrawerTrigger asChild key={request.id}>
 								<button
 									onClick={() => {
 										setSelectedRequest(request);
@@ -333,7 +333,7 @@ function BorrowRequestReviewContent(
 
 				<div>
 					<Caption className="text-muted">
-						Requested on {format(request.borrowedAt, "MMMM d, yyyy - hh:mm a")}
+						Requested on {format(request.requestedAt, "MMMM d, yyyy - hh:mm a")}
 					</Caption>
 
 					<Caption className="text-muted">
@@ -341,8 +341,8 @@ function BorrowRequestReviewContent(
 						{format(request.expectedReturnAt, "MMMM d, yyyy - hh:mm a")}
 					</Caption>
 
-					{props.selectedRequest.anomalyResult &&
-					props.selectedRequest.anomalyResult.isAnomaly &&
+					{props.selectedRequest.anomaly &&
+					props.selectedRequest.anomaly.isAnomaly &&
 					SHOW_ANOMALY ? (
 						<Badge className="mt-1" variant="destructive">
 							Anomaly

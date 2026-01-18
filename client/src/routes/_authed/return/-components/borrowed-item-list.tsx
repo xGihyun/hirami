@@ -1,7 +1,11 @@
 import { useAuth } from "@/auth";
 import { ComponentLoading } from "@/components/loading";
 import { LabelMedium } from "@/components/typography";
-import { borrowedItemsQuery } from "@/lib/equipment/borrow";
+import {
+	borrowHistoryQuery,
+	BorrowRequestStatus,
+    type BorrowRequestItem,
+} from "@/lib/equipment/borrow";
 import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import { useState, type JSX } from "react";
@@ -12,7 +16,6 @@ import { Form } from "@/components/ui/form";
 import { useMutation } from "@tanstack/react-query";
 import type { SelectedBorrowedEquipment } from "../-model.ts";
 import { cn } from "@/lib/utils";
-import { type BorrowedEquipment } from "@/lib/equipment/borrow";
 import type { CheckedState } from "@radix-ui/react-checkbox";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BorrowedItem } from "./borrowed-item";
@@ -66,10 +69,11 @@ export function BorrowedItemList(): JSX.Element {
 	const search = useSearch({ from: "/_authed/return/" });
 	const auth = useAuth();
 	const borrowHistory = useQuery(
-		borrowedItemsQuery({
+		borrowHistoryQuery({
 			userId: auth.user?.id,
 			sort: search.dueDateSort,
 			category: search.category,
+			status: BorrowRequestStatus.Claimed,
 		}),
 	);
 
@@ -86,35 +90,31 @@ export function BorrowedItemList(): JSX.Element {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 
 	function handleSelect(
-		equipment: BorrowedEquipment,
+		item: BorrowRequestItem,
 		quantity: number,
 		checked: CheckedState,
 	): void {
 		if (!checked) {
 			setSelectedEquipments((prev) => {
-				return prev.filter(
-					(item) =>
-						item.equipment.borrowRequestItemId !==
-						equipment.borrowRequestItemId,
-				);
+				return prev.filter((selected) => selected.item.id !== item.id);
 			});
 			return;
 		}
 
 		setSelectedEquipments((prev) => {
-			return [...prev, { equipment: equipment, quantity: quantity }];
+			return [...prev, { item: item, quantity: quantity }];
 		});
 	}
 
 	function handleUpdateQuantity(
-		equipment: BorrowedEquipment,
+		item: BorrowRequestItem,
 		newQuantity: number,
 	): void {
 		setSelectedEquipments((prev) =>
-			prev.map((item) =>
-				item.equipment.borrowRequestItemId === equipment.borrowRequestItemId
-					? { ...item, quantity: newQuantity }
-					: item,
+			prev.map((it) =>
+				it.item.id === item.id
+					? { ...it, quantity: newQuantity }
+					: it,
 			),
 		);
 	}
@@ -136,9 +136,9 @@ export function BorrowedItemList(): JSX.Element {
 	}
 
 	async function onSubmit(value: ReturnEquipmentSchema): Promise<void> {
-		const equipmentsPayload = selectedEquipments.map((item) => ({
-			borrowRequestItemId: item.equipment.borrowRequestItemId,
-			quantity: item.quantity,
+		const equipmentsPayload = selectedEquipments.map((selected) => ({
+			borrowRequestItemId: selected.item.id,
+			quantity: selected.quantity,
 		}));
 
 		value.items = equipmentsPayload;
@@ -203,46 +203,43 @@ export function BorrowedItemList(): JSX.Element {
 				onSubmit={form.handleSubmit(onSubmit)}
 				className={cn("space-y-4")}
 			>
-				{borrowHistory.data.map((transaction) => (
-					<div
-						className="flex flex-col gap-3.5"
-						key={transaction.borrowRequestId}
-					>
-						{transaction.equipments.map((equipment) => {
-							const isChecked = selectedEquipments.some(
-								(item) =>
-									item.equipment.borrowRequestItemId ===
-									equipment.borrowRequestItemId,
-							);
+				{borrowHistory.data.map((history) => {
+					return (
+						<div className="flex flex-col gap-3.5" key={history.id}>
+							{history.requestedItems.map((item) => {
+								const equipment = item.equipment;
+								const isChecked = selectedEquipments.some(
+									(selected) => selected.item.id === item.id,
+								);
+								return (
+									<label
+										key={item.id}
+										htmlFor={item.id}
+										className="group text-start"
+									>
+										<Checkbox
+											id={item.id}
+											className="sr-only"
+											value={item.id}
+											checked={isChecked}
+											onCheckedChange={(checked) =>
+												handleSelect(item, equipment.quantity, checked)
+											}
+										/>
 
-							return (
-								<label
-									key={equipment.borrowRequestItemId}
-									htmlFor={equipment.borrowRequestItemId}
-									className="group text-start"
-								>
-									<Checkbox
-										id={equipment.borrowRequestItemId}
-										className="sr-only"
-										value={equipment.borrowRequestItemId}
-										checked={isChecked}
-										onCheckedChange={(checked) =>
-											handleSelect(equipment, equipment.quantity, checked)
-										}
-									/>
-
-									<BorrowedItem
-										equipment={equipment}
-										transaction={transaction}
-										handleUpdateQuantity={handleUpdateQuantity}
-										className="cursor-pointer group-has-data-[state=checked]:bg-primary group-has-data-[state=checked]:text-primary-foreground"
-										isSelected={isChecked}
-									/>
-								</label>
-							);
-						})}
-					</div>
-				))}
+										<BorrowedItem
+											item={item}
+											transaction={history}
+											handleUpdateQuantity={handleUpdateQuantity}
+											className="cursor-pointer group-has-data-[state=checked]:bg-primary group-has-data-[state=checked]:text-primary-foreground"
+											isSelected={isChecked}
+										/>
+									</label>
+								);
+							})}
+						</div>
+					);
+				})}
 
 				<Dialog
 					open={isDialogOpen}
