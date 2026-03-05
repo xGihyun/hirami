@@ -122,14 +122,14 @@ function RouteComponent(): JSX.Element {
 			setIsReceived(res.status.code === BorrowRequestStatus.Claimed);
 		}
 
-		eventSource.addEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
+		eventSource.addEventListener(EquipmentServerEvent.BorrowRequestCreate, handleEvent);
 		eventSource.addEventListener(
 			EquipmentServerEvent.BorrowRequestUpdate,
 			handleBorrowRequestEvent,
 		);
 
 		return () => {
-			eventSource.removeEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
+			eventSource.removeEventListener(EquipmentServerEvent.BorrowRequestCreate, handleEvent);
 			eventSource.removeEventListener(
 				EquipmentServerEvent.BorrowRequestUpdate,
 				handleBorrowRequestEvent,
