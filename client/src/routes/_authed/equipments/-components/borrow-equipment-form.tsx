@@ -26,7 +26,7 @@ import type { SelectedEquipment } from "..";
 import { useAuth } from "@/auth";
 import { H1, LabelLarge, LabelSmall } from "@/components/typography";
 import { Separator } from "@/components/ui/separator";
-import type { Equipment } from "@/lib/equipment";
+import type { Equipment } from "@/lib/equipment/model";
 import { Calendar } from "@/components/ui/calendar";
 import {
 	Popover,
@@ -38,9 +38,9 @@ import { useState } from "react";
 import { IconArrowLeft } from "@/lib/icons";
 import { NumberInput } from "@/components/number-input";
 import {
-	borrow,
-	borrowRequestSchema,
-	type BorrowRequestSchema,
+	createBorrowRequest,
+	createBorrowRequestSchema,
+	type CreateBorrowRequest,
 } from "../-function";
 import { DialogClose } from "@radix-ui/react-dialog";
 import { Success } from "@/components/success";
@@ -61,8 +61,8 @@ export function BorrowEquipmentForm(
 	const [openCalendar, setOpenCalendar] = useState(false);
 	const now = new Date();
 
-	const form = useForm<BorrowRequestSchema>({
-		resolver: zodResolver(borrowRequestSchema),
+	const form = useForm<CreateBorrowRequest>({
+		resolver: zodResolver(createBorrowRequestSchema),
 		defaultValues: {
 			equipments: [],
 			expectedReturnAt: now,
@@ -75,10 +75,10 @@ export function BorrowEquipmentForm(
 
 	const mutation = useMutation({
 		mutationKey: ["submit-borrow-request"],
-		mutationFn: borrow,
+		mutationFn: createBorrowRequest,
 	});
 
-	async function onSubmit(value: BorrowRequestSchema): Promise<void> {
+	async function onSubmit(value: CreateBorrowRequest): Promise<void> {
 		const equipmentsPayload = props.selectedEquipments.map((item) => ({
 			equipmentTypeId: item.equipment.id,
 			quantity: item.quantity,

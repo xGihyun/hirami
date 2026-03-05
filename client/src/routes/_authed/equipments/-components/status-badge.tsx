@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { toImageUrl } from "@/lib/api";
-import { EquipmentStatus, type Equipment } from "@/lib/equipment";
+import { EquipmentStatus, type Equipment } from "@/lib/equipment/model";
 import { capitalizeWords } from "@/lib/utils";
 import type { JSX } from "react";
 

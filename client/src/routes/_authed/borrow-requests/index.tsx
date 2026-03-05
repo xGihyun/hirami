@@ -1,7 +1,7 @@
 import {
-	borrowRequestsQuery,
+	getBorrowRequestsQuery,
 	BorrowRequestStatus,
-	type BorrowTransaction,
+	type BorrowRequest,
 	type ReviewBorrowRequest,
 	type ReviewBorrowResponse,
 	type UpdateBorrowResponse,
@@ -50,7 +50,7 @@ import { EquipmentServerEvent } from "@/lib/equipment/sse";
 export const Route = createFileRoute("/_authed/borrow-requests/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
-		context.queryClient.prefetchQuery(borrowRequestsQuery);
+		context.queryClient.prefetchQuery(getBorrowRequestsQuery);
 	},
 });
 
@@ -74,9 +74,9 @@ async function reviewBorrowRequest(
 }
 
 function RouteComponent(): JSX.Element {
-	const borrowRequests = useQuery(borrowRequestsQuery);
+	const borrowRequests = useQuery(getBorrowRequestsQuery);
 	const [selectedRequest, setSelectedRequest] = useState<
-		BorrowTransaction | undefined
+		BorrowRequest | undefined
 	>(undefined);
 	const queryClient = useQueryClient();
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -88,14 +88,14 @@ function RouteComponent(): JSX.Element {
 	const mutation = useMutation({
 		mutationFn: reviewBorrowRequest,
 		onSuccess: (data) => {
-			queryClient.invalidateQueries(borrowRequestsQuery);
+			queryClient.invalidateQueries(getBorrowRequestsQuery);
 			setReviewedBorrowRequest(data.data);
 			setRemarks("");
 		},
 	});
 
 	async function handleReview(
-		request: BorrowTransaction,
+		request: BorrowRequest,
 		reviewedBy: User,
 		status: BorrowRequestStatus,
 		remarks?: string,
@@ -114,7 +114,7 @@ function RouteComponent(): JSX.Element {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
 
 		function handleEvent(_: MessageEvent): void {
-			queryClient.invalidateQueries(borrowRequestsQuery);
+			queryClient.invalidateQueries(getBorrowRequestsQuery);
 		}
 
 		function handleBorrowRequestEvent(e: MessageEvent): void {
@@ -296,11 +296,11 @@ function ConfirmationQr(props: ConfirmationQrProps): JSX.Element {
 }
 
 type BorrowRequestReviewContentProps = {
-	selectedRequest: BorrowTransaction;
+	selectedRequest: BorrowRequest;
 	remarks: string;
 	setRemarks: (remarks: string) => void;
 	handleReview: (
-		request: BorrowTransaction,
+		request: BorrowRequest,
 		reviewedBy: User,
 		status: BorrowRequestStatus,
 		remarks?: string,

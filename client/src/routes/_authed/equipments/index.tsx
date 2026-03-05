@@ -1,7 +1,6 @@
 import {
 	equipmentNamesQuery,
 	equipmentsQuery,
-	type Equipment,
 } from "@/lib/equipment";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -21,6 +20,7 @@ import { CatalogCategories } from "./-components/catalog-categories";
 import { v4 as uuidv4 } from "uuid";
 import { ComponentLoading } from "@/components/loading";
 import { EquipmentServerEvent } from "@/lib/equipment/sse";
+import type { Equipment } from "@/lib/equipment/model";
 
 const searchSchema = z.object({
 	categories: z.array(z.string()).optional().default([]),

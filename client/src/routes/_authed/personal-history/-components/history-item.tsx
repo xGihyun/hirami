@@ -5,7 +5,7 @@ import { BACKEND_URL } from "@/lib/api";
 import {
 	BorrowRequestStatus,
 	type BorrowRequestItem,
-	type BorrowTransaction,
+	type BorrowRequest,
 } from "@/lib/equipment/borrow";
 import { UserRole } from "@/lib/user";
 import { capitalizeWords, cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ import type { JSX } from "react";
 
 type Props = {
 	item: BorrowRequestItem;
-	transaction: BorrowTransaction;
+	transaction: BorrowRequest;
 	className?: string;
 };
 

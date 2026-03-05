@@ -14,7 +14,7 @@ import QrScanner from "qr-scanner";
 import { Failed } from "@/components/failed";
 import {
 	borrowRequestByOtpQuery,
-	type BorrowTransaction,
+	type BorrowRequest,
 } from "@/lib/equipment/borrow";
 import { Borrow } from "./-components/borrow";
 import { Return } from "./-components/return";
@@ -53,7 +53,7 @@ export const Route = createFileRoute("/_authed/scan/")({
 function RouteComponent(): JSX.Element {
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const queryClient = useQueryClient();
-	const [borrowRequest, setBorrowRequest] = useState<BorrowTransaction | null>(
+	const [borrowRequest, setBorrowRequest] = useState<BorrowRequest | null>(
 		null,
 	);
 	const [returnRequest, setReturnRequest] = useState<ReturnRequest | null>(
@@ -179,9 +179,9 @@ function RouteComponent(): JSX.Element {
 
 type ScannerProps = {
 	videoRef: React.RefObject<HTMLVideoElement | null>;
-	borrowRequest: BorrowTransaction | null;
+	borrowRequest: BorrowRequest | null;
 	setBorrowRequest: React.Dispatch<
-		React.SetStateAction<BorrowTransaction | null>
+		React.SetStateAction<BorrowRequest | null>
 	>;
 	returnRequest: ReturnRequest | null;
 	setReturnRequest: React.Dispatch<React.SetStateAction<ReturnRequest | null>>;

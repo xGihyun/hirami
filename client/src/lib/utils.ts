@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { BorrowRequestStatus } from "./equipment/borrow";
 import type { BadgeVariant } from "@/components/ui/badge";
-import { EquipmentStatus } from "./equipment";
+import { EquipmentStatus } from "./equipment/model";
 import { UserRole } from "./user";
 
 export function cn(...inputs: ClassValue[]) {

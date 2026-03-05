@@ -2,7 +2,7 @@ import {
 	BorrowRequestStatus,
 	updateBorrowRequest,
 	type BorrowRequestItem,
-	type BorrowTransaction,
+	type BorrowRequest,
 } from "@/lib/equipment/borrow";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {

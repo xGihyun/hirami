@@ -1,10 +1,12 @@
 import { LabelLarge, LabelMedium, LabelSmall } from "@/components/typography";
 import {
 	DEFAULT_EQUIPMENT_IMAGE,
+} from "@/lib/equipment";
+import {
 	EquipmentStatus,
 	type Equipment,
 	type EquipmentWithBorrower,
-} from "@/lib/equipment";
+} from "@/lib/equipment/model";
 import type { Dispatch, JSX, SetStateAction } from "react";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";

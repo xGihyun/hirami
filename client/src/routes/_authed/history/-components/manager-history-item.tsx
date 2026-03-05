@@ -4,14 +4,14 @@ import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { SHOW_ANOMALY, toImageUrl } from "@/lib/api";
 import {
 	BorrowRequestStatus,
-	type BorrowTransaction,
+	type BorrowRequest,
 } from "@/lib/equipment/borrow";
 import { capitalizeWords, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { JSX } from "react";
 
 type Props = {
-	transaction: BorrowTransaction;
+	transaction: BorrowRequest;
 	className?: string;
 };
 

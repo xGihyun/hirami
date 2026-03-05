@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	EquipmentStatus,
-	type EquipmentType,
+	type EquipmentWithStatusQuantity,
 } from "@/lib/equipment";
 import {
 	Form,
@@ -64,7 +64,7 @@ async function reallocateEquipment(
 }
 
 type Props = {
-	equipmentType: EquipmentType;
+	equipmentType: EquipmentWithStatusQuantity;
 };
 
 export function ReallocateForm(props: Props): JSX.Element {

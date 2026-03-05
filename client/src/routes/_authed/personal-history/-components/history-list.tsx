@@ -1,7 +1,7 @@
 import {
 	BorrowRequestStatus,
 	type BorrowRequestItem,
-	type BorrowTransaction,
+	type BorrowRequest,
 } from "@/lib/equipment/borrow";
 import { useState, type JSX } from "react";
 import { HistoryItem } from "./history-item";
@@ -17,11 +17,11 @@ import { Timer } from "@ark-ui/react/timer";
 import { getRemainingMs } from "@/lib/utils";
 
 type Props = {
-	history: BorrowTransaction[];
+	history: BorrowRequest[];
 };
 
 type Selected = {
-	transaction: BorrowTransaction;
+	transaction: BorrowRequest;
 	item: BorrowRequestItem;
 };
 

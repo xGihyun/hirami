@@ -30,7 +30,7 @@ function RouteComponent(): JSX.Element {
 		brand: "Mikasa",
 		imageUrl: "/uploads/equipments/1429.jpg",
 		quantity: 4,
-		borrowers: [
+		requests: [
 			{
 				quantity: 1,
 				borrower: {
@@ -74,7 +74,7 @@ function RouteComponent(): JSX.Element {
 				<TitleSmall>Current Borrowers:</TitleSmall>
 
 				<div className="space-y-2.5">
-					{equipment.borrowers.map((eq) => {
+					{equipment.requests.map((eq) => {
 						const borrower = eq.borrower;
 						const initials = borrower.firstName[0] + borrower.lastName[0];
 

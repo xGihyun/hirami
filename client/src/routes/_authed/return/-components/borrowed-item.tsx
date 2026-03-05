@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { BACKEND_URL } from "@/lib/api";
 import type {
 	BorrowRequestItem,
-	BorrowTransaction,
+	BorrowRequest,
 } from "@/lib/equipment/borrow";
 import { cn } from "@/lib/utils";
 import { differenceInMinutes, format, isAfter } from "date-fns";
@@ -12,7 +12,7 @@ import type { JSX } from "react";
 
 type Props = {
 	item: BorrowRequestItem;
-	transaction: BorrowTransaction;
+	transaction: BorrowRequest;
 	handleUpdateQuantity: (
 		equipment: BorrowRequestItem,
 		newQuantity: number,
