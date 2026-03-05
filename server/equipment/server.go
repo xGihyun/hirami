@@ -431,7 +431,6 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
-	// TODO: Use the correct SSE event
 	eventRes := sse.EventResponse{
 		Event: eventBorrowRequestCreate,
 		Data:  res,
