@@ -23,6 +23,7 @@ export const Route = createFileRoute("/_authed/equipments/$equipmentId/")({
 });
 
 function RouteComponent(): JSX.Element {
+    // TODO: Make this dynamic
 	const equipment: EquipmentWithBorrower = {
 		id: "d8d4de7d-3e56-4f94-b0af-5e5185b83098",
 		name: "Volleyball",
