@@ -19,6 +19,10 @@ export const Route = createFileRoute("/_authed")({
 		if (session === null) {
 			throw redirect({ to: "/onboarding" });
 		}
+
+		return {
+			authedSession: session,
+		};
 	},
 });
 
@@ -46,10 +50,16 @@ function RouteComponent(): JSX.Element {
 			});
 		}
 
-		eventSource.addEventListener(EquipmentServerEvent.BorrowRequestReview, handleEvent);
+		eventSource.addEventListener(
+			EquipmentServerEvent.BorrowRequestReview,
+			handleEvent,
+		);
 
 		return () => {
-			eventSource.removeEventListener(EquipmentServerEvent.BorrowRequestReview, handleEvent);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.BorrowRequestReview,
+				handleEvent,
+			);
 			eventSource.close();
 		};
 	}, []);

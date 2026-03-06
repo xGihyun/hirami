@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type JSX } from "react";
 import {
-	borrowedItemsQuery,
+	getBorrowedItemsQuery,
 	returnRequestsQuery,
 	equipmentNamesQuery,
 } from "@/lib/equipment/api";
@@ -29,8 +29,8 @@ export const Route = createFileRoute("/_authed/return/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
 		context.queryClient.ensureQueryData(
-			borrowedItemsQuery({
-				userId: context.auth.user?.id,
+			getBorrowedItemsQuery({
+				userId: context.authedSession.user.id,
 				sort: Sort.Asc,
 			}),
 		);
@@ -50,7 +50,7 @@ function RouteComponent(): JSX.Element {
 	// NOTE: Naive way to make sure the available options in equipment names are
 	// only the equipments included in the history or return request
 	const borrowHistoryAllCategory = useQuery(
-		borrowedItemsQuery({
+		getBorrowedItemsQuery({
 			userId: auth.user?.id,
 			sort: search.dueDateSort,
 		}),
@@ -88,7 +88,7 @@ function RouteComponent(): JSX.Element {
 
 		function handleEvent(_: MessageEvent): void {
 			queryClient.invalidateQueries(
-				borrowedItemsQuery({
+				getBorrowedItemsQuery({
 					userId: auth.user?.id,
 				}),
 			);

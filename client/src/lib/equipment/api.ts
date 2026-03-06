@@ -244,7 +244,7 @@ async function getBorrowedItems(
 	return borrowRequestItemSchema.array().parse(result.data);
 }
 
-export const borrowedItemsQuery = (params: GetBorrowedItemParams) =>
+export const getBorrowedItemsQuery = (params: GetBorrowedItemParams) =>
 	queryOptions({
 		queryKey: ["borrowed-items", params],
 		queryFn: () => getBorrowedItems(params),
