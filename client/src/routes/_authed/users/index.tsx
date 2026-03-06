@@ -1,14 +1,12 @@
 import { H2, LabelMedium } from "@/components/typography";
 import { usersQuery } from "@/lib/user";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import z from "zod";
 import { Search } from "./-components/search";
 import type { JSX } from "react";
 import { ComponentLoading } from "@/components/loading";
 import { UserList } from "./-components/user-list";
-import { Button } from "@/components/ui/button";
-import { v4 as uuidv4 } from "uuid";
 
 const searchSchema = z.object({
 	search: z.string().optional(),

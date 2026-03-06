@@ -1,7 +1,7 @@
 import {
 	equipmentNamesQuery,
 	equipmentsQuery,
-} from "@/lib/equipment";
+} from "@/lib/equipment/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";

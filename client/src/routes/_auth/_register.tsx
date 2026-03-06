@@ -6,7 +6,7 @@ import {
 	Outlet,
 	useRouterState,
 } from "@tanstack/react-router";
-import { useState, type JSX } from "react";
+import { type JSX } from "react";
 import { RegisterProvider } from "./_register/-context";
 
 export const Route = createFileRoute("/_auth/_register")({

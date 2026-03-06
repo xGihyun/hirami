@@ -4,12 +4,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import type { JSX } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toImageUrl } from "@/lib/api";
-import type { EquipmentWithBorrower } from "@/lib/equipment";
+import type { EquipmentWithBorrower } from "@/lib/equipment/model";
 import { Caption, H2, TitleSmall } from "@/components/typography";
 import { Separator } from "@/components/ui/separator";
 import {
 	Item,
-	ItemActions,
 	ItemContent,
 	ItemDescription,
 	ItemMedia,

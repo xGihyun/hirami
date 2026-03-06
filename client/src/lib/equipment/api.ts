@@ -4,15 +4,17 @@ import {
 	borrowRequestItemSchema,
 	borrowRequestSchema,
 	equipmentWithBorrowerSchema,
-	equipmentWithStatusQuantitySchema,
+	equipmentInventoryStatusSchema,
 	returnRequestSchema,
 	updateBorrowResponseSchema,
 	type BorrowRequest,
 	type BorrowRequestItem,
 	type BorrowRequestStatus,
 	type EquipmentWithBorrower,
-	type EquipmentWithStatusQuantity,
+	type EquipmentInventoryStatus,
 	type ReturnRequest,
+	type ReviewBorrowRequest,
+	type ReviewBorrowResponse,
 	type UpdateBorrowRequest,
 	type UpdateBorrowResponse,
 } from "./model";
@@ -58,19 +60,19 @@ export const equipmentsQuery = (params: GetEquipmentParams) =>
 
 async function getEquipmentType(
 	id: string,
-): Promise<EquipmentWithStatusQuantity> {
+): Promise<EquipmentInventoryStatus> {
 	const url = new URL(`${BACKEND_URL}/equipments/${id}`);
 	const response = await fetch(url.toString(), {
 		method: "GET",
 	});
 
-	const result: ApiResponse<EquipmentWithStatusQuantity> =
+	const result: ApiResponse<EquipmentInventoryStatus> =
 		await response.json();
 	if (!response.ok) {
 		throw new Error(result.message);
 	}
 
-	return equipmentWithStatusQuantitySchema.parse(result.data);
+	return equipmentInventoryStatusSchema.parse(result.data);
 }
 
 export const equipmentTypeQuery = (id: string) =>
@@ -265,6 +267,25 @@ export async function updateBorrowRequest(
 	}
 
 	updateBorrowResponseSchema.parse(result.data);
+
+	return result;
+}
+
+export async function reviewBorrowRequest(
+	value: ReviewBorrowRequest,
+): Promise<ApiResponse<ReviewBorrowResponse>> {
+	const response = await fetch(`${BACKEND_URL}/review-borrow-requests`, {
+		method: "PATCH",
+		body: JSON.stringify(value),
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	const result: ApiResponse<ReviewBorrowResponse> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
 
 	return result;
 }

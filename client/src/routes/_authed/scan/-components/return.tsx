@@ -1,9 +1,3 @@
-import {
-	BorrowRequestStatus,
-	updateBorrowRequest,
-	type BorrowRequestItem,
-	type BorrowRequest,
-} from "@/lib/equipment/borrow";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DrawerClose,
@@ -27,11 +21,8 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { Failed } from "@/components/failed";
 import { Success } from "@/components/success";
-import {
-	confirmReturnRequest,
-	type ReturnRequest,
-} from "@/lib/equipment/return";
-import type { Equipment } from "@/lib/equipment";
+import type { ReturnRequest, Equipment } from "@/lib/equipment/model";
+import { confirmReturnRequest } from "@/lib/equipment/api";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/auth";
 

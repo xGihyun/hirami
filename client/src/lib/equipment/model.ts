@@ -23,7 +23,7 @@ export const equipmentSchema = z.object({
 	model: z.string().nullable(),
 	imageUrl: z.string().nullable(),
 	quantity: z.number().nonnegative(),
-	status: enumDetailSchema(EquipmentStatus),
+	status: enumDetailSchema(EquipmentStatus).optional(),
 });
 export type Equipment = z.infer<typeof equipmentSchema>;
 
@@ -35,16 +35,16 @@ export type EquipmentStatusQuantity = z.infer<
 	typeof equipmentStatusQuantitySchema
 >;
 
-export const equipmentWithStatusQuantitySchema = z.object({
+export const equipmentInventoryStatusSchema = z.object({
 	id: z.uuidv4(),
 	name: z.string(),
 	brand: z.string().nullable(),
 	model: z.string().nullable(),
 	imageUrl: z.string().nullable(),
-	statusQuantity: equipmentStatusQuantitySchema,
+	statusQuantity: equipmentStatusQuantitySchema.array(),
 });
-export type EquipmentWithStatusQuantity = z.infer<
-	typeof equipmentWithStatusQuantitySchema
+export type EquipmentInventoryStatus = z.infer<
+	typeof equipmentInventoryStatusSchema
 >;
 
 //
@@ -89,11 +89,16 @@ export const borrowRequestItemSchema = z.object({
 });
 export type BorrowRequestItem = z.infer<typeof borrowRequestItemSchema>;
 
+const returnedEquipmentSchema = z.object({
+	id: z.uuid(),
+	quantity: z.number().nonnegative(),
+});
+
 const returnConfirmationSchema = z.object({
 	id: z.uuid(),
 	confirmedBy: userBasicInfoSchema,
 	confirmedAt: z.coerce.date(),
-	equipments: equipmentSchema.array(),
+	equipments: returnedEquipmentSchema.array(),
 	remarks: z.string().nullable(),
 });
 
@@ -114,7 +119,7 @@ export const borrowRequestSchema = z.object({
 	id: z.uuidv4(),
 	requestedAt: z.coerce.date(),
 	borrower: userBasicInfoSchema,
-	requestedItems: borrowRequestItemSchema,
+	requestedItems: borrowRequestItemSchema.array(),
 	location: z.string(),
 	purpose: z.string(),
 	status: enumDetailSchema(BorrowRequestStatus),
@@ -123,7 +128,7 @@ export const borrowRequestSchema = z.object({
 	actualReturnAt: z.coerce.date().nullable(),
 	returnConfirmations: returnConfirmationSchema.array(),
 	otp: otpSchema.nullable(),
-	anomaly: anomalyResultSchema,
+	anomaly: anomalyResultSchema.nullable(),
 });
 export type BorrowRequest = z.infer<typeof borrowRequestSchema>;
 

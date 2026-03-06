@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type JSX, type SetStateAction } from "react";
+import { type JSX } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
 import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import type { User } from "@/lib/user";
 import { useMutation } from "@tanstack/react-query";
@@ -29,13 +28,8 @@ import { PasswordInput } from "@/components/password-input";
 import { FullScreenLoading } from "@/components/loading";
 
 const formSchema = z.object({
-	email: z
-		.string()
-		.nonempty()
-		.email({ error: "Invalid email format." }),
-	password: z
-		.string()
-		.nonempty(),
+	email: z.string().nonempty().email({ error: "Invalid email format." }),
+	password: z.string().nonempty(),
 });
 
 type LoginResponse = {
@@ -74,7 +68,7 @@ export function LoginForm(): JSX.Element {
 
 	const mutation = useMutation({
 		mutationFn: login,
-		onSuccess: async (result, _variables, toastId) => {
+		onSuccess: async (result) => {
 			setCookie("session", result.data.token);
 			await navigate({ to: "/equipments" });
 		},

@@ -1,11 +1,13 @@
 import { useAuth } from "@/auth";
 import { BACKEND_URL, Sort } from "@/lib/api";
-import { borrowedItemsQuery } from "@/lib/equipment/borrow";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type JSX } from "react";
-import { returnRequestsQuery } from "@/lib/equipment/return";
-import { equipmentNamesQuery } from "@/lib/equipment";
+import {
+	borrowedItemsQuery,
+	returnRequestsQuery,
+	equipmentNamesQuery,
+} from "@/lib/equipment/api";
 import { EventSource } from "eventsource";
 import { ReturnHeader } from "./-components/return-header";
 import z from "zod";
@@ -62,8 +64,8 @@ function RouteComponent(): JSX.Element {
 	// NOTE: Getting the unique names should ideally be done on the server
 	const historyEquipmentNames = Array.from(
 		new Set(
-			borrowHistoryAllCategory.data?.flatMap((history) =>
-				history.equipment.name
+			borrowHistoryAllCategory.data?.flatMap(
+				(history) => history.equipment.name,
 			),
 		),
 	);
@@ -99,10 +101,16 @@ function RouteComponent(): JSX.Element {
 			setIsConfirmed(true);
 		}
 
-		eventSource.addEventListener(EquipmentServerEvent.ReturnRequestConfirm, handleEvent);
+		eventSource.addEventListener(
+			EquipmentServerEvent.ReturnRequestConfirm,
+			handleEvent,
+		);
 
 		return () => {
-			eventSource.removeEventListener(EquipmentServerEvent.ReturnRequestConfirm, handleEvent);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.ReturnRequestConfirm,
+				handleEvent,
+			);
 			eventSource.close();
 		};
 	}, []);

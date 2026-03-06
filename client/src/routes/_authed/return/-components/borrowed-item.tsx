@@ -5,7 +5,7 @@ import { BACKEND_URL } from "@/lib/api";
 import type {
 	BorrowRequestItem,
 	BorrowRequest,
-} from "@/lib/equipment/borrow";
+} from "@/lib/equipment/model";
 import { cn } from "@/lib/utils";
 import { differenceInMinutes, format, isAfter } from "date-fns";
 import type { JSX } from "react";

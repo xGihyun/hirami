@@ -11,7 +11,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRef, useState, type JSX } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { equipmentTypeQuery } from "@/lib/equipment";
+import { equipmentTypeQuery } from "@/lib/equipment/api";
 import { FullScreenLoading } from "@/components/loading";
 import { H2 } from "@/components/typography";
 import {
@@ -170,7 +170,6 @@ function RouteComponent(): JSX.Element {
 								name="image"
 								render={({
 									field: { value, onChange, ...fieldProps },
-									fieldState,
 								}) => (
 									<FormItem>
 										<FormControl>

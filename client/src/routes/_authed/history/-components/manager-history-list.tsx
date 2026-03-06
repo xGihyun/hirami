@@ -1,4 +1,4 @@
-import type { BorrowRequest } from "@/lib/equipment/borrow";
+import type { BorrowRequest } from "@/lib/equipment/model";
 import type { JSX } from "react";
 import { ManagerHistoryItem } from "./manager-history-item";
 import { Link } from "@tanstack/react-router";

@@ -1,6 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
-import { toImageUrl } from "@/lib/api";
 import { EquipmentStatus, type Equipment } from "@/lib/equipment/model";
 import { capitalizeWords } from "@/lib/utils";
 import type { JSX } from "react";
@@ -28,17 +26,7 @@ export function StatusBadge(props: Props): JSX.Element {
 		>
 			{capitalizeWords(props.equipment.status.code)}
 
-			{!props.equipment.borrower ? (
-				<span>({props.equipment.quantity} units)</span>
-			) : (
-				<Avatar className="size-5 text-xs ml-1">
-					<AvatarImage src={toImageUrl(props.equipment.borrower.avatarUrl)} />
-					<AvatarFallback>
-						{props.equipment.borrower.firstName[0]}
-						{props.equipment.borrower.lastName[0]}
-					</AvatarFallback>
-				</Avatar>
-			)}
+			<span>({props.equipment.quantity} units)</span>
 		</Badge>
 	);
 }

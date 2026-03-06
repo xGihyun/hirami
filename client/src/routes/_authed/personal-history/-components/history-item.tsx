@@ -6,7 +6,7 @@ import {
 	BorrowRequestStatus,
 	type BorrowRequestItem,
 	type BorrowRequest,
-} from "@/lib/equipment/borrow";
+} from "@/lib/equipment/model";
 import { UserRole } from "@/lib/user";
 import { capitalizeWords, cn } from "@/lib/utils";
 import { format } from "date-fns";

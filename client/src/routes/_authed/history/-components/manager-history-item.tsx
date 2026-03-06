@@ -5,7 +5,7 @@ import { SHOW_ANOMALY, toImageUrl } from "@/lib/api";
 import {
 	BorrowRequestStatus,
 	type BorrowRequest,
-} from "@/lib/equipment/borrow";
+} from "@/lib/equipment/model";
 import { capitalizeWords, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { JSX } from "react";

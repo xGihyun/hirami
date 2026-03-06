@@ -6,7 +6,7 @@ import { EventSource } from "eventsource";
 import {
 	BorrowRequestStatus,
 	type ReviewBorrowResponse,
-} from "@/lib/equipment/borrow";
+} from "@/lib/equipment/model";
 import { toast } from "sonner";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";

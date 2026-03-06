@@ -1,7 +1,7 @@
 import { LabelLarge, LabelMedium, LabelSmall } from "@/components/typography";
 import {
 	DEFAULT_EQUIPMENT_IMAGE,
-} from "@/lib/equipment";
+} from "@/lib/equipment/constant";
 import {
 	EquipmentStatus,
 	type Equipment,

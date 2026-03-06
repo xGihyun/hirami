@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { getUserRoleBadgeVariant } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { IconMoreHorizontal, IconTrash } from "@/lib/icons";
+import { IconMoreHorizontal } from "@/lib/icons";
 import {
 	DropdownMenu,
 	DropdownMenuContent,

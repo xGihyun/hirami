@@ -7,8 +7,7 @@ import {
 } from "@/components/typography";
 import { Badge } from "@/components/ui/badge";
 import { BACKEND_URL } from "@/lib/api";
-import type { Equipment } from "@/lib/equipment";
-import type { ReturnRequest } from "@/lib/equipment/return";
+import type { Equipment, ReturnRequest } from "@/lib/equipment/model";
 import { cn, getRemainingMs } from "@/lib/utils";
 import { format } from "date-fns";
 import type { JSX } from "react";

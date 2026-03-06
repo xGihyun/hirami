@@ -14,7 +14,6 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/password-input";
 import { H1, LabelSmall, TitleSmall } from "@/components/typography";
 import { IconArrowLeft } from "@/lib/icons";

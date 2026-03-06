@@ -1,4 +1,4 @@
-import { borrowHistoryQuery } from "@/lib/equipment/borrow";
+import { borrowHistoryQuery } from "@/lib/equipment/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, type JSX } from "react";
