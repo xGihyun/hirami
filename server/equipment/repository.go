@@ -217,6 +217,7 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 		WHERE borrow_request_status.borrow_request_status_id IN ($3, $4)
 			AND borrow_request_item.equipment_type_id = equipment_type.equipment_type_id
 	) AS active_borrow_request ON TRUE
+	WHERE TRUE
 	`
 
 	var args []any = []any{reserved, borrowed, approved, claimed}
@@ -2462,7 +2463,7 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 			'brand', equipment_type.brand,
 			'model', equipment_type.model,
 			'imageUrl', equipment_type.image_url,
-			'quantity', borrow_request_item.quantity
+			'quantity', borrow_request_item.quantity,
 			'status', equipment_status_agg.status
 		) AS equipment
 	FROM equipment_type
