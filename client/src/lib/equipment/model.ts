@@ -74,6 +74,7 @@ export const activeBorrowRequestSchema = z.object({
 	expectedReturnAt: z.coerce.date(),
 	status: enumDetailSchema(BorrowRequestStatus),
 	review: borrowReviewSchema,
+	quantity: z.number().nonnegative(),
 });
 export type ActiveBorrowRequest = z.infer<typeof activeBorrowRequestSchema>;
 

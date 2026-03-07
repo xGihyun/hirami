@@ -58,16 +58,35 @@ export const equipmentsQuery = (params: GetEquipmentParams) =>
 		queryFn: () => getEquipments(params),
 	});
 
-async function getEquipmentType(
-	id: string,
-): Promise<EquipmentInventoryStatus> {
+async function getEquipmentById(id: string): Promise<EquipmentWithBorrower | null> {
 	const url = new URL(`${BACKEND_URL}/equipments/${id}`);
 	const response = await fetch(url.toString(), {
 		method: "GET",
 	});
 
-	const result: ApiResponse<EquipmentInventoryStatus> =
-		await response.json();
+	const result: ApiResponse<EquipmentInventoryStatus | null> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return equipmentWithBorrowerSchema.nullable().parse(result.data);
+}
+
+export const getEquipmentByIdQuery = (id: string) =>
+	queryOptions({
+		queryKey: ["equipments", id],
+		queryFn: () => getEquipmentById(id),
+	});
+
+async function getEquipmentInventoryStatus(
+	id: string,
+): Promise<EquipmentInventoryStatus> {
+	const url = new URL(`${BACKEND_URL}/equipments/${id}/status`);
+	const response = await fetch(url.toString(), {
+		method: "GET",
+	});
+
+	const result: ApiResponse<EquipmentInventoryStatus> = await response.json();
 	if (!response.ok) {
 		throw new Error(result.message);
 	}
@@ -75,10 +94,10 @@ async function getEquipmentType(
 	return equipmentInventoryStatusSchema.parse(result.data);
 }
 
-export const equipmentTypeQuery = (id: string) =>
+export const getEquipmentInventoryStatusQuery = (id: string) =>
 	queryOptions({
-		queryKey: ["equipments", id],
-		queryFn: () => getEquipmentType(id),
+		queryKey: ["equipments", "status", id],
+		queryFn: () => getEquipmentInventoryStatus(id),
 	});
 
 async function getEquipmentNames(): Promise<string[]> {

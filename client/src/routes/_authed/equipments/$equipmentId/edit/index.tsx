@@ -11,7 +11,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRef, useState, type JSX } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { equipmentTypeQuery } from "@/lib/equipment/api";
+import { getEquipmentInventoryStatusQuery } from "@/lib/equipment/api";
 import { FullScreenLoading } from "@/components/loading";
 import { H2 } from "@/components/typography";
 import {
@@ -34,7 +34,7 @@ import { ReallocateForm } from "./-components/reallocate-form";
 export const Route = createFileRoute("/_authed/equipments/$equipmentId/edit/")({
 	component: RouteComponent,
 	loader: ({ context, params }) => {
-		context.queryClient.ensureQueryData(equipmentTypeQuery(params.equipmentId));
+		context.queryClient.ensureQueryData(getEquipmentInventoryStatusQuery(params.equipmentId));
 	},
 });
 
@@ -80,7 +80,7 @@ async function editEquipment(value: EditEquipmentSchema): Promise<ApiResponse> {
 
 function RouteComponent(): JSX.Element {
 	const params = Route.useParams();
-	const equipmentType = useQuery(equipmentTypeQuery(params.equipmentId));
+	const equipmentType = useQuery(getEquipmentInventoryStatusQuery(params.equipmentId));
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(
