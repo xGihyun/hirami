@@ -1,17 +1,17 @@
 meta {
-  name: get-all-equipments copy
+  name: get-equipment-by-id
   type: http
-  seq: 13
+  seq: 11
 }
 
 get {
-  url: {{baseUrl}}/equipments/{{equipmentTypeId}}
+  url: {{baseUrl}}/equipments
   body: none
   auth: inherit
 }
 
 params:query {
-  ~name: Basketball
+  ~name: Volleyball
 }
 
 vars:post-response {
