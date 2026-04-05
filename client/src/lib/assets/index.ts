@@ -13,6 +13,8 @@ import fitnessTrackerIllustration from "./undraw_fitness-tracker.svg";
 import indoorBikeIllustration from "./undraw_indoor-bike.svg";
 import fitnessStatsIllustration from "./undraw_fitness-stats.svg";
 import addFilesIllustration from "./undraw_add-files.svg";
+import unlockIllustration from "./undraw_unlock.svg";
+import messageSentIllustration from "./undraw_message-sent.svg";
 
 export {
 	hiramiLogo,
@@ -30,4 +32,6 @@ export {
 	indoorBikeIllustration,
 	fitnessStatsIllustration,
 	addFilesIllustration,
+	unlockIllustration,
+	messageSentIllustration,
 };

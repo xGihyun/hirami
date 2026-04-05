@@ -1,7 +1,14 @@
-import { H1, TitleSmall } from "@/components/typography";
+import {
+	DisplayLarge,
+	H1,
+	TitleMedium,
+	TitleSmall,
+} from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { connectionLostIllustration } from "@/lib/assets";
 import { IconArrowLeft } from "@/lib/icons";
+import { cn } from "@/lib/utils";
+import { PaddingLayout } from "@/routes/-components/padding-layout";
 import { Link } from "@tanstack/react-router";
 import type { JSX } from "react";
 
@@ -11,11 +18,21 @@ type Props = {
 	header: string;
 	backLink: string;
 	backMessage?: string;
+	illustration?: string;
+	className?: string;
 };
 
 export function Failed(props: Props): JSX.Element {
+	const description =
+		"A temporary issue occured. Please check your network and Try Again in a moment.";
+
 	return (
-		<div className="px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] h-svh inset-0 fixed bg-background w-full z-50">
+		<PaddingLayout
+			className={cn(
+				"h-svh inset-0 bg-background w-full z-50",
+				props.className,
+			)}
+		>
 			<Button
 				variant="ghost"
 				size="icon"
@@ -29,21 +46,30 @@ export function Failed(props: Props): JSX.Element {
 			</Button>
 
 			<main className="mt-10 pb-10">
-				<div className="h-full w-full flex flex-col gap-30">
+				<div className="h-full w-full flex flex-col gap-25 max-w-md mx-auto items-center justify-center">
 					<section className="space-y-3.5 content-center flex flex-col justify-center items-center">
 						<img
-							src={connectionLostIllustration}
+							src={
+								props.illustration
+									? props.illustration
+									: connectionLostIllustration
+							}
 							alt="Connection lost illustration"
-							className="w-full max-w-xs mx-auto aspect-[320/172]"
+							className="w-full max-w-xs md:max-w-none mx-auto"
 						/>
 
 						<div className="space-y-1.5">
-							<H1 className="text-center">{props.header}</H1>
+							<H1 className="text-center block md:hidden">{props.header}</H1>
+							<DisplayLarge className="text-center hidden md:block">
+								{props.header}
+							</DisplayLarge>
 
-							<TitleSmall className="text-center">
-								A temporary issue occured. Please check your network and Try
-								Again in a moment.
+							<TitleSmall className="text-center block md:hidden">
+								{description}
 							</TitleSmall>
+							<TitleMedium className="text-center hidden md:block">
+								{description}
+							</TitleMedium>
 						</div>
 					</section>
 
@@ -58,6 +84,6 @@ export function Failed(props: Props): JSX.Element {
 					</section>
 				</div>
 			</main>
-		</div>
+		</PaddingLayout>
 	);
 }

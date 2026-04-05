@@ -94,6 +94,19 @@ export function TitleSmall(props: Props): JSX.Element {
 	);
 }
 
+export function TitleMedium(props: Props): JSX.Element {
+	return (
+		<p
+			className={cn(
+				"font-montserrat-medium text-base leading-6",
+				props.className,
+			)}
+		>
+			{props.children}
+		</p>
+	);
+}
+
 export function DisplayLarge(props: Props): JSX.Element {
 	return (
 		<h1
