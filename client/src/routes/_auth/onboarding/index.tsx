@@ -1,19 +1,19 @@
-import {
-	DisplayLarge,
-	LabelMedium,
-	TitleSmall,
-} from "@/components/typography";
+import { DisplayLarge, LabelMedium, TitleSmall } from "@/components/typography";
 import { Button } from "@/components/ui/button";
-import { morningWorkoutIllustration } from "@/lib/assets";
+import { hiramiLogoDark, morningWorkoutIllustration } from "@/lib/assets";
 import {
 	createFileRoute,
 	Link,
 	redirect,
 	useSearch,
 } from "@tanstack/react-router";
-import type { JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import z from "zod";
 import { Onboarding } from "./-components/onboarding";
+import { PaddingLayout } from "@/routes/-components/padding-layout";
+import { HiramiLogoDark } from "@/lib/assets/logo-dark";
+import { SplashScreen } from "@/components/splash-screen";
+import { SideLogo } from "../-components/side-logo";
 
 const searchSchema = z.object({
 	step: z.number().optional(),
@@ -35,53 +35,86 @@ export const Route = createFileRoute("/_auth/onboarding/")({
 
 function RouteComponent(): JSX.Element {
 	const search = useSearch({ from: "/_auth/onboarding/" });
+	const [phase, setPhase] = useState<"splash" | "fading" | "done">("splash");
 
-	if (search.step) {
-		return <Onboarding />;
-	}
+	useEffect(() => {
+		const fadeTimer = setTimeout(() => setPhase("fading"), 400);
+		const doneTimer = setTimeout(() => setPhase("done"), 500);
 
-	return <Welcome />;
+		return () => {
+			clearTimeout(fadeTimer);
+			clearTimeout(doneTimer);
+		};
+	}, []);
+
+	const content = search.step ? (
+		<PaddingLayout>
+			<Onboarding />
+		</PaddingLayout>
+	) : (
+		<main className="flex h-svh">
+			<SideLogo />
+			<Welcome />
+		</main>
+	);
+
+	return (
+		<>
+			{content}
+			{phase !== "done" && (
+				<SplashScreen
+					className={
+						phase === "fading" ? "animate-out fade-out duration-100" : ""
+					}
+				/>
+			)}
+		</>
+	);
 }
 
 function Welcome(): JSX.Element {
 	return (
-		<div className="h-full w-full flex flex-col justify-center items-center">
-			<div className="w-full space-y-20">
-				<section className="space-y-3.5 flex flex-col justify-center items-center w-full">
-					<div className="w-full max-w-60 mx-auto aspect-[24/25]">
-						<img
-							src={morningWorkoutIllustration}
-							alt="Workout illustration"
-							className="w-full h-full"
-						/>
-					</div>
-					<div className="space-y-1.5">
-						<DisplayLarge className="text-center">Welcome</DisplayLarge>
-						<TitleSmall className="text-center">
-							Log in or sign up to get started
-						</TitleSmall>
-					</div>
-				</section>
+		<PaddingLayout className="w-full">
+			<section className="h-full w-full flex flex-col justify-center items-center max-w-sm mx-auto">
+				<div className="w-full space-y-20">
+					<section className="space-y-3.5 flex flex-col justify-center items-center w-full">
+						<div className="w-full max-w-60 mx-auto ">
+							<img
+								src={morningWorkoutIllustration}
+								alt="Workout illustration"
+								className="w-full h-full md:hidden block aspect-[24/25]"
+							/>
 
-				<section className="flex flex-col gap-2 w-full">
-					<Button className="w-full" asChild>
-						<Link to="/login">Log in</Link>
-					</Button>
-					<Button className="w-full" variant="ghost" asChild>
-						<Link to="/register">Create a new account</Link>
-					</Button>
+							<HiramiLogoDark className="w-full h-fit md:block hidden" />
+						</div>
+						<div className="space-y-1.5">
+							<DisplayLarge className="text-center">Hirami</DisplayLarge>
+							<TitleSmall className="text-center">
+								Log in or sign up to get started
+							</TitleSmall>
+						</div>
+					</section>
 
-					<LabelMedium className="underline text-center text-primary mt-10">
-						<a
-							href="https://docs.google.com/document/d/1LYMJ3kEMjBGzp_XxVLRCjC7Ht69krWmOeiQq3TP7jCE/edit?usp=sharing"
-							rel="noreferrer"
-							target="_blank"
-						>
-							Privacy Policy & Terms and Conditions
-						</a>
-					</LabelMedium>
-				</section>
-			</div>
-		</div>
+					<section className="flex flex-col gap-2 w-full">
+						<Button className="w-full" asChild>
+							<Link to="/login">Log in</Link>
+						</Button>
+						<Button className="w-full flex md:hidden" variant="secondary" asChild>
+							<Link to="/register">Register</Link>
+						</Button>
+
+						<LabelMedium className="text-center mt-2">
+							<a
+								href="https://docs.google.com/document/d/1LYMJ3kEMjBGzp_XxVLRCjC7Ht69krWmOeiQq3TP7jCE/edit?usp=sharing"
+								rel="noreferrer"
+								target="_blank"
+							>
+								Privacy Policy & Terms and Conditions
+							</a>
+						</LabelMedium>
+					</section>
+				</div>
+			</section>
+		</PaddingLayout>
 	);
 }

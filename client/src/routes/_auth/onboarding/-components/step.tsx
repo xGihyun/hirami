@@ -13,8 +13,8 @@ export function Step(props: Props): JSX.Element {
 				className="w-full max-w-xs mx-auto"
 			/>
 			<div className="space-y-7.5">
-				<H1 className="text-center">{props.title}</H1>
-				<TitleSmall className="text-center">{props.description}</TitleSmall>
+				<H1 className="text-center md:text-[2.8rem] md:leading-13">{props.title}</H1>
+				<TitleSmall className="text-center md:text-[1.4rem] md:leading-7">{props.description}</TitleSmall>
 			</div>
 		</section>
 	);

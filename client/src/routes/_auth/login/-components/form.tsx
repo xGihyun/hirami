@@ -19,13 +19,18 @@ import { useMutation } from "@tanstack/react-query";
 import { setCookie } from "@/lib/cookie";
 import { accessDeniedIllustration, loginIllustration } from "@/lib/assets";
 import {
+	DisplayLarge,
 	H1,
 	LabelLarge,
 	LabelSmall,
 	TitleSmall,
 } from "@/components/typography";
 import { PasswordInput } from "@/components/password-input";
-import { FullScreenLoading } from "@/components/loading";
+import { ComponentLoading, FullScreenLoading } from "@/components/loading";
+import { HiramiLogoDark } from "@/lib/assets/logo-dark";
+import { toast } from "sonner";
+import { Failed } from "@/components/failed";
+import { ErrInvalidCredentials } from "@/lib/user/error";
 
 const formSchema = z.object({
 	email: z.string().nonempty().email({ error: "Invalid email format." }),
@@ -48,6 +53,12 @@ async function login(
 	});
 
 	const result: ApiResponse<LoginResponse> = await response.json();
+	if (response.status === 401) {
+		throw new ErrInvalidCredentials(
+			result.message || "Invalid email or password.",
+		);
+	}
+
 	if (!response.ok) {
 		throw new Error(result.message || "Login failed");
 	}
@@ -70,6 +81,7 @@ export function LoginForm(): JSX.Element {
 		mutationFn: login,
 		onSuccess: async (result) => {
 			setCookie("session", result.data.token);
+			toast("Log in Successful");
 			await navigate({ to: "/equipments" });
 		},
 	});
@@ -78,39 +90,54 @@ export function LoginForm(): JSX.Element {
 		mutation.mutate(value);
 	}
 
-	if (mutation.isError) {
+	if (mutation.isError && !(mutation.error instanceof ErrInvalidCredentials)) {
 		return (
 			<Failed
 				header="Login failed."
-				onSubmit={form.handleSubmit(onSubmit)}
-				reset={mutation.reset}
+				fn={mutation.reset}
+				retry={form.handleSubmit(onSubmit)}
+				backLink="/login"
+				backMessage="or return to Log in page"
+				illustration={accessDeniedIllustration}
 			/>
 		);
 	}
 
 	if (mutation.isPending) {
-		return <FullScreenLoading />;
+		return (
+			<div className="flex h-full items-center justify-center ">
+				<FullScreenLoading className="md:hidden block" />
+				<ComponentLoading className="md:block hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+			</div>
+		);
 	}
 
 	return (
 		<div className="h-full w-full flex flex-col gap-12">
 			<section className="space-y-3.5 content-center flex flex-col justify-center items-center h-full">
-				<img
-					src={loginIllustration}
-					alt="Login illustration"
-					className="w-full max-w-52 mx-auto aspect-square"
-				/>
+				<div className="w-full max-w-60 mx-auto">
+					<img
+						src={loginIllustration}
+						alt="Login illustration"
+						className="w-full max-w-52 mx-auto aspect-square block md:hidden"
+					/>
+
+					<HiramiLogoDark className="hidden md:block w-full h-fit" />
+				</div>
 
 				<div className="space-y-1.5">
-					<H1 className="text-center">Log In</H1>
+					<H1 className="text-center block md:hidden">Log In</H1>
+					<DisplayLarge className="text-center hidden md:block">
+						Hirami
+					</DisplayLarge>
 					<TitleSmall className="text-center">
-						Enter your email and password to proceed.
+						Log in or sign up to get started.
 					</TitleSmall>
 				</div>
 			</section>
 
 			<Form {...form}>
-				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+				<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-15">
 					<div className="space-y-4">
 						<FormField
 							control={form.control}
@@ -144,23 +171,31 @@ export function LoginForm(): JSX.Element {
 						/>
 					</div>
 
-					<Button
-						type="submit"
-						className="w-full"
-						disabled={!form.formState.isValid}
-					>
-						Log In
-					</Button>
+					<div className="space-y-4">
+						{mutation.error instanceof ErrInvalidCredentials ? (
+							<p
+								data-slot="form-message"
+								className="text-destructive font-montserrat-semibold text-xs leading-4 text-center"
+							>
+								Invalid email or password.
+							</p>
+						) : null}
 
-					<LabelSmall className="text-center">
-						Forgot password?{" "}
-						<Link
-							to="/password-reset"
-							className="font-montserrat-bold underline"
+						<Button
+							type="submit"
+							className="w-full"
+							disabled={!form.formState.isValid}
 						>
-							Click here
-						</Link>
-					</LabelSmall>
+							Log In
+						</Button>
+
+						<div className="text-center flex gap-1 justify-center items-center w-full mx-auto">
+							<LabelSmall>Forgot password?</LabelSmall>
+							<Link to="/password-reset">
+								<LabelLarge className="underline">Click here</LabelLarge>
+							</Link>
+						</div>
+					</div>
 				</form>
 			</Form>
 		</div>
@@ -173,32 +208,32 @@ type FailedProps = {
 	header: string;
 };
 
-function Failed(props: FailedProps): JSX.Element {
-	return (
-		<div className="h-full w-full flex flex-col gap-12">
-			<section className="space-y-3.5 content-center flex flex-col justify-center items-center h-full">
-				<img
-					src={accessDeniedIllustration}
-					alt="Failed illustration"
-					className="w-full max-w-xs mx-auto"
-				/>
-
-				<div className="space-y-1.5">
-					<H1 className="text-center">{props.header}</H1>
-					<TitleSmall className="text-center">
-						A temporary issue occured. Please check your network and Try Again
-						in a moment.
-					</TitleSmall>
-				</div>
-			</section>
-
-			<section className="w-full flex flex-col text-center gap-4">
-				<Button onClick={props.onSubmit}>Try Again</Button>
-
-				<button onClick={props.reset} className="cursor-pointer w-fit mx-auto">
-					<LabelLarge>or return to Log In page</LabelLarge>
-				</button>
-			</section>
-		</div>
-	);
-}
+// function Failed(props: FailedProps): JSX.Element {
+// 	return (
+// 		<div className="h-full w-full flex flex-col gap-12">
+// 			<section className="space-y-3.5 content-center flex flex-col justify-center items-center h-full">
+// 				<img
+// 					src={accessDeniedIllustration}
+// 					alt="Failed illustration"
+// 					className="w-full max-w-xs mx-auto"
+// 				/>
+//
+// 				<div className="space-y-1.5">
+// 					<H1 className="text-center">{props.header}</H1>
+// 					<TitleSmall className="text-center">
+// 						A temporary issue occured. Please check your network and Try Again
+// 						in a moment.
+// 					</TitleSmall>
+// 				</div>
+// 			</section>
+//
+// 			<section className="w-full flex flex-col text-center gap-4">
+// 				<Button onClick={props.onSubmit}>Try Again</Button>
+//
+// 				<button onClick={props.reset} className="cursor-pointer w-fit mx-auto">
+// 					<LabelLarge>or return to Log In page</LabelLarge>
+// 				</button>
+// 			</section>
+// 		</div>
+// 	);
+// }

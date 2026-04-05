@@ -6,9 +6,14 @@ type Props = {
 	className?: string;
 };
 
-export function FullScreenLoading(): JSX.Element {
+export function FullScreenLoading(props: Props): JSX.Element {
 	return (
-		<div className="h-svh inset-0 fixed bg-background w-full content-center">
+		<div
+			className={cn(
+				"h-svh inset-0 fixed bg-background w-full content-center",
+				props.className,
+			)}
+		>
 			<Spinner className="mx-auto size-12.5 text-primary" />
 		</div>
 	);

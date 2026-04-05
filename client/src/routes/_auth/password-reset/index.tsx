@@ -16,18 +16,23 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { IconArrowLeft } from "@/lib/icons";
-import { passwordResetIllustration } from "@/lib/assets";
+import {
+	accessDeniedIllustration,
+	messageSentIllustration,
+	passwordResetIllustration,
+	unlockIllustration,
+} from "@/lib/assets";
 import { H1, TitleSmall } from "@/components/typography";
+import { PaddingLayout } from "@/routes/-components/padding-layout";
+import { Success } from "@/components/success";
+import { Failed } from "@/components/failed";
 
 export const Route = createFileRoute("/_auth/password-reset/")({
 	component: RouteComponent,
 });
 
 const formSchema = z.object({
-	email: z
-		.string()
-		.nonempty()
-		.email({ error: "Invalid email format." }),
+	email: z.string().nonempty().email({ error: "Invalid email format." }),
 });
 
 async function requestPasswordReset(
@@ -62,7 +67,9 @@ function RouteComponent() {
 			return toast.loading("Requesting for password reset.");
 		},
 		onSuccess: (result, _variables, toastId) => {
-			toast.success("A password reset link has been sent to your email.", { id: toastId });
+			toast.success("A password reset link has been sent to your email.", {
+				id: toastId,
+			});
 		},
 		onError: (error, _variables, toastId) => {
 			toast.error(error.message, { id: toastId });
@@ -73,54 +80,119 @@ function RouteComponent() {
 		mutation.mutate(value);
 	}
 
+	if (mutation.isSuccess) {
+		return (
+			<Success
+				backLink="/password-reset"
+				header="A password reset link has been sent to your email."
+				illustration={messageSentIllustration}
+			/>
+		);
+	}
+
+	if (mutation.isError) {
+		return (
+			<Failed
+				header="Password reset failed."
+				fn={mutation.reset}
+				retry={form.handleSubmit(onSubmit)}
+				backLink="/onboarding"
+				backMessage="or return to Welcome Page"
+				illustration={accessDeniedIllustration}
+			/>
+		);
+	}
+
 	return (
-		<div className="h-full w-full">
-			<Button variant="ghost" size="icon" className="size-15">
-				<Link to="/onboarding">
-					<IconArrowLeft className="size-8" />
-				</Link>
-			</Button>
+		<div className="flex h-full w-full">
+			<section className="w-full h-full hidden md:block">
+				<PaddingLayout className="flex items-center justify-center">
+					<div className="relative h-full w-full flex">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-15 absolute inset-0"
+						>
+							<Link to="/onboarding">
+								<IconArrowLeft className="size-8" />
+							</Link>
+						</Button>
 
-			<main className="mt-10 pb-10">
-				<div className="h-full w-full flex flex-col gap-12">
-					<section className="space-y-3.5 content-center flex flex-col justify-center items-center h-full">
 						<img
-							src={passwordResetIllustration}
+							src={unlockIllustration}
 							alt="Password reset illustration"
-							className="w-full max-w-52 mx-auto aspect-[208/167]"
+							className="w-full max-w-md ml-auto aspect-[208/167]"
 						/>
+					</div>
+				</PaddingLayout>
+			</section>
 
-						<div className="space-y-1.5">
-							<H1 className="text-center">Forgot Password?</H1>
-							<TitleSmall className="text-center">
-								Enter your email to proceed.
-							</TitleSmall>
-						</div>
-					</section>
+			<section className="w-full h-full">
+				<PaddingLayout className="md:flex md:items-start md:justify-center">
+					<div className="h-full w-full md:bg-white md:rounded-[1.25rem] md:p-12 md:h-fit md:max-w-md">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-15 block md:hidden"
+						>
+							<Link to="/onboarding">
+								<IconArrowLeft className="size-8" />
+							</Link>
+						</Button>
 
-					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-							<FormField
-								control={form.control}
-								name="email"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Email</FormLabel>
-										<FormControl>
-											<Input placeholder="youremail@gmail.com" {...field} />
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
+						<main className="mt-10 pb-10">
+							<div className="h-full w-full flex flex-col gap-12">
+								<section className="space-y-3.5 content-center flex flex-col justify-center items-center h-full">
+									<img
+										src={passwordResetIllustration}
+										alt="Password reset illustration"
+										className="w-full max-w-52 mx-auto aspect-[208/167]"
+									/>
 
-							<Button type="submit" className="w-full">
-								Verify
-							</Button>
-						</form>
-					</Form>
-				</div>
-			</main>
+									<div className="space-y-1.5">
+										<H1 className="text-center">Forgot Password?</H1>
+										<TitleSmall className="text-center">
+											Enter your email to proceed.
+										</TitleSmall>
+									</div>
+								</section>
+
+								<Form {...form}>
+									<form
+										onSubmit={form.handleSubmit(onSubmit)}
+										className="space-y-15"
+									>
+										<FormField
+											control={form.control}
+											name="email"
+											render={({ field }) => (
+												<FormItem>
+													<FormLabel>Email</FormLabel>
+													<FormControl>
+														<Input
+															placeholder="youremail@gmail.com"
+															{...field}
+														/>
+													</FormControl>
+													<FormMessage />
+												</FormItem>
+											)}
+										/>
+
+										<Button
+											type="submit"
+											className="w-full"
+											disabled={!form.formState.isValid}
+										>
+											Verify
+										</Button>
+									</form>
+								</Form>
+							</div>
+						</main>
+					</div>
+				</PaddingLayout>
+			</section>
 		</div>
 	);
 }

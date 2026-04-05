@@ -1,7 +1,7 @@
 import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -17,6 +17,10 @@ import {
 import { PasswordInput } from "@/components/password-input";
 import { H1, LabelSmall, TitleSmall } from "@/components/typography";
 import { IconArrowLeft } from "@/lib/icons";
+import { PaddingLayout } from "@/routes/-components/padding-layout";
+import { accessDeniedIllustration, doneIllustration, unlockIllustration } from "@/lib/assets";
+import { Success } from "@/components/success";
+import { Failed } from "@/components/failed";
 
 export const Route = createFileRoute("/_auth/password-reset/$token")({
 	component: RouteComponent,
@@ -46,9 +50,7 @@ const formSchema = z
 			.refine(hasLowercase, "Password requirements not met.")
 			.refine(hasNumber, "Password requirements not met.")
 			.refine(hasSpecialChar, "Password requirements not met."),
-		confirmPassword: z
-			.string()
-			.nonempty(),
+		confirmPassword: z.string().nonempty(),
 	})
 	.refine((data) => data.newPassword === data.confirmPassword, {
 		message: "Password and Confirm Password do not match",
@@ -105,90 +107,149 @@ function RouteComponent() {
 
 	const newPassword = form.watch("newPassword");
 
+	if (mutation.isSuccess) {
+		return (
+			<Success
+				backLink="/onboarding"
+				header="Your password has been successfully reset."
+				illustration={doneIllustration}
+			/>
+		);
+	}
+
+	if (mutation.isError) {
+		return (
+			<Failed
+				header="Password reset failed."
+				fn={mutation.reset}
+				retry={form.handleSubmit(onSubmit)}
+				backLink="/onboarding"
+				backMessage="or return to Welcome Page"
+				illustration={accessDeniedIllustration}
+			/>
+		);
+	}
+
 	return (
-		<div className="h-full w-full">
-			<Button variant="ghost" size="icon" className="size-15">
-				<IconArrowLeft className="size-8" />
-			</Button>
+		<div className="flex h-full w-full">
+			<section className="w-full h-full hidden md:block">
+				<PaddingLayout className="flex items-center justify-center">
+					<div className="relative h-full w-full flex">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-15 absolute inset-0"
+						>
+							<Link to="/onboarding">
+								<IconArrowLeft className="size-8" />
+							</Link>
+						</Button>
 
-			<main className="mt-10 pb-10">
-				<div className="h-full w-full flex flex-col gap-15">
-					<section className="space-y-1 content-center flex flex-col justify-center items-center">
-						<H1 className="text-center">Enter your new password</H1>
-						<TitleSmall className="text-center">
-							Enter your password to secure your account.
-						</TitleSmall>
-					</section>
+						<img
+							src={unlockIllustration}
+							alt="Password reset illustration"
+							className="w-full max-w-md ml-auto aspect-[208/167]"
+						/>
+					</div>
+				</PaddingLayout>
+			</section>
 
-					<section className="h-full">
-						<Form {...form}>
-							<form
-								onSubmit={form.handleSubmit(onSubmit)}
-								className="space-y-8"
-							>
-								<div className="space-y-4">
-									<FormField
-										control={form.control}
-										name="newPassword"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel>Password</FormLabel>
-												<FormControl>
-													<PasswordInput
-														placeholder="Enter your Password"
-														{...field}
-													/>
-												</FormControl>
-												<FormMessage />
-											</FormItem>
-										)}
-									/>
+			<section className="w-full h-full">
+				<PaddingLayout className="md:flex md:items-start md:justify-center">
+					<div className="h-full w-full md:bg-white md:rounded-[1.25rem] md:p-12 md:h-fit md:max-w-md">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="size-15 block md:hidden"
+						>
+							<Link to="/onboarding">
+								<IconArrowLeft className="size-8" />
+							</Link>
+						</Button>
 
-									<div className="bg-card rounded-xl border p-6">
-										{validationRules.map((rule, i) => {
-											const isMet = rule.check(newPassword);
+						<main className="mt-10 pb-10">
+							<div className="h-full w-full flex flex-col gap-15">
+								<section className="space-y-1 content-center flex flex-col justify-center items-center">
+									<H1 className="text-center">Enter your new password</H1>
+									<TitleSmall className="text-center">
+										Enter your password to secure your account.
+									</TitleSmall>
+								</section>
 
-											return (
-												<LabelSmall
-													key={i}
-													className={isMet ? "text-success" : "text-muted"}
-												>
-													{rule.label}
-												</LabelSmall>
-											);
-										})}
-									</div>
+								<section className="h-full">
+									<Form {...form}>
+										<form
+											onSubmit={form.handleSubmit(onSubmit)}
+											className="space-y-8"
+										>
+											<div className="space-y-4">
+												<FormField
+													control={form.control}
+													name="newPassword"
+													render={({ field }) => (
+														<FormItem>
+															<FormLabel>Password</FormLabel>
+															<FormControl>
+																<PasswordInput
+																	placeholder="Enter your Password"
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessage />
+														</FormItem>
+													)}
+												/>
 
-									<FormField
-										control={form.control}
-										name="confirmPassword"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel>Confirm Password</FormLabel>
-												<FormControl>
-													<PasswordInput
-														placeholder="Confirm your Password"
-														{...field}
-													/>
-												</FormControl>
-												<FormMessage />
-											</FormItem>
-										)}
-									/>
-								</div>
+												<div className="bg-card rounded-xl border p-6">
+													{validationRules.map((rule, i) => {
+														const isMet = rule.check(newPassword);
 
-								<Button
-									type="submit"
-									className="w-full"
-									disabled={!form.formState.isValid}
-								>
-									Confirm
-								</Button>
-							</form>
-						</Form>
-					</section>
-				</div>
-			</main>
+														return (
+															<LabelSmall
+																key={i}
+																className={
+																	isMet ? "text-success" : "text-muted"
+																}
+															>
+																{rule.label}
+															</LabelSmall>
+														);
+													})}
+												</div>
+
+												<FormField
+													control={form.control}
+													name="confirmPassword"
+													render={({ field }) => (
+														<FormItem>
+															<FormLabel>Confirm Password</FormLabel>
+															<FormControl>
+																<PasswordInput
+																	placeholder="Confirm your Password"
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessage />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<Button
+												type="submit"
+												className="w-full"
+												disabled={!form.formState.isValid}
+											>
+												Confirm
+											</Button>
+										</form>
+									</Form>
+								</section>
+							</div>
+						</main>
+					</div>
+				</PaddingLayout>
+			</section>
 		</div>
 	);
 }
