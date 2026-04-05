@@ -11,15 +11,18 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/xGihyun/hirami/api"
+	"google.golang.org/api/gmail/v1"
 )
 
 type Server struct {
-	repository Repository
+	repository   Repository
+	gmailService *gmail.Service
 }
 
-func NewServer(repo Repository) *Server {
+func NewServer(repo Repository, svc *gmail.Service) *Server {
 	return &Server{
-		repository: repo,
+		repository:   repo,
+		gmailService: svc,
 	}
 }
 
@@ -389,7 +392,7 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
 	  <p>This link will expire in 15 minutes.</p>
 	`, resetLink, resetLink)
 
-	if err := api.SendEmail(data.Email, subject, bodyHTML); err != nil {
+	if err := api.SendGmail(s.gmailService, data.Email, subject, bodyHTML); err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("password reset email: %w", err),
 			Code:    http.StatusInternalServerError,

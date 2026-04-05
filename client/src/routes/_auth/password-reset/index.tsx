@@ -83,9 +83,10 @@ function RouteComponent() {
 	if (mutation.isSuccess) {
 		return (
 			<Success
-				backLink="/password-reset"
+				backLink="/onboarding"
 				header="A password reset link has been sent to your email."
 				illustration={messageSentIllustration}
+				fn={mutation.reset}
 			/>
 		);
 	}
