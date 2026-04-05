@@ -146,19 +146,11 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) api.Response {
 
 	res, err := s.repository.login(ctx, data)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return api.Response{
-				Error:   fmt.Errorf("sign in: %w", err),
-				Code:    http.StatusNotFound,
-				Message: "Invalid credentials.",
-			}
-		}
-
-		if errors.Is(err, errInvalidPassword) {
+		if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, errInvalidPassword) {
 			return api.Response{
 				Error:   fmt.Errorf("sign in: %w", err),
 				Code:    http.StatusUnauthorized,
-				Message: "Invalid password.",
+				Message: "Invalid credentials.",
 			}
 		}
 

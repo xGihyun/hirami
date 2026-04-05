@@ -52,7 +52,7 @@ function Welcome(): JSX.Element {
 							/>
 						</div>
 						<div className="space-y-1.5">
-							<DisplayLarge className="text-center">Welcome</DisplayLarge>
+							<DisplayLarge className="text-center">Hirami</DisplayLarge>
 							<TitleSmall className="text-center">
 								Log in or sign up to get started
 							</TitleSmall>
@@ -63,11 +63,11 @@ function Welcome(): JSX.Element {
 						<Button className="w-full" asChild>
 							<Link to="/login">Log in</Link>
 						</Button>
-						<Button className="w-full" variant="ghost" asChild>
-							<Link to="/register">Create a new account</Link>
+						<Button className="w-full" variant="secondary" asChild>
+							<Link to="/register">Register</Link>
 						</Button>
 
-						<LabelMedium className="underline text-center text-primary mt-10">
+						<LabelMedium className="text-center mt-2">
 							<a
 								href="https://docs.google.com/document/d/1LYMJ3kEMjBGzp_XxVLRCjC7Ht69krWmOeiQq3TP7jCE/edit?usp=sharing"
 								rel="noreferrer"
