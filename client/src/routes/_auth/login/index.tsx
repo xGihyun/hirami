@@ -3,6 +3,7 @@ import { LoginForm } from "./-components/form";
 import type { JSX } from "react";
 import { Button } from "@/components/ui/button";
 import { IconX } from "@/lib/icons";
+import { PaddingLayout } from "@/routes/-components/padding-layout";
 
 export const Route = createFileRoute("/_auth/login/")({
 	component: RouteComponent,
@@ -10,16 +11,18 @@ export const Route = createFileRoute("/_auth/login/")({
 
 function RouteComponent(): JSX.Element {
 	return (
-		<div className="h-full w-full">
-			<Button variant="ghost" size="icon" className="size-15">
-				<Link to="/onboarding">
-					<IconX className="size-8" />
-				</Link>
-			</Button>
+		<PaddingLayout>
+			<div className="h-full w-full">
+				<Button variant="ghost" size="icon" className="size-15">
+					<Link to="/onboarding">
+						<IconX className="size-8" />
+					</Link>
+				</Button>
 
-			<main className="mt-10 pb-10">
-				<LoginForm />
-			</main>
-		</div>
+				<main className="mt-10 pb-10">
+					<LoginForm />
+				</main>
+			</div>
+		</PaddingLayout>
 	);
 }

@@ -37,7 +37,7 @@ export function Onboarding(): JSX.Element {
 	const currentStepData = steps[currentStep - 1];
 
 	return (
-		<div className="h-full w-full flex flex-col justify-center items-center">
+		<main className="h-full w-full max-w-4xl flex flex-col justify-center items-center mx-auto">
 			<div className="w-full space-y-12">
 				<div className="h-[30rem] flex items-center justify-center relative">
 					{steps.map((stepData, index) => (
@@ -63,7 +63,7 @@ export function Onboarding(): JSX.Element {
 					))}
 				</div>
 
-				<section className="flex flex-col gap-1 w-full">
+				<section className="flex flex-col gap-1 w-full max-w-lg mx-auto">
 					<Button className="w-full" asChild>
 						<Link
 							to="/onboarding"
@@ -79,6 +79,6 @@ export function Onboarding(): JSX.Element {
 					</Button>
 				</section>
 			</div>
-		</div>
+		</main>
 	);
 }
