@@ -6,7 +6,7 @@ const borrowEquipmentItemSchema = z.object({
 	quantity: z.number().positive(),
 });
 
-export const borrowRequestSchema = z.object({
+export const createBorrowRequestSchema = z.object({
 	equipments: z.array(borrowEquipmentItemSchema),
 	location: z.string().nonempty(),
 	purpose: z.string().nonempty(),
@@ -14,9 +14,9 @@ export const borrowRequestSchema = z.object({
 	requestedBy: z.string().nonempty(),
 });
 
-export type BorrowRequestSchema = z.infer<typeof borrowRequestSchema>;
+export type CreateBorrowRequest = z.infer<typeof createBorrowRequestSchema>;
 
-export async function borrow(value: BorrowRequestSchema): Promise<ApiResponse> {
+export async function createBorrowRequest(value: CreateBorrowRequest): Promise<ApiResponse> {
 	const response = await fetch(`${BACKEND_URL}/borrow-requests`, {
 		method: "POST",
 		body: JSON.stringify(value),

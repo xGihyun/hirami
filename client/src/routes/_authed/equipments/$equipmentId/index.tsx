@@ -4,12 +4,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import type { JSX } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toImageUrl } from "@/lib/api";
-import type { EquipmentWithBorrower } from "@/lib/equipment";
-import { Caption, H2, TitleSmall } from "@/components/typography";
+import { Caption, H2, LabelMedium, TitleSmall } from "@/components/typography";
 import { Separator } from "@/components/ui/separator";
 import {
 	Item,
-	ItemActions,
 	ItemContent,
 	ItemDescription,
 	ItemMedia,
@@ -17,31 +15,40 @@ import {
 } from "@/components/ui/item";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { getEquipmentByIdQuery } from "@/lib/equipment/api";
+import { ComponentLoading } from "@/components/loading";
+import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment/constant";
 
 export const Route = createFileRoute("/_authed/equipments/$equipmentId/")({
 	component: RouteComponent,
 });
 
 function RouteComponent(): JSX.Element {
-    // TODO: Make this dynamic
-	const equipment: EquipmentWithBorrower = {
-		id: "d8d4de7d-3e56-4f94-b0af-5e5185b83098",
-		name: "Volleyball",
-		brand: "Mikasa",
-		imageUrl: "/uploads/equipments/1429.jpg",
-		quantity: 4,
-		borrowers: [
-			{
-				quantity: 1,
-				borrower: {
-					firstName: "Shammy Kierson",
-					lastName: "Suyat",
-					id: "ee584a9d-14ae-4975-80be-3dd1d2467e58",
-				},
-				expectedReturnAt: `${new Date()}`,
-			},
-		],
-	};
+	const params = Route.useParams();
+	const equipmentQuery = useQuery(getEquipmentByIdQuery(params.equipmentId));
+
+	if (equipmentQuery.isLoading) {
+		return <ComponentLoading />;
+	}
+
+	if (equipmentQuery.isError) {
+		return (
+			<LabelMedium className="text-muted text-center mt-10">
+				Failed to load equipment.
+			</LabelMedium>
+		);
+	}
+
+	if (!equipmentQuery.data) {
+		return (
+			<LabelMedium className="text-muted text-center mt-10">
+				Equipment not found.
+			</LabelMedium>
+		);
+	}
+
+	const { equipment, requests } = equipmentQuery.data;
 
 	return (
 		<main className="space-y-4">
@@ -54,7 +61,9 @@ function RouteComponent(): JSX.Element {
 			<section className="w-fit mx-auto space-y-2.5">
 				<div className="flex flex-col items-center">
 					<Avatar className="size-30 mx-auto">
-						<AvatarImage src={toImageUrl(equipment.imageUrl)} />
+						<AvatarImage
+							src={toImageUrl(equipment.imageUrl) || DEFAULT_EQUIPMENT_IMAGE}
+						/>
 						<AvatarFallback />
 					</Avatar>
 
@@ -74,7 +83,7 @@ function RouteComponent(): JSX.Element {
 				<TitleSmall>Current Borrowers:</TitleSmall>
 
 				<div className="space-y-2.5">
-					{equipment.borrowers.map((eq) => {
+					{requests.map((eq) => {
 						const borrower = eq.borrower;
 						const initials = borrower.firstName[0] + borrower.lastName[0];
 
@@ -100,11 +109,8 @@ function RouteComponent(): JSX.Element {
 										</span>
 
 										<span>
-                                            {" "}
-											{format(eq.expectedReturnAt, "h:mm a")}
-                                            {" "}
-											at
-                                            {" "}
+											{" "}
+											{format(eq.expectedReturnAt, "h:mm a")} at{" "}
 											{format(eq.expectedReturnAt, "MM/d/yyyy")}
 										</span>
 									</ItemDescription>

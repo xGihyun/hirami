@@ -1,21 +1,18 @@
 import {
 	returnRequestByOtpQuery,
 	returnRequestsQuery,
-	type ReturnRequest,
-} from "@/lib/equipment/return";
+	borrowRequestByOtpQuery,
+} from "@/lib/equipment/api";
+import type { ReturnRequest, BorrowRequest } from "@/lib/equipment/model";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type JSX } from "react";
 import { Drawer } from "@/components/ui/drawer";
 import { BACKEND_URL } from "@/lib/api";
-import { Caption, H2, LabelLarge } from "@/components/typography";
+import { H2 } from "@/components/typography";
 import { EventSource } from "eventsource";
 import QrScanner from "qr-scanner";
 import { Failed } from "@/components/failed";
-import {
-	borrowRequestByOtpQuery,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
 import { Borrow } from "./-components/borrow";
 import { Return } from "./-components/return";
 import {
@@ -31,7 +28,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	Form,
 	FormControl,
-	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
@@ -53,7 +49,7 @@ export const Route = createFileRoute("/_authed/scan/")({
 function RouteComponent(): JSX.Element {
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const queryClient = useQueryClient();
-	const [borrowRequest, setBorrowRequest] = useState<BorrowTransaction | null>(
+	const [borrowRequest, setBorrowRequest] = useState<BorrowRequest | null>(
 		null,
 	);
 	const [returnRequest, setReturnRequest] = useState<ReturnRequest | null>(
@@ -88,9 +84,15 @@ function RouteComponent(): JSX.Element {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
 		const handleEvent = () =>
 			queryClient.invalidateQueries(returnRequestsQuery({}));
-		eventSource.addEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
+		eventSource.addEventListener(
+			EquipmentServerEvent.EquipmentCreate,
+			handleEvent,
+		);
 		return () => {
-			eventSource.removeEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.EquipmentCreate,
+				handleEvent,
+			);
 			eventSource.close();
 		};
 	}, []);
@@ -179,10 +181,8 @@ function RouteComponent(): JSX.Element {
 
 type ScannerProps = {
 	videoRef: React.RefObject<HTMLVideoElement | null>;
-	borrowRequest: BorrowTransaction | null;
-	setBorrowRequest: React.Dispatch<
-		React.SetStateAction<BorrowTransaction | null>
-	>;
+	borrowRequest: BorrowRequest | null;
+	setBorrowRequest: React.Dispatch<React.SetStateAction<BorrowRequest | null>>;
 	returnRequest: ReturnRequest | null;
 	setReturnRequest: React.Dispatch<React.SetStateAction<ReturnRequest | null>>;
 	scannerRef: React.RefObject<QrScanner | null>;

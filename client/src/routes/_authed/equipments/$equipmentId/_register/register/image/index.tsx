@@ -23,7 +23,7 @@ import {
 	type ApiResponse,
 } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { equipmentsQuery } from "@/lib/equipment";
+import { equipmentsQuery } from "@/lib/equipment/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FullScreenLoading } from "@/components/loading";
 import { Failed } from "../../-components/failed";

@@ -2,10 +2,10 @@ import { useAuth } from "@/auth";
 import { ComponentLoading } from "@/components/loading";
 import { LabelMedium } from "@/components/typography";
 import {
-	borrowHistoryQuery,
 	BorrowRequestStatus,
-    type BorrowRequestItem,
-} from "@/lib/equipment/borrow";
+	type BorrowRequestItem,
+} from "@/lib/equipment/model";
+import { borrowHistoryQuery } from "@/lib/equipment/api";
 import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import { useState, type JSX } from "react";
@@ -112,9 +112,7 @@ export function BorrowedItemList(): JSX.Element {
 	): void {
 		setSelectedEquipments((prev) =>
 			prev.map((it) =>
-				it.item.id === item.id
-					? { ...it, quantity: newQuantity }
-					: it,
+				it.item.id === item.id ? { ...it, quantity: newQuantity } : it,
 			),
 		);
 	}

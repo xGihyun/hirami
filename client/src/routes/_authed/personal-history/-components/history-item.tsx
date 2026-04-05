@@ -5,8 +5,8 @@ import { BACKEND_URL } from "@/lib/api";
 import {
 	BorrowRequestStatus,
 	type BorrowRequestItem,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
+	type BorrowRequest,
+} from "@/lib/equipment/model";
 import { UserRole } from "@/lib/user";
 import { capitalizeWords, cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -14,7 +14,7 @@ import type { JSX } from "react";
 
 type Props = {
 	item: BorrowRequestItem;
-	transaction: BorrowTransaction;
+	transaction: BorrowRequest;
 	className?: string;
 };
 

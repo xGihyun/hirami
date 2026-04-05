@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { EnumLike } from "zod/v3";
 
 z.config({
 	customError: (issue) => {
@@ -7,3 +8,11 @@ z.config({
 		}
 	},
 });
+
+export function enumDetailSchema<T extends EnumLike>(code: T) {
+	return z.object({
+		id: z.number().nonnegative(),
+		label: z.string().nonempty(),
+		code: z.enum(code),
+	});
+}

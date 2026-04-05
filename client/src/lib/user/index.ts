@@ -30,14 +30,6 @@ export type User = {
 	role: UserRoleDetail;
 };
 
-export type UserBasicInfo = {
-	id: string;
-	firstName: string;
-	middleName?: string;
-	lastName: string;
-	avatarUrl?: string;
-};
-
 type GetUserParams = {
 	search?: string;
 };

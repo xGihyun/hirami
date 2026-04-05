@@ -1,10 +1,10 @@
+import { borrowHistoryQuery } from "@/lib/equipment/api";
 import {
-	borrowHistoryQuery,
 	BorrowRequestStatus,
 	type UpdateBorrowResponse,
-} from "@/lib/equipment/borrow";
+} from "@/lib/equipment/model";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, redirect, useSearch } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState, type JSX } from "react";
 import { H2, LabelMedium } from "@/components/typography";
 import { BACKEND_URL, Sort } from "@/lib/api";
@@ -55,17 +55,32 @@ function RouteComponent() {
 			queryClient.invalidateQueries(borrowHistoryQuery({}));
 		}
 
-		eventSource.addEventListener(EquipmentServerEvent.BorrowRequestReview, handleEvent);
-		eventSource.addEventListener(EquipmentServerEvent.EquipmentAnomaly, handleEvent);
+		eventSource.addEventListener(
+			EquipmentServerEvent.BorrowRequestReview,
+			handleEvent,
+		);
+		eventSource.addEventListener(
+			EquipmentServerEvent.EquipmentAnomaly,
+			handleEvent,
+		);
 		eventSource.addEventListener(
 			EquipmentServerEvent.BorrowRequestUpdate,
 			handleBorrowRequestEvent,
 		);
 
 		return () => {
-			eventSource.removeEventListener(EquipmentServerEvent.BorrowRequestReview, handleEvent);
-			eventSource.removeEventListener(EquipmentServerEvent.EquipmentAnomaly, handleEvent);
-			eventSource.removeEventListener(EquipmentServerEvent.BorrowRequestUpdate, handleBorrowRequestEvent);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.BorrowRequestReview,
+				handleEvent,
+			);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.EquipmentAnomaly,
+				handleEvent,
+			);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.BorrowRequestUpdate,
+				handleBorrowRequestEvent,
+			);
 			eventSource.close();
 		};
 	}, []);

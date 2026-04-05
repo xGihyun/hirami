@@ -1,10 +1,12 @@
 import { LabelLarge, LabelMedium, LabelSmall } from "@/components/typography";
 import {
 	DEFAULT_EQUIPMENT_IMAGE,
+} from "@/lib/equipment/constant";
+import {
 	EquipmentStatus,
 	type Equipment,
 	type EquipmentWithBorrower,
-} from "@/lib/equipment";
+} from "@/lib/equipment/model";
 import type { Dispatch, JSX, SetStateAction } from "react";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -65,7 +67,7 @@ export function Catalog(props: Props): JSX.Element {
 		<section className="pb-15 !mb-0">
 			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
 				{props.equipments.map(({ equipment }) => {
-					const key = `${equipment.id}-${equipment.status.code}`;
+					const key = `${equipment.id}-${equipment.status?.code}`;
 					const equipmentImage = equipment.imageUrl
 						? toImageUrl(equipment.imageUrl)
 						: DEFAULT_EQUIPMENT_IMAGE;
@@ -85,7 +87,7 @@ export function Catalog(props: Props): JSX.Element {
 								onCheckedChange={(checked) =>
 									handleSelect(equipment, 1, checked)
 								}
-								disabled={equipment.status.code !== EquipmentStatus.Available}
+								disabled={equipment.status?.code !== EquipmentStatus.Available}
 							/>
 
 							<div className="space-y-1">
@@ -124,14 +126,14 @@ export function Catalog(props: Props): JSX.Element {
 					}
 
 					if (
-						equipment.status.code === EquipmentStatus.Borrowed ||
-						equipment.status.code === EquipmentStatus.Reserved
+						equipment.status?.code === EquipmentStatus.Borrowed ||
+						equipment.status?.code === EquipmentStatus.Reserved
 					) {
 						return (
 							<Link
 								key={key}
 								to="/equipments/$equipmentId"
-								params={{ equipmentId: "d8d4de7d-3e56-4f94-b0af-5e5185b83098" }}
+								params={{ equipmentId: equipment.id }}
 							>
 								<CardContent className="hover:bg-tertiary transition active:bg-tertiary" />
 							</Link>

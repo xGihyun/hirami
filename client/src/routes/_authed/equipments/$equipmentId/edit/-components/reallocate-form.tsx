@@ -3,8 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	EquipmentStatus,
-	type EquipmentType,
-} from "@/lib/equipment";
+	type EquipmentInventoryStatus,
+} from "@/lib/equipment/model";
 import {
 	Form,
 	FormControl,
@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL, type ApiResponse } from "@/lib/api";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Failed } from "@/components/failed";
 import { FullScreenLoading } from "@/components/loading";
 import { Success } from "@/components/success";
@@ -64,7 +64,7 @@ async function reallocateEquipment(
 }
 
 type Props = {
-	equipmentType: EquipmentType;
+	equipmentType: EquipmentInventoryStatus;
 };
 
 export function ReallocateForm(props: Props): JSX.Element {
@@ -189,7 +189,9 @@ export function ReallocateForm(props: Props): JSX.Element {
 										field.onChange(e.currentTarget.value as EquipmentStatus)
 									}
 								>
-									<NativeSelectOption disabled selected hidden>Select status</NativeSelectOption>
+									<NativeSelectOption disabled selected hidden>
+										Select status
+									</NativeSelectOption>
 
 									{props.equipmentType.statusQuantity.map((q) => (
 										<NativeSelectOption

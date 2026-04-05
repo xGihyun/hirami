@@ -1,9 +1,9 @@
+import { updateBorrowRequest } from "@/lib/equipment/api";
 import {
 	BorrowRequestStatus,
-	updateBorrowRequest,
 	type BorrowRequestItem,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
+	type BorrowRequest,
+} from "@/lib/equipment/model";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DrawerClose,
@@ -21,9 +21,10 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { Failed } from "@/components/failed";
 import { Success } from "@/components/success";
+import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment/constant";
 
 type Props = {
-	transaction: BorrowTransaction;
+	transaction: BorrowRequest;
 	reset: () => void;
 };
 
@@ -75,7 +76,7 @@ export function Borrow(props: Props): JSX.Element {
 				</DrawerDescription>
 			</DrawerHeader>
 			<div className="px-4 py-4 overflow-y-auto space-y-4">
-				<EquipmentList equipments={props.transaction.equipments} />
+				<EquipmentList equipments={props.transaction.requestedItems} />
 
 				<DrawerFooter>
 					<Button
@@ -100,14 +101,12 @@ export function Borrow(props: Props): JSX.Element {
 function EquipmentList({ equipments }: { equipments: BorrowRequestItem[] }) {
 	return (
 		<div className="space-y-2.5">
-			{equipments.map((equipment) => {
-				const key = equipment.borrowRequestItemId;
+			{equipments.map(({ id, equipment }) => {
 				const equipmentImage =
-					toImageUrl(equipment.imageUrl) ||
-					"https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
+					toImageUrl(equipment.imageUrl) || DEFAULT_EQUIPMENT_IMAGE;
 
 				return (
-					<div className="flex flex-col gap-2 w-full" key={key}>
+					<div className="flex flex-col gap-2 w-full" key={id}>
 						<div className="flex items-center gap-3 justify-between p-4 bg-card rounded-2xl shadow-item">
 							<div className="flex items-center gap-2 w-full">
 								<img

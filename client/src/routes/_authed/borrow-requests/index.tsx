@@ -1,11 +1,10 @@
 import {
-	borrowRequestsQuery,
 	BorrowRequestStatus,
-	type BorrowTransaction,
+	type BorrowRequest,
 	type ReviewBorrowRequest,
 	type ReviewBorrowResponse,
 	type UpdateBorrowResponse,
-} from "@/lib/equipment/borrow";
+} from "@/lib/equipment/model";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type JSX } from "react";
@@ -46,37 +45,22 @@ import { QRCodeSVG } from "qrcode.react";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
 import { EquipmentServerEvent } from "@/lib/equipment/sse";
+import {
+	getBorrowRequestsQuery,
+	reviewBorrowRequest,
+} from "@/lib/equipment/api";
 
 export const Route = createFileRoute("/_authed/borrow-requests/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
-		context.queryClient.prefetchQuery(borrowRequestsQuery);
+		context.queryClient.prefetchQuery(getBorrowRequestsQuery);
 	},
 });
 
-async function reviewBorrowRequest(
-	value: ReviewBorrowRequest,
-): Promise<ApiResponse<ReviewBorrowResponse>> {
-	const response = await fetch(`${BACKEND_URL}/review-borrow-requests`, {
-		method: "PATCH",
-		body: JSON.stringify(value),
-		headers: {
-			"Content-Type": "application/json",
-		},
-	});
-
-	const result: ApiResponse<ReviewBorrowResponse> = await response.json();
-	if (!response.ok) {
-		throw new Error(result.message);
-	}
-
-	return result;
-}
-
 function RouteComponent(): JSX.Element {
-	const borrowRequests = useQuery(borrowRequestsQuery);
+	const borrowRequests = useQuery(getBorrowRequestsQuery);
 	const [selectedRequest, setSelectedRequest] = useState<
-		BorrowTransaction | undefined
+		BorrowRequest | undefined
 	>(undefined);
 	const queryClient = useQueryClient();
 	const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -88,14 +72,14 @@ function RouteComponent(): JSX.Element {
 	const mutation = useMutation({
 		mutationFn: reviewBorrowRequest,
 		onSuccess: (data) => {
-			queryClient.invalidateQueries(borrowRequestsQuery);
+			queryClient.invalidateQueries(getBorrowRequestsQuery);
 			setReviewedBorrowRequest(data.data);
 			setRemarks("");
 		},
 	});
 
 	async function handleReview(
-		request: BorrowTransaction,
+		request: BorrowRequest,
 		reviewedBy: User,
 		status: BorrowRequestStatus,
 		remarks?: string,
@@ -114,7 +98,7 @@ function RouteComponent(): JSX.Element {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
 
 		function handleEvent(_: MessageEvent): void {
-			queryClient.invalidateQueries(borrowRequestsQuery);
+			queryClient.invalidateQueries(getBorrowRequestsQuery);
 		}
 
 		function handleBorrowRequestEvent(e: MessageEvent): void {
@@ -122,14 +106,20 @@ function RouteComponent(): JSX.Element {
 			setIsReceived(res.status.code === BorrowRequestStatus.Claimed);
 		}
 
-		eventSource.addEventListener(EquipmentServerEvent.BorrowRequestCreate, handleEvent);
+		eventSource.addEventListener(
+			EquipmentServerEvent.BorrowRequestCreate,
+			handleEvent,
+		);
 		eventSource.addEventListener(
 			EquipmentServerEvent.BorrowRequestUpdate,
 			handleBorrowRequestEvent,
 		);
 
 		return () => {
-			eventSource.removeEventListener(EquipmentServerEvent.BorrowRequestCreate, handleEvent);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.BorrowRequestCreate,
+				handleEvent,
+			);
 			eventSource.removeEventListener(
 				EquipmentServerEvent.BorrowRequestUpdate,
 				handleBorrowRequestEvent,
@@ -296,11 +286,11 @@ function ConfirmationQr(props: ConfirmationQrProps): JSX.Element {
 }
 
 type BorrowRequestReviewContentProps = {
-	selectedRequest: BorrowTransaction;
+	selectedRequest: BorrowRequest;
 	remarks: string;
 	setRemarks: (remarks: string) => void;
 	handleReview: (
-		request: BorrowTransaction,
+		request: BorrowRequest,
 		reviewedBy: User,
 		status: BorrowRequestStatus,
 		remarks?: string,
@@ -352,14 +342,14 @@ function BorrowRequestReviewContent(
 			</DrawerHeader>
 
 			<div className="px-4 space-y-2.5 mb-4">
-				{request.equipments.map((equipment) => {
+				{request.requestedItems.map(({ id, equipment }) => {
 					const equipmentImage = equipment.imageUrl
 						? `${BACKEND_URL}${equipment.imageUrl}`
 						: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 
 					return (
 						<div
-							key={equipment.equipmentTypeId}
+							key={id}
 							className="flex items-center gap-3 bg-card rounded-2xl p-4 shadow-item text-start"
 						>
 							<img

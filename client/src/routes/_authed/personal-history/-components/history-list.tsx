@@ -1,27 +1,33 @@
 import {
 	BorrowRequestStatus,
 	type BorrowRequestItem,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
+	type BorrowRequest,
+} from "@/lib/equipment/model";
 import { useState, type JSX } from "react";
 import { HistoryItem } from "./history-item";
-import { Caption, H1, H2, LabelMedium, TitleSmall } from "@/components/typography";
+import {
+	Caption,
+	H1,
+	H2,
+	LabelMedium,
+	TitleSmall,
+} from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft } from "@/lib/icons";
 import { toImageUrl } from "@/lib/api";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
-import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment";
+import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment/constant";
 import { QRCodeSVG } from "qrcode.react";
 import { Timer } from "@ark-ui/react/timer";
 import { getRemainingMs } from "@/lib/utils";
 
 type Props = {
-	history: BorrowTransaction[];
+	history: BorrowRequest[];
 };
 
 type Selected = {
-	transaction: BorrowTransaction;
+	transaction: BorrowRequest;
 	item: BorrowRequestItem;
 };
 

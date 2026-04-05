@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/api"
 	"github.com/xGihyun/hirami/sse"
@@ -31,6 +32,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /equipments", api.Handler(s.createEquipment))
 	mux.Handle("GET /equipments", api.Handler(s.getAll))
 	mux.Handle("GET /equipments/{equipmentTypeId}", api.Handler(s.getEquipmentByID))
+	mux.Handle("GET /equipments/{equipmentTypeId}/status", api.Handler(s.getEquipmentInventoryStatusByID))
 	mux.Handle("GET /equipment-names", api.Handler(s.getEquipmentNames))
 	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
 	mux.Handle("POST /equipments/{equipmentTypeId}/reallocate", api.Handler(s.reallocate))
@@ -213,6 +215,34 @@ func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 }
 
 func (s *Server) getEquipmentByID(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	equipmentTypeID := r.PathValue("equipmentTypeId")
+	equipment, err := s.repository.getByID(ctx, equipmentTypeID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return api.Response{
+				Error:   fmt.Errorf("get equipment: %w", err),
+				Code:    http.StatusNotFound,
+				Message: "Equipment not found.",
+			}
+		}
+
+		return api.Response{
+			Error:   fmt.Errorf("get equipment: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get equipments.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched equipment.",
+		Data:    equipment,
+	}
+}
+
+func (s *Server) getEquipmentInventoryStatusByID(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
 	equipmentTypeID := r.PathValue("equipmentTypeId")

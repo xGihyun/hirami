@@ -20,16 +20,14 @@ import {
 	type ApiResponse,
 } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarIcon, ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon } from "lucide-react";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import { equipmentsQuery } from "@/lib/equipment";
+import { equipmentsQuery } from "@/lib/equipment/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LabelMedium } from "@/components/typography";
 

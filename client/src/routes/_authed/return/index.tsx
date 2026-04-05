@@ -1,11 +1,13 @@
 import { useAuth } from "@/auth";
 import { BACKEND_URL, Sort } from "@/lib/api";
-import { borrowedItemsQuery } from "@/lib/equipment/borrow";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type JSX } from "react";
-import { returnRequestsQuery } from "@/lib/equipment/return";
-import { equipmentNamesQuery } from "@/lib/equipment";
+import {
+	getBorrowedItemsQuery,
+	returnRequestsQuery,
+	equipmentNamesQuery,
+} from "@/lib/equipment/api";
 import { EventSource } from "eventsource";
 import { ReturnHeader } from "./-components/return-header";
 import z from "zod";
@@ -27,8 +29,8 @@ export const Route = createFileRoute("/_authed/return/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
 		context.queryClient.ensureQueryData(
-			borrowedItemsQuery({
-				userId: context.auth.user?.id,
+			getBorrowedItemsQuery({
+				userId: context.authedSession.user.id,
 				sort: Sort.Asc,
 			}),
 		);
@@ -48,7 +50,7 @@ function RouteComponent(): JSX.Element {
 	// NOTE: Naive way to make sure the available options in equipment names are
 	// only the equipments included in the history or return request
 	const borrowHistoryAllCategory = useQuery(
-		borrowedItemsQuery({
+		getBorrowedItemsQuery({
 			userId: auth.user?.id,
 			sort: search.dueDateSort,
 		}),
@@ -62,8 +64,8 @@ function RouteComponent(): JSX.Element {
 	// NOTE: Getting the unique names should ideally be done on the server
 	const historyEquipmentNames = Array.from(
 		new Set(
-			borrowHistoryAllCategory.data?.flatMap((history) =>
-				history.equipment.name
+			borrowHistoryAllCategory.data?.flatMap(
+				(history) => history.equipment.name,
 			),
 		),
 	);
@@ -86,7 +88,7 @@ function RouteComponent(): JSX.Element {
 
 		function handleEvent(_: MessageEvent): void {
 			queryClient.invalidateQueries(
-				borrowedItemsQuery({
+				getBorrowedItemsQuery({
 					userId: auth.user?.id,
 				}),
 			);
@@ -99,10 +101,16 @@ function RouteComponent(): JSX.Element {
 			setIsConfirmed(true);
 		}
 
-		eventSource.addEventListener(EquipmentServerEvent.ReturnRequestConfirm, handleEvent);
+		eventSource.addEventListener(
+			EquipmentServerEvent.ReturnRequestConfirm,
+			handleEvent,
+		);
 
 		return () => {
-			eventSource.removeEventListener(EquipmentServerEvent.ReturnRequestConfirm, handleEvent);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.ReturnRequestConfirm,
+				handleEvent,
+			);
 			eventSource.close();
 		};
 	}, []);
