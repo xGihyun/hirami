@@ -1,14 +1,17 @@
 import {
 	IconBox,
+	IconFileScan,
+	IconGitPullRequestArrow,
 	IconHistory,
 	IconProfile,
 	IconQrCode,
 	IconRoundArrowUp,
+	IconUser,
 	IconUserRoundCog,
 } from "@/lib/icons";
 import { UserRole } from "./user";
 
-export function getNavOptions(role?: UserRole) {
+export function getNavOptions(role?: UserRole, isDesktop: boolean = false) {
 	const profileOption = {
 		to: "/profile",
 		label: "Profile",
@@ -51,18 +54,18 @@ export function getNavOptions(role?: UserRole) {
 		{
 			to: "/borrow-requests",
 			label: "Requests",
-			icon: IconRoundArrowUp,
+			icon: isDesktop ? IconRoundArrowUp : IconGitPullRequestArrow,
 		},
 		{
 			to: "/scan",
 			label: "Scan",
-			icon: IconQrCode,
+			icon: isDesktop ? IconQrCode : IconFileScan,
 		},
 		historyOption,
 		{
 			to: "/users",
 			label: "Users",
-			icon: IconUserRoundCog,
+			icon: isDesktop ? IconUserRoundCog : IconUser,
 		},
 	];
 }
