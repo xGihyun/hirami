@@ -11,7 +11,7 @@ import {
 } from "@/lib/icons";
 import { UserRole } from "./user";
 
-export function getNavOptions(role?: UserRole, isDesktop: boolean = false) {
+export function getNavOptions(role?: UserRole, isMobile: boolean = false) {
 	const profileOption = {
 		to: "/profile",
 		label: "Profile",
@@ -54,18 +54,18 @@ export function getNavOptions(role?: UserRole, isDesktop: boolean = false) {
 		{
 			to: "/borrow-requests",
 			label: "Requests",
-			icon: isDesktop ? IconRoundArrowUp : IconGitPullRequestArrow,
+			icon: isMobile ? IconRoundArrowUp : IconGitPullRequestArrow,
 		},
 		{
 			to: "/scan",
 			label: "Scan",
-			icon: isDesktop ? IconQrCode : IconFileScan,
+			icon: isMobile ? IconQrCode : IconFileScan,
 		},
 		historyOption,
 		{
 			to: "/users",
 			label: "Users",
-			icon: isDesktop ? IconUserRoundCog : IconUser,
+			icon: isMobile ? IconUserRoundCog : IconUser,
 		},
 	];
 }

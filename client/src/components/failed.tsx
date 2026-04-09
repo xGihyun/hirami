@@ -46,7 +46,7 @@ export function Failed(props: Props): JSX.Element {
 			</Button>
 
 			<main className="mt-10 pb-10">
-				<div className="h-full w-full flex flex-col gap-25 max-w-md mx-auto items-center justify-center">
+				<div className="h-full w-full flex flex-col gap-25 max-w-4xl mx-auto items-center justify-center">
 					<section className="space-y-3.5 content-center flex flex-col justify-center items-center">
 						<img
 							src={
@@ -55,7 +55,7 @@ export function Failed(props: Props): JSX.Element {
 									: connectionLostIllustration
 							}
 							alt="Connection lost illustration"
-							className="w-full max-w-xs md:max-w-none mx-auto"
+							className="w-full max-w-xs md:max-w-md mx-auto"
 						/>
 
 						<div className="space-y-1.5">
@@ -73,7 +73,7 @@ export function Failed(props: Props): JSX.Element {
 						</div>
 					</section>
 
-					<section className="w-full flex flex-col text-center gap-2">
+					<section className="w-full flex flex-col text-center gap-2 max-w-md">
 						<Button onClick={props.retry}>Try Again</Button>
 
 						{props.backMessage ? (

@@ -12,7 +12,7 @@ type Props = {
 export function Navbar(props: Props): JSX.Element {
 	const auth = useAuth();
 
-	const navOptions = linkOptions(getNavOptions(auth.user?.role.code));
+	const navOptions = linkOptions(getNavOptions(auth.user?.role.code, true));
 
 	return (
 		<header

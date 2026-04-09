@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { H1, LabelMedium } from "@/components/typography";
-import z from "zod";
 import { useEffect, useRef, useState, type JSX } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,16 +11,8 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import {
-	useRegisterEquipment,
-	type RegisterEquipmentData,
-} from "../../-context";
-import {
-	BACKEND_URL,
-	IMAGE_FORMATS,
-	IMAGE_SIZE_LIMIT,
-	type ApiResponse,
-} from "@/lib/api";
+import { useRegisterEquipment } from "../../-context";
+import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { equipmentsQuery } from "@/lib/equipment/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,6 +20,11 @@ import { FullScreenLoading } from "@/components/loading";
 import { Failed } from "../../-components/failed";
 import { Success } from "../../-components/success";
 import { IconEdit, IconUserPen } from "@/lib/icons";
+import {
+	registerEquipmentImageSchema,
+	type RegisterEquipmentImageSchema,
+    type RegisterEquipmentSchema,
+} from "../-schema";
 
 export const Route = createFileRoute(
 	"/_authed/equipments/$equipmentId/_register/register/image/",
@@ -36,26 +32,8 @@ export const Route = createFileRoute(
 	component: RouteComponent,
 });
 
-const registerEquipmentImageSchema = z.object({
-	image: z
-		.instanceof(File)
-		.refine(
-			(file) => file.size <= IMAGE_SIZE_LIMIT,
-			"Invalid file: Must be PNG or JPG, under 5MB",
-		)
-		.refine(
-			(file) => IMAGE_FORMATS.includes(file.type),
-			"Invalid file: Must be PNG or JPG, under 5MB",
-		)
-		.optional(),
-});
-
-export type RegisterEquipmentImageSchema = z.infer<
-	typeof registerEquipmentImageSchema
->;
-
 async function registerEquipment(
-	value: RegisterEquipmentData,
+	value: RegisterEquipmentSchema,
 ): Promise<ApiResponse> {
 	const formData = new FormData();
 	formData.append("name", value.name);
@@ -100,7 +78,7 @@ function RouteComponent(): JSX.Element {
 	});
 
 	async function onSubmit(value: RegisterEquipmentImageSchema): Promise<void> {
-		const data: RegisterEquipmentData = {
+		const data: RegisterEquipmentSchema = {
 			...registerEquipmentContext.value,
 			...value,
 		};

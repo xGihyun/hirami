@@ -10,7 +10,7 @@ export function FullScreenLoading(props: Props): JSX.Element {
 	return (
 		<div
 			className={cn(
-				"h-svh inset-0 fixed bg-background w-full content-center",
+				"h-svh inset-0 fixed bg-background w-full content-center z-500",
 				props.className,
 			)}
 		>

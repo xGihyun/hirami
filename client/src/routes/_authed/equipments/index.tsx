@@ -149,7 +149,7 @@ function RouteComponent(): JSX.Element {
 					asChild
 				>
 					<Link
-						to="/equipments/$equipmentId/register/name"
+						to="/equipments/$equipmentId/register"
 						params={{ equipmentId: uuidv4() }}
 					>
 						Register New Equipment
