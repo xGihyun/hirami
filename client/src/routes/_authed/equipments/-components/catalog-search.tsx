@@ -51,7 +51,7 @@ export function CatalogSearch(props: Props): JSX.Element {
 	}, [inputValue]);
 
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col md:flex-col-reverse gap-4">
 			<section>
 				<TitleSmall className="text-muted">
 					Welcome back {props.user.firstName},

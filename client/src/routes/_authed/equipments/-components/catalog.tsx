@@ -1,7 +1,5 @@
 import { LabelLarge, LabelMedium, LabelSmall } from "@/components/typography";
-import {
-	DEFAULT_EQUIPMENT_IMAGE,
-} from "@/lib/equipment/constant";
+import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment/constant";
 import {
 	EquipmentStatus,
 	type Equipment,
@@ -76,6 +74,7 @@ export function Catalog(props: Props): JSX.Element {
 						<Card
 							className={cn(
 								"group space-y-2 border-input has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none",
+								"md:bg-background",
 								props.className,
 							)}
 						>
