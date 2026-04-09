@@ -1,86 +1,24 @@
-import { Link, linkOptions, useLocation } from "@tanstack/react-router";
+import { Link, linkOptions } from "@tanstack/react-router";
 import type { JSX } from "react";
-import {
-	IconBox,
-	IconHistory,
-	IconProfile,
-	IconQrCode,
-	IconRoundArrowUp,
-	IconUserRoundCog,
-} from "@/lib/icons";
 import { LabelSmall } from "./typography";
 import { useAuth } from "@/auth";
-import { UserRole } from "@/lib/user";
 import { cn } from "@/lib/utils";
+import { getNavOptions } from "@/lib/constant";
 
-export function Navbar(): JSX.Element {
+type Props = {
+	className?: string;
+};
+
+export function Navbar(props: Props): JSX.Element {
 	const auth = useAuth();
 
-	const getNavOptions = () => {
-		const profileOption = {
-			to: "/profile",
-			label: "Profile",
-			icon: IconProfile,
-		};
-
-		const historyOption = {
-			to: "/history",
-			label: "History",
-			icon: IconHistory,
-		};
-
-		if (auth.user?.role.code === UserRole.Borrower) {
-			return [
-				{
-					to: "/equipments",
-					label: "Catalog",
-					icon: IconBox,
-				},
-				{
-					to: "/return",
-					label: "Return",
-					icon: IconRoundArrowUp,
-				},
-				{
-					to: "/personal-history",
-					label: "History",
-					icon: IconHistory,
-				},
-				profileOption,
-			];
-		}
-
-		return [
-			{
-				to: "/equipments",
-				label: "Manage",
-				icon: IconBox,
-			},
-			{
-				to: "/borrow-requests",
-				label: "Requests",
-				icon: IconRoundArrowUp,
-			},
-			{
-				to: "/scan",
-				label: "Scan",
-				icon: IconQrCode,
-			},
-			historyOption,
-			{
-				to: "/users",
-				label: "Users",
-				icon: IconUserRoundCog,
-			},
-		];
-	};
-
-	const navOptions = linkOptions(getNavOptions());
+	const navOptions = linkOptions(getNavOptions(auth.user?.role.code));
 
 	return (
 		<header
 			className={cn(
 				"gap-2 bg-card text-primary fixed bottom-0 left-0 w-full shadow z-40 pb-[env(safe-area-inset-bottom)] rounded-t-2xl pt-2",
+				props.className,
 			)}
 		>
 			<nav className="py-1 px-2 font-bold flex justify-around w-full h-16">

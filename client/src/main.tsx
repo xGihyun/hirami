@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from "./auth.tsx";
 import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
 
 import "@/lib/zod.ts";
+import { TooltipProvider } from "./components/ui/tooltip.tsx";
 
 const queryClient = new QueryClient();
 
@@ -43,7 +44,9 @@ if (rootElement && !rootElement.innerHTML) {
 		<StrictMode>
 			<QueryClientProvider client={queryClient}>
 				<AuthProvider>
-					<App />
+					<TooltipProvider>
+						<App />
+					</TooltipProvider>
 				</AuthProvider>
 			</QueryClientProvider>
 		</StrictMode>,
