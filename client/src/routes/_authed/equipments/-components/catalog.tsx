@@ -70,24 +70,28 @@ export function Catalog(props: Props): JSX.Element {
 						? toImageUrl(equipment.imageUrl)
 						: DEFAULT_EQUIPMENT_IMAGE;
 
-					const CardContent = (props: { className?: string }) => (
+					const cardContent = (className?: string) => (
 						<Card
 							className={cn(
 								"group space-y-2 border-input has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none",
 								"md:bg-background",
-								props.className,
+								className,
 							)}
 						>
-							<Checkbox
-								id={key}
-								checked={isChecked(equipment)}
-								className={`sr-only ${isEquipmentManager ? "hidden" : ""}`}
-								value={equipment.id}
-								onCheckedChange={(checked) =>
-									handleSelect(equipment, 1, checked)
-								}
-								disabled={equipment.status?.code !== EquipmentStatus.Available}
-							/>
+							{!isEquipmentManager && (
+								<Checkbox
+									id={key}
+									checked={isChecked(equipment)}
+									className="sr-only"
+									value={equipment.id}
+									onCheckedChange={(checked) =>
+										handleSelect(equipment, 1, checked)
+									}
+									disabled={
+										equipment.status?.code !== EquipmentStatus.Available
+									}
+								/>
+							)}
 
 							<div className="space-y-1">
 								<div className="w-full h-28 overflow-hidden rounded-md relative">
@@ -119,7 +123,7 @@ export function Catalog(props: Props): JSX.Element {
 								to="/equipments/$equipmentId/edit"
 								params={{ equipmentId: equipment.id }}
 							>
-								<CardContent className="hover:bg-tertiary transition active:bg-tertiary" />
+								{cardContent("hover:bg-tertiary transition active:bg-tertiary")}
 							</Link>
 						);
 					}
@@ -134,7 +138,7 @@ export function Catalog(props: Props): JSX.Element {
 								to="/equipments/$equipmentId"
 								params={{ equipmentId: equipment.id }}
 							>
-								<CardContent className="hover:bg-tertiary transition active:bg-tertiary" />
+								{cardContent("hover:bg-tertiary transition active:bg-tertiary")}
 							</Link>
 						);
 					}
@@ -145,7 +149,7 @@ export function Catalog(props: Props): JSX.Element {
 							key={key}
 							className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-md"
 						>
-							<CardContent />
+							{cardContent()}
 						</label>
 					);
 				})}

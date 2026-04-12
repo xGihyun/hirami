@@ -212,7 +212,11 @@ export function ReallocateForm(props: Props): JSX.Element {
 					)}
 				/>
 
-				<Button type="submit" className="w-full shadow-none">
+				<Button
+					type="submit"
+					className="w-full shadow-none"
+					disabled={!form.formState.isValid || mutation.isPending}
+				>
 					Reallocate
 				</Button>
 			</form>
