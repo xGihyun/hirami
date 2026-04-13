@@ -27,6 +27,7 @@ import {
 } from "@/lib/api";
 import {
 	Caption,
+	H1,
 	H2,
 	LabelLarge,
 	LabelMedium,
@@ -188,7 +189,8 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="relative space-y-4">
-			<H2 className="text-center">Request List</H2>
+			<H2 className="text-center md:hidden block">Request List</H2>
+			<H1 className="text-start md:block hidden">Request List</H1>
 
 			<Drawer
 				open={isDrawerOpen}
@@ -200,7 +202,7 @@ function RouteComponent(): JSX.Element {
 					}
 				}}
 			>
-				<div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
+				<div className="grid grid-cols-1 gap-2">
 					{borrowRequests.data?.map((request) => {
 						const borrowerInitials = `${request.borrower.firstName[0]}${request.borrower.lastName[0]}`;
 						const borrowerName = `${request.borrower.firstName} ${request.borrower.lastName}`;
@@ -306,7 +308,7 @@ function BorrowRequestReviewContent(
 	const request = props.selectedRequest;
 
 	return (
-		<div className="h-full overflow-y-auto">
+		<div className="h-full overflow-y-auto md:max-w-sm w-full mx-auto">
 			<DrawerHeader>
 				<DrawerTitle className="items-center flex flex-col">
 					<Avatar className="size-16">

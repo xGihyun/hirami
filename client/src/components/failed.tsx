@@ -29,7 +29,7 @@ export function Failed(props: Props): JSX.Element {
 	return (
 		<PaddingLayout
 			className={cn(
-				"h-svh inset-0 bg-background w-full z-50",
+				"md:bg-white md:p-0 h-svh inset-0 bg-background w-full z-50",
 				props.className,
 			)}
 		>
