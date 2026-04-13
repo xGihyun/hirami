@@ -46,7 +46,12 @@ export function Return(props: Props): JSX.Element {
 
 	if (mutation.isError) {
 		return (
-			<Failed backLink="/scan" header="Failed to confirm return." fn={reset} />
+			<Failed
+				backLink="/scan"
+				header="Failed to confirm return."
+				fn={reset}
+				className="md:absolute md:inset-0 md:z-500"
+			/>
 		);
 	}
 
@@ -56,12 +61,13 @@ export function Return(props: Props): JSX.Element {
 				backLink="/scan"
 				header="Successfully returned equipments."
 				fn={reset}
+				className="md:absolute md:inset-0 md:z-500"
 			/>
 		);
 	}
 
 	return (
-		<DrawerContent className="space-y-4 h-full">
+		<DrawerContent className="space-y-4 h-full md:h-auto">
 			<DrawerHeader>
 				<DrawerTitle className="items-center flex flex-col">
 					<Avatar className="size-12">
