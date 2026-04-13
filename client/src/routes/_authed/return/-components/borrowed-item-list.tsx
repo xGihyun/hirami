@@ -8,7 +8,7 @@ import {
 import { borrowHistoryQuery } from "@/lib/equipment/api";
 import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -82,6 +82,7 @@ export function BorrowedItemList(): JSX.Element {
 		defaultValues: {
 			items: [],
 		},
+		mode: "onChange",
 	});
 
 	const [selectedEquipments, setSelectedEquipments] = useState<
@@ -148,6 +149,17 @@ export function BorrowedItemList(): JSX.Element {
 		0,
 	);
 
+	useEffect(() => {
+		form.setValue(
+			"items",
+			selectedEquipments.map((selected) => ({
+				borrowRequestItemId: selected.item.id,
+				quantity: selected.quantity,
+			})),
+			{ shouldValidate: true },
+		);
+	}, [selectedEquipments, form.setValue]);
+
 	if (mutation.isPending) {
 		return <FullScreenLoading />;
 	}
@@ -160,6 +172,7 @@ export function BorrowedItemList(): JSX.Element {
 				retry={form.handleSubmit(onSubmit)}
 				backLink="/return"
 				backMessage="or return to Return Page"
+				className="fixed inset-0"
 			/>
 		);
 	}
@@ -170,6 +183,7 @@ export function BorrowedItemList(): JSX.Element {
 				header="Return request submitted successfully"
 				fn={reset}
 				backLink="/return"
+				className="fixed inset-0"
 			/>
 		);
 	}
