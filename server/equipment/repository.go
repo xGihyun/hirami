@@ -2274,7 +2274,7 @@ type returnedEquipment struct {
 
 type returnConfirmation struct {
 	ReturnRequestItemID string              `json:"id"`
-	ConfirmedBy         user.BasicInfo      `json:"confirmedBy"`
+	ConfirmedBy         *user.BasicInfo     `json:"confirmedBy"`
 	ConfirmedAt         time.Time           `json:"confirmedAt"`
 	Equipments          []returnedEquipment `json:"equipments"`
 	Remarks             *string             `json:"remarks"`
@@ -2327,13 +2327,16 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			return_request.borrow_request_id,
 			return_request.return_request_id,
 			return_request.created_at,
-			jsonb_build_object(
-				'id', person.person_id,
-				'firstName', person.first_name,
-				'middleName', person.middle_name,
-				'lastName', person.last_name,
-				'avatarUrl', person.avatar_url
-			) AS confirmed_by,
+			CASE WHEN person.person_id IS NULL THEN NULL
+			ELSE
+				jsonb_build_object(
+					'id', person.person_id,
+					'firstName', person.first_name,
+					'middleName', person.middle_name,
+					'lastName', person.last_name,
+					'avatarUrl', person.avatar_url
+				)
+			END AS confirmed_by,
 			jsonb_agg(
 				jsonb_build_object(
 					'id', equipment_type.equipment_type_id,

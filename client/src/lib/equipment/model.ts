@@ -97,7 +97,7 @@ const returnedEquipmentSchema = z.object({
 
 const returnConfirmationSchema = z.object({
 	id: z.uuid(),
-	confirmedBy: userBasicInfoSchema,
+	confirmedBy: userBasicInfoSchema.nullable(),
 	confirmedAt: z.coerce.date(),
 	equipments: returnedEquipmentSchema.array(),
 	remarks: z.string().nullable(),
