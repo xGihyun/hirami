@@ -1554,14 +1554,17 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 			) 
 		END AS review,
 
-		jsonb_agg( 
-			jsonb_build_object(
-				'id', all_return_confirmation.return_request_item_id,
-				'confirmedBy', all_return_confirmation.confirmed_by,
-				'confirmedAt', all_return_confirmation.created_at,
-				'equipments', all_return_confirmation.equipments,
-				'remarks', all_return_confirmation.remarks
-			)
+		COALESCE(
+			jsonb_agg( 
+				jsonb_build_object(
+					'id', all_return_confirmation.return_request_item_id,
+					'confirmedBy', all_return_confirmation.confirmed_by,
+					'confirmedAt', all_return_confirmation.created_at,
+					'equipments', all_return_confirmation.equipments,
+					'remarks', all_return_confirmation.remarks
+				)
+			) FILTER (WHERE all_return_confirmation.return_request_item_id IS NOT NULL),
+			'[]'::jsonb
 		) AS return_confirmations,
 
 		COALESCE(requested_items_agg.items_agg, '[]'::jsonb) AS requested_items,
@@ -2423,6 +2426,8 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
 	LEFT JOIN anomaly_result ON anomaly_result.borrow_request_id = borrow_request.borrow_request_id
 	LEFT JOIN borrow_request_otp ON borrow_request_otp.borrow_request_id = borrow_request.borrow_request_id
+	LEFT JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id  
+	LEFT JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id      
 	LEFT JOIN LATERAL (
 		SELECT jsonb_agg( 
 			jsonb_build_object(
@@ -2528,7 +2533,8 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		anomaly_result.anomaly_result_id,
 		borrow_request_otp.borrow_request_otp_id,
 		return_confirmation_agg.return_confirmations,
-		requested_items_agg.items_agg
+		requested_items_agg.items_agg,
+		equipment_type.equipment_type_id
 	`
 
 	sortByColumn := "borrow_request.created_at"
@@ -2583,7 +2589,7 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 			'brand', equipment_type.brand,
 			'model', equipment_type.model,
 			'imageUrl', equipment_type.image_url,
-			'quantity', borrow_request_item.quantity,
+			'quantity', borrow_request_item.quantity - COALESCE(returned_qty.total_returned, 0),
 			'status', equipment_status_agg.status
 		) AS equipment
 	FROM equipment_type
@@ -2601,7 +2607,15 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 			AND equipment.equipment_status_id = $3
 		LIMIT 1
 	) equipment_status_agg ON TRUE
-	WHERE borrow_request.requested_by = $1 AND borrow_request.borrow_request_status_id = $2
+	LEFT JOIN LATERAL (
+		SELECT COALESCE(SUM(rri.quantity), 0) AS total_returned
+		FROM return_request_item rri
+		JOIN return_transaction rt ON rt.return_request_item_id = rri.return_request_item_id
+		WHERE rri.borrow_request_item_id = borrow_request_item.borrow_request_item_id
+	) returned_qty ON TRUE
+	WHERE borrow_request.requested_by = $1 
+		AND borrow_request.borrow_request_status_id = $2
+		AND (borrow_request_item.quantity - COALESCE(returned_qty.total_returned, 0)) > 0
 	`
 
 	var args []any = []any{params.userID, claimed, borrowed}
