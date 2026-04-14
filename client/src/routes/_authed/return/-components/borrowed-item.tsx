@@ -94,7 +94,7 @@ export function BorrowedItem(props: Props): JSX.Element {
 			<NumberInput
 				isDisabled={!props.isSelected}
 				className="w-40"
-				defaultValue={props.item.equipment.quantity}
+				defaultValue={1}
 				maxValue={props.item.equipment.quantity}
 				onClick={stopPropagation}
 				onPointerDown={stopPropagation}

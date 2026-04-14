@@ -2,7 +2,7 @@ import { borrowHistoryQuery } from "@/lib/equipment/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, type JSX } from "react";
-import { H2, LabelMedium } from "@/components/typography";
+import { H1, H2, LabelMedium } from "@/components/typography";
 import { BACKEND_URL, Sort } from "@/lib/api";
 import { EventSource } from "eventsource";
 import z from "zod";
@@ -40,20 +40,33 @@ function RouteComponent() {
 			queryClient.invalidateQueries({ queryKey: ["borrow-history"] });
 		}
 
-		eventSource.addEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
-		eventSource.addEventListener(EquipmentServerEvent.EquipmentAnomaly, handleEvent);
+		eventSource.addEventListener(
+			EquipmentServerEvent.EquipmentCreate,
+			handleEvent,
+		);
+		eventSource.addEventListener(
+			EquipmentServerEvent.EquipmentAnomaly,
+			handleEvent,
+		);
 
 		return () => {
-			eventSource.removeEventListener(EquipmentServerEvent.EquipmentCreate, handleEvent);
-			eventSource.removeEventListener(EquipmentServerEvent.EquipmentAnomaly, handleEvent);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.EquipmentCreate,
+				handleEvent,
+			);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.EquipmentAnomaly,
+				handleEvent,
+			);
 			eventSource.close();
 		};
 	}, []);
 
 	return (
 		<div className="relative space-y-4">
-			<header className="flex flex-col w-full items-center justify-between gap-4">
-				<H2>History</H2>
+			<header className="flex flex-col w-full justify-between gap-4">
+				<H2 className="text-center md:hidden block">History</H2>
+				<H1 className="text-start md:block hidden">History</H1>
 				<Control />
 			</header>
 
