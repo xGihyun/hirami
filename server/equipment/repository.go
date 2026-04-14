@@ -2034,7 +2034,7 @@ type returnRequest struct {
 	Borrower         user.BasicInfo `json:"borrower"`
 	Equipments       []equipment    `json:"equipments"`
 	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
-	OTP              OTP            `json:"otp"`
+	OTP              OTP            `json:"otp,omitzero"`
 }
 
 type getReturnRequestParams struct {

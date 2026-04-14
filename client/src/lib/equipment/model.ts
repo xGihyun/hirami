@@ -169,6 +169,6 @@ export const returnRequestSchema = z.object({
 	borrower: userBasicInfoSchema,
 	equipments: equipmentSchema.array(),
 	expectedReturnAt: z.coerce.date(),
-	otp: otpSchema,
+	otp: otpSchema.optional(),
 });
 export type ReturnRequest = z.infer<typeof returnRequestSchema>;
