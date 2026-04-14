@@ -48,7 +48,7 @@ export function Return(props: Props): JSX.Element {
 		return (
 			<Failed
 				backLink="/scan"
-				header="Failed to confirm return."
+				header="Return confirmation failed."
 				fn={reset}
 				className="md:absolute md:inset-0 md:z-500"
 			/>
@@ -68,7 +68,7 @@ export function Return(props: Props): JSX.Element {
 
 	return (
 		<DrawerContent className="space-y-4 h-full md:h-auto">
-			<DrawerHeader>
+			<DrawerHeader className="md:max-w-sm md:w-full md:mx-auto md:p-0 md:mb-0">
 				<DrawerTitle className="items-center flex flex-col">
 					<Avatar className="size-12">
 						<AvatarImage src={toImageUrl(borrower.avatarUrl)} />
@@ -87,7 +87,7 @@ export function Return(props: Props): JSX.Element {
 				</DrawerDescription>
 			</DrawerHeader>
 
-			<div className="px-4 py-4 overflow-y-auto space-y-4">
+			<div className="px-4 py-4 overflow-y-auto space-y-4 md:max-w-sm md:w-full md:mx-auto">
 				<EquipmentList equipments={props.request.equipments} />
 
 				<div className="space-y-1">
@@ -100,7 +100,7 @@ export function Return(props: Props): JSX.Element {
 					/>
 				</div>
 
-				<DrawerFooter>
+				<DrawerFooter className="p-0">
 					<Button
 						onClick={() => {
 							if (!auth.user) return;

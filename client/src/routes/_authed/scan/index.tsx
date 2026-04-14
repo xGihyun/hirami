@@ -259,6 +259,7 @@ function Scanner(props: ScannerProps) {
 				backLink="/scan"
 				fn={resetState}
 				header="Failed to scan QR code."
+				className="md:absolute md:inset-0"
 			/>
 		);
 	}
