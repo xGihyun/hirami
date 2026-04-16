@@ -23,6 +23,7 @@ import IconChevronArrowDownUp from "~icons/lucide/chevrons-up-down";
 import IconGitPullRequestArrow from "~icons/lucide/git-pull-request-arrow";
 import IconFileScan from "~icons/lucide/file-scan";
 import IconUser from "~icons/lucide/user";
+import IconEllipsis from "~icons/lucide/ellipsis";
 
 export {
 	IconRoundArrowDown,
@@ -50,4 +51,5 @@ export {
 	IconGitPullRequestArrow,
 	IconFileScan,
 	IconUser,
+	IconEllipsis,
 };

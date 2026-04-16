@@ -1,12 +1,14 @@
-import { H2, LabelMedium } from "@/components/typography";
+import { H1, H2, LabelMedium } from "@/components/typography";
 import { usersQuery } from "@/lib/user";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import z from "zod";
 import { Search } from "./-components/search";
 import type { JSX } from "react";
 import { ComponentLoading } from "@/components/loading";
 import { UserList } from "./-components/user-list";
+import { Button } from "@/components/ui/button";
+import { v4 as uuidv4 } from "uuid";
 
 const searchSchema = z.object({
 	search: z.string().optional(),
@@ -23,21 +25,22 @@ export const Route = createFileRoute("/_authed/users/")({
 function RouteComponent(): JSX.Element {
 	return (
 		<main className="space-y-4">
-			<header className="flex flex-col w-full items-center justify-between gap-4">
-				<H2>Users</H2>
+			<header className="flex flex-col w-full justify-between gap-4">
+				<H2 className="text-center md:hidden block">Users</H2>
+				<H1 className="text-start md:block hidden">Users</H1>
 				<Search />
 			</header>
 
 			<Users />
 
-			{/* <Button */}
-			{/* 	className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow" */}
-			{/* 	asChild */}
-			{/* > */}
-			{/* 	<Link to="/users/$userId/register" params={{ userId: uuidv4() }}> */}
-			{/* 		Create New User */}
-			{/* 	</Link> */}
-			{/* </Button> */}
+			<Button
+				className="fixed bottom-10 right-8 w-92 z-50 shadow"
+				asChild
+			>
+				<Link to="/users/$userId/register" params={{ userId: uuidv4() }}>
+					Create new account
+				</Link>
+			</Button>
 		</main>
 	);
 }

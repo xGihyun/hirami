@@ -91,7 +91,7 @@ code {
   --destructive: oklch(0.5676 0.2084 27.06);
   --destructive-foreground: oklch(0.9746 0.009 78.28);
   --success: oklch(0.6731 0.1624 144.21);
-  --success-foreground: oklch(0.2375 0.0391 60.76);
+  --success-foreground: oklch(1 0 0);
   --warning: oklch(0.7762 0.164868 73.5517);
   --warning-foreground: oklch(0.2375 0.0391 60.76);
   --border: oklch(0.8879 0.0321 78.14);

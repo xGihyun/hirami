@@ -1,28 +1,28 @@
 import type { User } from "@/lib/user";
 import type { JSX } from "react";
-import {
-	Item,
-	ItemActions,
-	ItemContent,
-	ItemDescription,
-	ItemMedia,
-	ItemTitle,
-} from "@/components/ui/item";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toImageUrl } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { getUserRoleBadgeVariant } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { IconMoreHorizontal } from "@/lib/icons";
+import { IconEllipsis } from "@/lib/icons";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { getFullName } from "@/lib/user/helper";
 
 type Props = {
 	users: User[];
@@ -30,59 +30,69 @@ type Props = {
 
 export function UserList(props: Props): JSX.Element {
 	return (
-		<section className="space-y-2">
-			{props.users.map((user) => {
-				return <UserItem user={user} />;
-			})}
-		</section>
-	);
-}
+		<Table>
+			<TableHeader>
+				<TableRow className="font-montserrat-bold text-xs leading-5">
+					<TableHead>Profile Picture</TableHead>
+					<TableHead>Name</TableHead>
+					<TableHead>Email</TableHead>
+					<TableHead>Role</TableHead>
+					<TableHead>Status</TableHead>
+					<TableHead className="text-right">Actions</TableHead>
+				</TableRow>
+			</TableHeader>
+			<TableBody>
+				{props.users.map((user) => {
+					const avatarUrl = toImageUrl(user.avatarUrl);
+					const initials = user.firstName[0] + user.lastName[0];
 
-type UserItemProps = {
-	user: User;
-};
-
-function UserItem(props: UserItemProps): JSX.Element {
-	const avatarUrl = toImageUrl(props.user.avatarUrl);
-	const initials = props.user.firstName[0] + props.user.lastName[0];
-
-	return (
-		<Item className="shadow-item rounded-2xl">
-			<ItemMedia>
-				<Avatar className="size-16">
-					<AvatarImage src={avatarUrl} />
-					<AvatarFallback className="text-xl">{initials}</AvatarFallback>
-				</Avatar>
-			</ItemMedia>
-			<ItemContent>
-				<ItemTitle>
-					{props.user.firstName} {props.user.middleName} {props.user.lastName}
-				</ItemTitle>
-				<ItemDescription>{props.user.email}</ItemDescription>
-				<Badge variant={getUserRoleBadgeVariant(props.user.role.code)}>
-					{props.user.role.label}
-				</Badge>
-			</ItemContent>
-			<ItemActions>
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button variant="ghost">
-							<span className="sr-only">Open menu</span>
-							<IconMoreHorizontal className="size-4" />
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent>
-						<DropdownMenuLabel>Actions</DropdownMenuLabel>
-						<DropdownMenuSeparator />
-						<DropdownMenuItem asChild>
-							<Link to="/users/$userId" params={{ userId: props.user.id }}>
-								Edit
-							</Link>
-						</DropdownMenuItem>
-						{/* <DropdownMenuItem>Deactivate</DropdownMenuItem> */}
-					</DropdownMenuContent>
-				</DropdownMenu>
-			</ItemActions>
-		</Item>
+					return (
+						<TableRow className="font-open-sans text-sm leading-6">
+							<TableCell>
+								<Avatar className="size-12">
+									<AvatarImage src={avatarUrl} />
+									<AvatarFallback>{initials}</AvatarFallback>
+								</Avatar>
+							</TableCell>
+							<TableCell>{getFullName(user)}</TableCell>
+							<TableCell>{user.email}</TableCell>
+							<TableCell>
+								<Badge variant={getUserRoleBadgeVariant(user.role.code)}>
+									{user.role.label}
+								</Badge>
+							</TableCell>
+							<TableCell>
+								<Badge variant="success">Active</Badge>
+							</TableCell>
+							<TableCell className="text-right">
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button variant="ghost" size="icon" className="size-6">
+											<IconEllipsis />
+											<span className="sr-only">Open actions</span>
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										<DropdownMenuItem asChild>
+											<Link
+												to="/users/$userId"
+												params={{ userId: user.id }}
+											>
+												Edit
+											</Link>
+										</DropdownMenuItem>
+										<DropdownMenuItem>Duplicate</DropdownMenuItem>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem variant="destructive">
+											Deactivate
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							</TableCell>
+						</TableRow>
+					);
+				})}
+			</TableBody>
+		</Table>
 	);
 }
