@@ -16,6 +16,15 @@ import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type Props = {
 	equipments: EquipmentWithBorrower[];
@@ -63,7 +72,7 @@ export function Catalog(props: Props): JSX.Element {
 
 	return (
 		<section className="pb-15 !mb-0">
-			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+			<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
 				{props.equipments.map(({ equipment }) => {
 					const key = `${equipment.id}-${equipment.status?.code}`;
 					const equipmentImage = equipment.imageUrl
@@ -99,7 +108,7 @@ export function Catalog(props: Props): JSX.Element {
 									<img
 										src={equipmentImage}
 										alt={`${equipment.name} ${equipment.brand}`}
-										className="w-full object-contain aspect-[164/112]"
+										className="w-full object-contain aspect-[164/112] h-full"
 									/>
 								</div>
 								<div className="flex flex-col">
@@ -115,6 +124,53 @@ export function Catalog(props: Props): JSX.Element {
 							</div>
 						</Card>
 					);
+
+					if (
+						isEquipmentManager &&
+						(equipment.status?.code === EquipmentStatus.Borrowed ||
+							equipment.status?.code === EquipmentStatus.Reserved)
+					) {
+						return (
+							<Dialog>
+								<DialogTrigger>
+									{cardContent(
+										"text-start hover:bg-tertiary transition active:bg-tertiary",
+									)}
+								</DialogTrigger>
+
+								<DialogContent>
+									<DialogHeader>
+										<DialogTitle>
+											{equipment.brand} {equipment.model}
+										</DialogTitle>
+										<DialogDescription>{equipment.name}</DialogDescription>
+									</DialogHeader>
+
+									<div className="flex gap-2">
+										<Button asChild>
+											<Link
+												key={key}
+												to="/equipments/$equipmentId/edit"
+												params={{ equipmentId: equipment.id }}
+											>
+												Edit Equipment
+											</Link>
+										</Button>
+
+										<Button variant="secondary" asChild>
+											<Link
+												key={key}
+												to="/equipments/$equipmentId"
+												params={{ equipmentId: equipment.id }}
+											>
+												View Borrowers
+											</Link>
+										</Button>
+									</div>
+								</DialogContent>
+							</Dialog>
+						);
+					}
 
 					if (isEquipmentManager) {
 						return (

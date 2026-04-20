@@ -381,16 +381,90 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
 		}
 	}
 
+	user, err := s.repository.GetByEmail(ctx, data.Email)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("password reset: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to reset password.",
+		}
+	}
+	fullName := fmt.Sprintf("%s %s", user.FirstName, user.LastName)
+
+	// TODO: Use environment variable for client URL
 	// NOTE: Hardcoded client URL
-	resetLink := fmt.Sprintf("hirami://password-reset/%s", rawToken) // Mobile URL
-	// resetLink := fmt.Sprintf("http://localhost:3000/password-reset/%s", rawToken) // Web URL
+	// resetLink := fmt.Sprintf("hirami://password-reset/%s", rawToken) // Mobile URL
+	resetLink := fmt.Sprintf("http://localhost:3000/password-reset/%s", rawToken) // Web URL
 	subject := "Password Reset Request"
 	bodyHTML := fmt.Sprintf(`
-	  <p>Click the button below to reset your password:</p>
-	  <p><a href="%s" style="display:inline-block;padding:10px 20px;background-color:#4CAF50;color:#fff;text-decoration:none;border-radius:5px;">Reset Password</a></p>
-	  <p>If the button doesn’t work, copy and paste this link into your browser:<br><code>%s</code></p>
-	  <p>This link will expire in 15 minutes.</p>
-	`, resetLink, resetLink)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Password Reset Request</title>
+</head>
+<body style="margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:oklch(0.9746 0.009 78.28);">
+  <table width="100%%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="380" cellpadding="0" cellspacing="0" style="background-color:oklch(0.9746 0.009 78.28);border-radius:16px;overflow:hidden;padding:40px 32px;max-width:380px;">
+
+          <!-- Title -->
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <h1 style="margin:0;font-size:26px;font-weight:700;color:#1a1a1a;line-height:1.3;">
+                Password Reset Request
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Body text -->
+          <tr>
+            <td style="padding-bottom:28px;color:#333333;font-size:14px;line-height:1.6;text-align:justify;">
+              <p style="margin:0 0 8px 0;">
+                Hello <strong>%s</strong>,
+              </p>
+              <p style="margin:0;">
+                We received a request to reset the password for your account.
+                To securely change your password, please click the button below.
+                This is an important security step, and your password will not be
+                changed unless you click the link and create a new one. For your
+                security, this link will expire in 24 hours. If you did not request
+                this change, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+            <a
+                href="%s"
+                target="_blank"
+                rel="noreferrer"
+                style="display:block;width:100%%;padding:16px 0;background-color:oklch(0.5701 0.1162 60.64);color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;"
+              >
+                Change Password
+              </a>
+            </td>
+          </tr>
+
+          <!-- Sign-off -->
+          <tr>
+            <td style="font-size:14px;color:#333333;line-height:1.6;">
+              Sincerely,<br/>
+              The Hirami Team
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+	`, fullName, resetLink)
 
 	if err := api.SendGmail(s.gmailService, data.Email, subject, bodyHTML); err != nil {
 		return api.Response{

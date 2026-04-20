@@ -55,7 +55,7 @@ async function login(
 	const result: ApiResponse<LoginResponse> = await response.json();
 	if (response.status === 401) {
 		throw new ErrInvalidCredentials(
-			result.message || "Invalid email or password.",
+			"Incorrect email or password.",
 		);
 	}
 
@@ -99,6 +99,7 @@ export function LoginForm(): JSX.Element {
 				backLink="/login"
 				backMessage="or return to Log in page"
 				illustration={accessDeniedIllustration}
+                className="md:bg-background md:p-5 fixed inset-0"
 			/>
 		);
 	}
@@ -177,7 +178,7 @@ export function LoginForm(): JSX.Element {
 								data-slot="form-message"
 								className="text-destructive font-montserrat-semibold text-xs leading-4 text-center"
 							>
-								Invalid email or password.
+                                {mutation.error.message}
 							</p>
 						) : null}
 

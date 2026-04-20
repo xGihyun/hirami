@@ -87,6 +87,7 @@ function RouteComponent() {
 				header="A password reset link has been sent to your email."
 				illustration={messageSentIllustration}
 				fn={mutation.reset}
+                className="md:bg-background md:p-5"
 			/>
 		);
 	}
@@ -100,6 +101,7 @@ function RouteComponent() {
 				backLink="/onboarding"
 				backMessage="or return to Welcome Page"
 				illustration={accessDeniedIllustration}
+                className="md:bg-background md:p-5"
 			/>
 		);
 	}

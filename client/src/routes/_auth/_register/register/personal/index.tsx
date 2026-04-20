@@ -1,7 +1,4 @@
-import {
-	H1,
-	LabelMedium,
-} from "@/components/typography";
+import { H1, LabelMedium } from "@/components/typography";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type JSX } from "react";
 import { useForm } from "react-hook-form";
@@ -30,19 +27,16 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
 import { FullScreenLoading } from "@/components/loading";
+import type { RegisterUser } from "@/lib/user/model";
 
 export const Route = createFileRoute("/_auth/_register/register/personal/")({
 	component: RouteComponent,
 });
 
 const formSchema = z.object({
-	firstName: z
-		.string()
-		.nonempty(),
+	firstName: z.string().nonempty(),
 	middleName: z.string().optional(),
-	lastName: z
-		.string()
-		.nonempty(),
+	lastName: z.string().nonempty(),
 	avatar: z
 		.instanceof(File)
 		.refine(
@@ -58,7 +52,7 @@ const formSchema = z.object({
 
 export type RegisterPersonalSchema = z.infer<typeof formSchema>;
 
-async function register(value: RegisterData): Promise<ApiResponse> {
+async function register(value: RegisterUser): Promise<ApiResponse> {
 	const formData = new FormData();
 	formData.append("email", value.email);
 	formData.append("password", value.password);

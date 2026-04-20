@@ -7,7 +7,7 @@ import {
 	toImageUrl,
 	type ApiResponse,
 } from "@/lib/api";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type JSX } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -63,8 +63,8 @@ type EditEquipmentSchema = z.infer<typeof editEquipmentSchema>;
 async function editEquipment(value: EditEquipmentSchema): Promise<ApiResponse> {
 	const formData = new FormData();
 	formData.append("name", value.name);
-	if (value.brand) formData.append("brand", value.brand);
-	if (value.model) formData.append("model", value.model);
+	formData.append("brand", value.brand || "");
+	formData.append("model", value.model || "");
 	if (value.image) formData.append("image", value.image);
 
 	const response = await fetch(`${BACKEND_URL}/equipments/${value.id}`, {
@@ -102,8 +102,15 @@ function RouteComponent(): JSX.Element {
 		mode: "onTouched",
 	});
 
+	const queryClient = useQueryClient();
+
 	const mutation = useMutation({
 		mutationFn: editEquipment,
+		onSuccess: () => {
+			queryClient.invalidateQueries(
+				getEquipmentInventoryStatusQuery(params.equipmentId),
+			);
+		},
 	});
 
 	async function onSubmit(value: EditEquipmentSchema): Promise<void> {
@@ -152,8 +159,8 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<div className="h-full w-full flex flex-col gap-12 md:gap-0">
-			<section className="relative ">
+		<div className="h-full w-full flex flex-col gap-12 md:gap-0 relative">
+			<section className="relative">
 				<Button
 					variant="ghost"
 					size="icon"

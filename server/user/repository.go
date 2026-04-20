@@ -434,3 +434,84 @@ func (r *repository) resetPasswordWithToken(ctx context.Context, tokenHash, newP
 
 	return nil
 }
+
+type createUserRequest struct {
+	Email      string  `json:"email"`
+	Password   string  `json:"password"`
+	FirstName  string  `json:"firstName"`
+	MiddleName *string `json:"middleName"`
+	LastName   string  `json:"lastName"`
+	Role       Role    `json:"role"`
+	AvatarURL  *string `json:"avatarUrl"`
+}
+
+func (r *repository) CreateUser(ctx context.Context, arg createUserRequest) (user, error) {
+	passwordHash, err := hashPassword(arg.Password)
+	if err != nil {
+		return user{}, err
+	}
+
+	query := `
+	WITH inserted_user AS (
+		INSERT INTO person (email, password_hash, first_name, middle_name, last_name, person_role_id, avatar_url)
+		VALUES (
+			$1, $2, $3, $4, $5, 
+			(SELECT person_role_id FROM person_role WHERE code = $6), 
+			$7
+		)
+		RETURNING 
+			user_id,
+			email,
+			created_at,
+			updated_at,
+			first_name,
+			middle_name,
+			last_name,
+			avatar_url,
+			person_role_id
+	)
+	SELECT 
+		inserted_user.user_id,
+		inserted_user.email,
+		inserted_user.created_at,
+		inserted_user.updated_at,
+		inserted_user.first_name,
+		inserted_user.middle_name,
+		inserted_user.last_name,
+		inserted_user.avatar_url,
+		jsonb_build_object(
+			'id', person_role.person_role_id,
+			'code', person_role.code,
+			'label', person_role.label
+		) AS role
+	`
+
+	row := r.querier.QueryRow(
+		ctx,
+		query,
+		arg.Email,
+		passwordHash,
+		arg.FirstName,
+		arg.MiddleName,
+		arg.LastName,
+		arg.Role,
+		arg.AvatarURL,
+	)
+
+	var person user
+	if err := row.Scan(
+		&person.UserID,
+		&person.CreatedAt,
+		&person.UpdatedAt,
+		&person.Email,
+		&person.FirstName,
+		&person.MiddleName,
+		&person.LastName,
+		&person.AvatarURL,
+		&person.Role,
+	); err != nil {
+		return user{}, err
+	}
+
+	return person, nil
+}

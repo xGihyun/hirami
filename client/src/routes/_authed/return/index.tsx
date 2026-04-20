@@ -123,7 +123,7 @@ function RouteComponent(): JSX.Element {
 		return (
 			<Success
 				fn={reset}
-				header="Successfully returned equipments."
+				header="Return confirmed successfully."
 				backLink="/return"
 			/>
 		);

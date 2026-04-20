@@ -202,48 +202,56 @@ function RouteComponent(): JSX.Element {
 					}
 				}}
 			>
-				<div className="grid grid-cols-1 gap-2">
-					{borrowRequests.data?.map((request) => {
-						const borrowerInitials = `${request.borrower.firstName[0]}${request.borrower.lastName[0]}`;
-						const borrowerName = `${request.borrower.firstName} ${request.borrower.lastName}`;
-						const requestedAt = `${format(request.requestedAt, "h:mm a")} at ${format(request.requestedAt, "MM/dd/yyyy")}`;
-						const anomalyResult = request.anomaly;
-						return (
-							<DrawerTrigger asChild key={request.id}>
-								<button
-									onClick={() => {
-										setSelectedRequest(request);
-										setReviewedBorrowRequest(null);
-									}}
-									className="flex items-center gap-2 bg-card rounded-2xl p-4 shadow-item text-start cursor-pointer active:bg-tertiary hover:bg-tertiary transition"
-								>
-									<Avatar className="size-16">
-										<AvatarImage src={toImageUrl(request.borrower.avatarUrl)} />
-										<AvatarFallback className="font-montserrat-bold">
-											{borrowerInitials}
-										</AvatarFallback>
-									</Avatar>
+				{borrowRequests.data && borrowRequests.data.length > 0 ? (
+					<div className="grid grid-cols-1 gap-2">
+						{borrowRequests.data?.map((request) => {
+							const borrowerInitials = `${request.borrower.firstName[0]}${request.borrower.lastName[0]}`;
+							const borrowerName = `${request.borrower.firstName} ${request.borrower.lastName}`;
+							const requestedAt = `${format(request.requestedAt, "h:mm a")} at ${format(request.requestedAt, "MM/dd/yyyy")}`;
+							const anomalyResult = request.anomaly;
+							return (
+								<DrawerTrigger asChild key={request.id}>
+									<button
+										onClick={() => {
+											setSelectedRequest(request);
+											setReviewedBorrowRequest(null);
+										}}
+										className="flex items-center gap-2 bg-card rounded-2xl p-4 shadow-item text-start cursor-pointer active:bg-tertiary hover:bg-tertiary transition"
+									>
+										<Avatar className="size-16">
+											<AvatarImage
+												src={toImageUrl(request.borrower.avatarUrl)}
+											/>
+											<AvatarFallback className="font-montserrat-bold">
+												{borrowerInitials}
+											</AvatarFallback>
+										</Avatar>
 
-									<div className="flex flex-col">
-										<p className="font-montserrat-bold">{borrowerName}</p>
-										<p className="text-sm font-montserrat">
-											<span className="font-montserrat-bold">Requested:</span>{" "}
-											{requestedAt}
-										</p>
+										<div className="flex flex-col">
+											<p className="font-montserrat-bold">{borrowerName}</p>
+											<p className="text-sm font-montserrat">
+												<span className="font-montserrat-bold">Requested:</span>{" "}
+												{requestedAt}
+											</p>
 
-										{anomalyResult &&
-										anomalyResult.isAnomaly &&
-										SHOW_ANOMALY ? (
-											<Badge className="mt-1" variant="destructive">
-												Anomaly
-											</Badge>
-										) : null}
-									</div>
-								</button>
-							</DrawerTrigger>
-						);
-					})}
-				</div>
+											{anomalyResult &&
+											anomalyResult.isAnomaly &&
+											SHOW_ANOMALY ? (
+												<Badge className="mt-1" variant="destructive">
+													Anomaly
+												</Badge>
+											) : null}
+										</div>
+									</button>
+								</DrawerTrigger>
+							);
+						})}
+					</div>
+				) : (
+					<LabelMedium className="text-muted text-center mt-10">
+						No requests found.
+					</LabelMedium>
+				)}
 
 				<DrawerContent className="space-y-4 h-full">
 					{selectedRequest ? (

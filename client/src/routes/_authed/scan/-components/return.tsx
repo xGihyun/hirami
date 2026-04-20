@@ -59,7 +59,7 @@ export function Return(props: Props): JSX.Element {
 		return (
 			<Success
 				backLink="/scan"
-				header="Successfully returned equipments."
+				header="Return confirmed successfully."
 				fn={reset}
 				className="md:absolute md:inset-0 md:z-500"
 			/>

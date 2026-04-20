@@ -75,7 +75,7 @@ export function Onboarding(): JSX.Element {
 						</Link>
 					</Button>
 					<Button className="w-full" variant="ghost" asChild>
-						<Link to="/login">Skip</Link>
+						<Link to="/onboarding">Skip</Link>
 					</Button>
 				</section>
 			</div>

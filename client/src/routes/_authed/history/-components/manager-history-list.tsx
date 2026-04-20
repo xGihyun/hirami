@@ -46,6 +46,15 @@ export function ManagerHistoryList(props: Props): JSX.Element {
 
 	const req = displayedRequest.current;
 
+	const formattedRemarks = [
+		req?.review?.remarks ? `• ${req.review.remarks}` : null,
+		req?.returnConfirmations?.[0]?.remarks
+			? `• ${req.returnConfirmations[0].remarks}`
+			: null,
+	]
+		.filter(Boolean)
+		.join("\n");
+
 	return (
 		<section className="space-y-4">
 			<Drawer
@@ -189,7 +198,7 @@ export function ManagerHistoryList(props: Props): JSX.Element {
 								<LabelMedium>Remarks</LabelMedium>
 								<Textarea
 									className="min-h-24"
-									value={req?.review?.remarks || ""}
+									value={formattedRemarks}
 									readOnly
 								/>
 							</div>
@@ -198,10 +207,10 @@ export function ManagerHistoryList(props: Props): JSX.Element {
 						<DrawerFooter>
 							<DrawerClose asChild>
 								<Button
-									variant="outline"
+									variant="default"
 									onClick={() => setSelectedRequest(null)}
 								>
-									Cancel
+									Close
 								</Button>
 							</DrawerClose>
 						</DrawerFooter>

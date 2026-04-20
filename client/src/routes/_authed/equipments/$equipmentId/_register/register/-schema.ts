@@ -13,7 +13,9 @@ export type RegisterEquipmentNameSchema = z.infer<
 
 export const registerEquipmentQuantitySchema = z.object({
 	acquisitionDate: z.date(),
-	quantity: z.number().positive(),
+	quantity: z
+		.number({ error: "This field must not be left blank." })
+		.positive({ error: "Quantity must be greater than zero." }),
 });
 
 export type RegisterEquipmentQuantitySchema = z.infer<

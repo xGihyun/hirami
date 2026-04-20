@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { IconChevronArrowDownUp } from "@/lib/icons";
 import { HiramiLogoDark } from "@/lib/assets/logo-dark";
 import type { JSX } from "react";
+import { toImageUrl } from "@/lib/api";
 
 export function AppSidebar(): JSX.Element {
 	const auth = useAuth();
@@ -33,7 +34,7 @@ export function AppSidebar(): JSX.Element {
 						{navOptions.map((opt) => {
 							const Icon = opt.icon;
 							return (
-								<SidebarMenuItem>
+								<SidebarMenuItem key={opt.label}>
 									<SidebarMenuButton
 										asChild
 										className="data-[status=active]:bg-primary data-[status=active]:text-primary-foreground h-fit"
@@ -58,7 +59,7 @@ export function AppSidebar(): JSX.Element {
 						<SidebarMenuButton className="h-fit items-center flex">
 							<Avatar className="size-8 bg-gradient-to-b from-accent to-muted rounded-md">
 								<AvatarImage
-									src={auth.user?.avatarUrl}
+									src={toImageUrl(auth.user?.avatarUrl)}
 									className="object-cover rounded-md"
 								/>
 								<AvatarFallback className="rounded-md" />

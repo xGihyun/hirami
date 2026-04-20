@@ -47,7 +47,7 @@ export function UserList(props: Props): JSX.Element {
 					const initials = user.firstName[0] + user.lastName[0];
 
 					return (
-						<TableRow className="font-open-sans text-sm leading-6">
+						<TableRow className="font-open-sans text-sm leading-6" key={user.id}>
 							<TableCell>
 								<Avatar className="size-12">
 									<AvatarImage src={avatarUrl} />

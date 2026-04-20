@@ -72,9 +72,9 @@ function RouteComponent(): JSX.Element {
 					</H2>
 				</div>
 
-				<div className="text-center text-muted">
-					<Caption>Brand: {equipment.brand}</Caption>
-				</div>
+				{/* <div className="text-center text-muted"> */}
+				{/* 	<Caption>Brand: {equipment.brand}</Caption> */}
+				{/* </div> */}
 			</section>
 
 			<Separator />

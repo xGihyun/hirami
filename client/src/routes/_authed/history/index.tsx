@@ -98,7 +98,7 @@ function History(): JSX.Element {
 		);
 	}
 
-	if (!history.data) {
+	if (history.data.length === 0) {
 		return (
 			<LabelMedium className="text-muted text-center mt-10">
 				No history found.
