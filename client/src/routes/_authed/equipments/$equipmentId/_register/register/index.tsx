@@ -120,13 +120,13 @@ function RouteComponent(): JSX.Element {
 		);
 	}
 
-	if (mutation.isSuccess) {
+	if (true) {
 		return (
 			<Success
 				header="Equipment has been successfully registered."
 				fn={mutation.reset}
 				backLink="/equipments"
-				className="bg-white md:p-0"
+				className="bg-white"
 			/>
 		);
 	}

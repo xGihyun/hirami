@@ -136,6 +136,7 @@ type user struct {
 	LastName   string     `json:"lastName"`
 	AvatarURL  *string    `json:"avatarUrl"`
 	Role       RoleDetail `json:"role"`
+	IsActive   bool       `json:"isActive"`
 }
 
 type BasicInfo struct {
@@ -161,7 +162,8 @@ func (r *repository) get(ctx context.Context, userID string) (user, error) {
 			'id', person_role.person_role_id,
 			'code', person_role.code,
 			'label', person_role.label
-		) AS role
+		) AS role,
+		person.is_active
 	FROM person
 	JOIN person_role USING (person_role_id)
 	WHERE person_id = ($1)
@@ -179,6 +181,7 @@ func (r *repository) get(ctx context.Context, userID string) (user, error) {
 		&person.LastName,
 		&person.AvatarURL,
 		&person.Role,
+		&person.IsActive,
 	); err != nil {
 		return user{}, err
 	}
@@ -201,7 +204,8 @@ func (r *repository) GetByEmail(ctx context.Context, email string) (user, error)
 			'id', person_role.person_role_id,
 			'code', person_role.code,
 			'label', person_role.label
-		) AS role
+		) AS role,
+		person.is_active
 	FROM person
 	JOIN person_role USING (person_role_id)
 	WHERE email = TRIM($1)
@@ -219,6 +223,7 @@ func (r *repository) GetByEmail(ctx context.Context, email string) (user, error)
 		&person.LastName,
 		&person.AvatarURL,
 		&person.Role,
+		&person.IsActive,
 	); err != nil {
 		return user{}, err
 	}
@@ -245,7 +250,8 @@ func (r *repository) getAll(ctx context.Context, params getParams) ([]user, erro
 			'id', person_role.person_role_id,
 			'code', person_role.code,
 			'label', person_role.label
-		) AS role
+		) AS role,
+		person.is_active
 	FROM person
 	JOIN person_role USING (person_role_id)
 	WHERE TRUE
@@ -300,9 +306,11 @@ type UpdateRequest struct {
 	LastName   *string
 	Role       *Role
 	AvatarURL  *string
+	IsActive   *bool
 }
 
 func (r *repository) Update(ctx context.Context, arg UpdateRequest) (user, error) {
+	fmt.Println(arg.IsActive)
 	query := `
 	WITH updated_user AS (
 		UPDATE person
@@ -311,8 +319,9 @@ func (r *repository) Update(ctx context.Context, arg UpdateRequest) (user, error
 			middle_name = COALESCE($3, middle_name),
 			last_name = COALESCE($4, last_name),
 			person_role_id = COALESCE($5, person_role_id),
-			avatar_url = COALESCE($6, avatar_url)
-		WHERE person_id = $7
+			avatar_url = COALESCE($6, avatar_url),
+			is_active = COALESCE($7, is_active)
+		WHERE person_id = $8
 		RETURNING 
 			person_id,
 			email,
@@ -322,7 +331,8 @@ func (r *repository) Update(ctx context.Context, arg UpdateRequest) (user, error
 			person_role_id,
 			avatar_url,
 			created_at,
-			updated_at
+			updated_at,
+			is_active
 	)
 	SELECT 
 		updated_user.person_id, 
@@ -337,10 +347,11 @@ func (r *repository) Update(ctx context.Context, arg UpdateRequest) (user, error
 			'id', person_role.person_role_id,
 			'code', person_role.code,
 			'label', person_role.label
-		) AS role
+		) AS role,
+		updated_user.is_active
 	FROM updated_user
 	JOIN person_role USING (person_role_id)
-	WHERE person_id = $7
+	WHERE person_id = $8
 	`
 
 	row := r.querier.QueryRow(
@@ -352,6 +363,7 @@ func (r *repository) Update(ctx context.Context, arg UpdateRequest) (user, error
 		arg.LastName,
 		arg.Role,
 		arg.AvatarURL,
+		arg.IsActive,
 		arg.PersonID,
 	)
 
@@ -366,6 +378,7 @@ func (r *repository) Update(ctx context.Context, arg UpdateRequest) (user, error
 		&person.LastName,
 		&person.AvatarURL,
 		&person.Role,
+		&person.IsActive,
 	); err != nil {
 		return user{}, err
 	}
@@ -468,7 +481,8 @@ func (r *repository) CreateUser(ctx context.Context, arg createUserRequest) (use
 			middle_name,
 			last_name,
 			avatar_url,
-			person_role_id
+			person_role_id,
+			is_active
 	)
 	SELECT 
 		inserted_user.user_id,
@@ -483,7 +497,8 @@ func (r *repository) CreateUser(ctx context.Context, arg createUserRequest) (use
 			'id', person_role.person_role_id,
 			'code', person_role.code,
 			'label', person_role.label
-		) AS role
+		) AS role,
+		inserted_user.is_active
 	`
 
 	row := r.querier.QueryRow(

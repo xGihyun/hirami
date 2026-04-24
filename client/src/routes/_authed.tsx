@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
 import { EquipmentServerEvent } from "@/lib/equipment/sse";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 
 export const Route = createFileRoute("/_authed")({
@@ -70,10 +70,10 @@ function RouteComponent(): JSX.Element {
 		<SidebarProvider>
 			<AppSidebar />
 
-			<div className="pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] px-4 lg:px-10 md:bg-white bg-background w-full">
+			<SidebarInset className="pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] px-4 lg:px-10 md:bg-white bg-background">
 				<Outlet />
 				<Navbar className="md:hidden block" />
-			</div>
+			</SidebarInset>
 		</SidebarProvider>
 	);
 }

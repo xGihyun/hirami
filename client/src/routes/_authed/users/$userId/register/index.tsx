@@ -1,4 +1,9 @@
-import { H1, LabelMedium, TitleSmall } from "@/components/typography";
+import {
+	H1,
+	LabelMedium,
+	LabelSmall,
+	TitleSmall,
+} from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft, IconEdit, IconUserPen } from "@/lib/icons";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
@@ -23,11 +28,25 @@ import {
 } from "@/components/ui/popover";
 import { ChevronDownIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { FullScreenLoading } from "@/components/loading";
+import { ComponentLoading, FullScreenLoading } from "@/components/loading";
 import { Failed } from "@/components/failed";
 import { Success } from "@/components/success";
-import { registerUserSchema, type RegisterUser } from "@/lib/user/model";
+import {
+	registerUserSchema,
+	validationRules,
+	type RegisterUser,
+} from "@/lib/user/model";
 import { registerUser } from "@/lib/user/auth";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { UserRole } from "@/lib/user";
+import { PasswordInput } from "@/components/password-input";
 
 export const Route = createFileRoute("/_authed/users/$userId/register/")({
 	component: RouteComponent,
@@ -64,11 +83,41 @@ function RouteComponent(): JSX.Element {
 		return url;
 	}, [imageFile]);
 
+	const password = form.watch("password");
+
 	useEffect(() => {
 		return () => {
 			if (previewUrl) URL.revokeObjectURL(previewUrl);
 		};
 	}, [previewUrl]);
+
+	if (mutation.isPending) {
+		return <ComponentLoading className="w-full h-full" />;
+	}
+
+	if (mutation.isError) {
+		return (
+			<Failed
+				backLink={`/users`}
+				header="Account creation failed."
+				fn={form.handleSubmit(onSubmit)}
+				backMessage="or return to User Management"
+				retry={form.handleSubmit(onSubmit)}
+			/>
+		);
+	}
+
+	if (mutation.isSuccess) {
+		return (
+			<Success
+				backLink={`/users`}
+				header="Account created successfully."
+				fn={() => {
+					mutation.reset();
+				}}
+			/>
+		);
+	}
 
 	return (
 		<div>
@@ -228,6 +277,85 @@ function RouteComponent(): JSX.Element {
 										)}
 									/>
 
+									<FormField
+										control={form.control}
+										name="role"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Role</FormLabel>
+												<FormControl>
+													<Select
+														{...field}
+														value={field.value}
+														onValueChange={field.onChange}
+													>
+														<SelectTrigger className="w-full">
+															<SelectValue placeholder="Please select a role" />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value={UserRole.Borrower}>
+																Borrower
+															</SelectItem>
+															<SelectItem value={UserRole.EquipmentManager}>
+																Equipment Manager
+															</SelectItem>
+														</SelectContent>
+													</Select>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								</div>
+
+								<div className="grid grid-cols-2 gap-2.5">
+									<FormField
+										control={form.control}
+										name="password"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Password</FormLabel>
+												<FormControl>
+													<PasswordInput
+														placeholder="Enter your Password"
+														{...field}
+													/>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+									<FormField
+										control={form.control}
+										name="confirmPassword"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Confirm Password</FormLabel>
+												<FormControl>
+													<PasswordInput
+														placeholder="Confirm your Password"
+														{...field}
+													/>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								</div>
+
+								<div className="bg-card rounded-xl border p-6">
+									{validationRules.map((rule, i) => {
+										const isMet = rule.check(password);
+
+										return (
+											<LabelSmall
+												key={i}
+												className={isMet ? "text-success" : "text-muted"}
+											>
+												{rule.label}
+											</LabelSmall>
+										);
+									})}
 								</div>
 
 								<Button

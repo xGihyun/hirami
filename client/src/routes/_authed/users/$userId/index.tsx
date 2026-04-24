@@ -84,9 +84,9 @@ function RouteComponent(): JSX.Element {
 		return (
 			<Failed
 				backLink={`/users/${params.userId}`}
-				header="User update failed."
+				header="User account update failed."
 				fn={form.handleSubmit(onSubmit)}
-				backMessage="or return to Profile"
+				backMessage="or return to User Management"
 				retry={form.handleSubmit(onSubmit)}
 			/>
 		);
@@ -96,7 +96,7 @@ function RouteComponent(): JSX.Element {
 		return (
 			<Success
 				backLink={`/users`}
-				header="User updated successfully."
+				header="User account updated successfully."
 				fn={() => {
 					mutation.reset();
 				}}

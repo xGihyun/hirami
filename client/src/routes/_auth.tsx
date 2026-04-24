@@ -1,8 +1,18 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import type { JSX } from "react";
 
 export const Route = createFileRoute("/_auth")({
 	component: RouteComponent,
+	beforeLoad: async ({ context }) => {
+		const session = await context.auth.validateSession();
+		if (session !== null) {
+			throw redirect({ to: "/equipments" });
+		}
+
+		return {
+			authedSession: session,
+		};
+	},
 });
 
 function RouteComponent(): JSX.Element {

@@ -1,14 +1,16 @@
 import { H1, H2, LabelMedium } from "@/components/typography";
-import { usersQuery } from "@/lib/user";
-import { useQuery } from "@tanstack/react-query";
+import { usersQuery, editUser, type User } from "@/lib/user";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import z from "zod";
 import { Search } from "./-components/search";
-import type { JSX } from "react";
+import { useState, type JSX } from "react";
 import { ComponentLoading } from "@/components/loading";
 import { UserList } from "./-components/user-list";
 import { Button } from "@/components/ui/button";
 import { v4 as uuidv4 } from "uuid";
+import { Success } from "@/components/success";
+import { toast } from "sonner";
 
 const searchSchema = z.object({
 	search: z.string().optional(),
@@ -23,6 +25,59 @@ export const Route = createFileRoute("/_authed/users/")({
 });
 
 function RouteComponent(): JSX.Element {
+	const queryClient = useQueryClient();
+	const [actionType, setActionType] = useState<
+		"deactivate" | "reactivate" | null
+	>(null);
+
+	const mutation = useMutation({
+		mutationFn: editUser,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["users"] });
+		},
+		onError: (error) => {
+			toast.error(error.message);
+		},
+	});
+
+	function handleAction(user: User): void {
+		setActionType(user.isActive ? "deactivate" : "reactivate");
+		mutation.mutate({
+			userId: user.id,
+			firstName: user.firstName,
+			lastName: user.lastName,
+			middleName: user.middleName,
+			role: user.role.code,
+			isActive: !user.isActive,
+		});
+	}
+
+	if (mutation.isSuccess) {
+		return (
+			<Success
+				header={`Account ${actionType === "deactivate" ? "deactivated" : "reactivated"} successfully.`}
+				backLink="/users"
+				fn={() => {
+					mutation.reset();
+					setActionType(null);
+				}}
+			/>
+		);
+	}
+
+	if (mutation.isError) {
+		return (
+			<Success
+				header={`Failed to ${actionType === "deactivate" ? "deactivate" : "reactivate"} account.`}
+				backLink="/users"
+				fn={() => {
+					mutation.reset();
+					setActionType(null);
+				}}
+			/>
+		);
+	}
+
 	return (
 		<main className="space-y-4">
 			<header className="flex flex-col w-full justify-between gap-4">
@@ -31,12 +86,9 @@ function RouteComponent(): JSX.Element {
 				<Search />
 			</header>
 
-			<Users />
+			<Users onAction={handleAction} isPending={mutation.isPending} />
 
-			<Button
-				className="fixed bottom-10 right-8 w-92 z-50 shadow"
-				asChild
-			>
+			<Button className="fixed bottom-10 right-8 w-92 z-50 shadow" asChild>
 				<Link to="/users/$userId/register" params={{ userId: uuidv4() }}>
 					Create new account
 				</Link>
@@ -45,7 +97,12 @@ function RouteComponent(): JSX.Element {
 	);
 }
 
-function Users(): JSX.Element {
+type UsersProps = {
+	onAction: (user: User) => void;
+	isPending: boolean;
+};
+
+function Users({ onAction, isPending }: UsersProps): JSX.Element {
 	const search = Route.useSearch();
 	const users = useQuery(usersQuery({ search: search.search }));
 
@@ -69,5 +126,7 @@ function Users(): JSX.Element {
 		);
 	}
 
-	return <UserList users={users.data} />;
+	return (
+		<UserList users={users.data} onAction={onAction} isPending={isPending} />
+	);
 }

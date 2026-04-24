@@ -16,10 +16,6 @@ import {
 import z from "zod";
 import { useParams } from "@tanstack/react-router";
 import { NumberInput } from "@/components/number-input";
-import {
-	NativeSelect,
-	NativeSelectOption,
-} from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL, type ApiResponse } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
@@ -162,27 +158,6 @@ export function ReallocateForm(props: Props): JSX.Element {
 						<FormItem>
 							<FormLabel>From Status</FormLabel>
 							<FormControl>
-								{/* <NativeSelect */}
-								{/* 	{...field} */}
-								{/* 	onChange={(e) => */}
-								{/* 		field.onChange(e.currentTarget.value as EquipmentStatus) */}
-								{/* 	} */}
-								{/* > */}
-								{/* 	{props.equipmentType.statusQuantity.map((q) => ( */}
-								{/* 		<NativeSelectOption */}
-								{/* 			value={q.status.code} */}
-								{/* 			key={q.status.code} */}
-								{/* 			disabled={ */}
-								{/* 				q.quantity === 0 || */}
-								{/* 				q.status.code === EquipmentStatus.Borrowed || */}
-								{/* 				q.status.code === EquipmentStatus.Reserved */}
-								{/* 			} */}
-								{/* 		> */}
-								{/* 			{q.status.label} ({q.quantity} units) */}
-								{/* 		</NativeSelectOption> */}
-								{/* 	))} */}
-								{/* </NativeSelect> */}
-
 								<Select
 									{...field}
 									value={field.value}
@@ -220,30 +195,6 @@ export function ReallocateForm(props: Props): JSX.Element {
 						<FormItem>
 							<FormLabel>To Status</FormLabel>
 							<FormControl>
-								{/* <NativeSelect */}
-								{/* 	{...field} */}
-								{/* 	onChange={(e) => */}
-								{/* 		field.onChange(e.currentTarget.value as EquipmentStatus) */}
-								{/* 	} */}
-								{/* > */}
-								{/* 	<NativeSelectOption disabled selected hidden> */}
-								{/* 		Select status */}
-								{/* 	</NativeSelectOption> */}
-								{/**/}
-								{/* 	{props.equipmentType.statusQuantity.map((q) => ( */}
-								{/* 		<NativeSelectOption */}
-								{/* 			value={q.status.code} */}
-								{/* 			key={q.status.code} */}
-								{/* 			disabled={ */}
-								{/* 				q.status.code === EquipmentStatus.Borrowed || */}
-								{/* 				q.status.code === EquipmentStatus.Reserved */}
-								{/* 			} */}
-								{/* 		> */}
-								{/* 			{q.status.label} ({q.quantity} units) */}
-								{/* 		</NativeSelectOption> */}
-								{/* 	))} */}
-								{/* </NativeSelect> */}
-
 								<Select
 									{...field}
 									value={field.value}

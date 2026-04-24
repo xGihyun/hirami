@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -324,6 +325,15 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 		role = &r
 	}
 
+	isActive, err := strconv.ParseBool(r.FormValue("isActive"))
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update user: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid update user request.",
+		}
+	}
+
 	data := UpdateRequest{
 		PersonID:   r.FormValue("id"),
 		Email:      toOptionalString(r.FormValue("email")),
@@ -332,6 +342,7 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 		LastName:   toOptionalString(r.FormValue("lastName")),
 		Role:       role,
 		AvatarURL:  avatarURL,
+		IsActive:   &isActive,
 	}
 
 	user, err := s.repository.Update(ctx, data)

@@ -72,7 +72,7 @@ export function Catalog(props: Props): JSX.Element {
 
 	return (
 		<section className="pb-15 !mb-0">
-			<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+			<div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2">
 				{props.equipments.map(({ equipment }) => {
 					const key = `${equipment.id}-${equipment.status?.code}`;
 					const equipmentImage = equipment.imageUrl
@@ -112,12 +112,12 @@ export function Catalog(props: Props): JSX.Element {
 									/>
 								</div>
 								<div className="flex flex-col">
-									<LabelLarge>
+									<LabelLarge className="line-clamp-1">
 										{equipment.brand ? equipment.brand : "No Brand"}
 										{equipment.model ? " " : null}
 										{equipment.model}
 									</LabelLarge>
-									<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground">
+									<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground line-clamp-1">
 										{equipment.name}
 									</LabelSmall>
 								</div>

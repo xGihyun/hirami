@@ -23,7 +23,7 @@ export const equipmentSchema = z.object({
 	model: z.string().nullable(),
 	imageUrl: z.string().nullable(),
 	quantity: z.number().nonnegative(),
-	status: enumDetailSchema(EquipmentStatus).optional(),
+	status: enumDetailSchema(EquipmentStatus),
 });
 export type Equipment = z.infer<typeof equipmentSchema>;
 
@@ -86,7 +86,9 @@ export type EquipmentWithBorrower = z.infer<typeof equipmentWithBorrowerSchema>;
 
 export const borrowRequestItemSchema = z.object({
 	id: z.uuidv4(),
-	equipment: equipmentSchema,
+	equipment: equipmentSchema.omit({
+		status: true,
+	}),
 });
 export type BorrowRequestItem = z.infer<typeof borrowRequestItemSchema>;
 

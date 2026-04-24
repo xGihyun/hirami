@@ -41,7 +41,7 @@ export function getEquipmentBadgeVariant(
 		case EquipmentStatus.Damaged:
 			return "destructive";
 		case EquipmentStatus.Disposed:
-			return "outline";
+			return "warning";
 	}
 
 	return "default";
