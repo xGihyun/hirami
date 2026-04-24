@@ -185,6 +185,7 @@ function RouteComponent(): JSX.Element {
 					variant="ghost"
 					size="icon"
 					className="size-15 mb-0 absolute inset-0 md:relative"
+                    asChild
 				>
 					<Link to="/equipments">
 						<IconArrowLeft className="size-8" />
