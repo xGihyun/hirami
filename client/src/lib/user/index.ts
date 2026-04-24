@@ -127,3 +127,19 @@ export async function editUser(
 
 	return result;
 }
+
+export async function checkEmailExists(email: string): Promise<boolean> {
+	const url = new URL(`${BACKEND_URL}/users/exists`);
+	url.searchParams.append("email", email);
+
+	const response = await fetch(url.toString(), {
+		method: "GET",
+	});
+
+	const result: ApiResponse<boolean> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result.data;
+}

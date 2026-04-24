@@ -24,6 +24,7 @@ import {
 	userByIdQuery,
 	UserRole,
 	type EditUserSchema,
+	checkEmailExists,
 } from "@/lib/user";
 import {
 	Select,
@@ -32,9 +33,18 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toImageUrl } from "@/lib/api";
 import { ComponentLoading } from "@/components/loading";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/users/$userId/")({
 	component: RouteComponent,
@@ -49,6 +59,9 @@ function RouteComponent(): JSX.Element {
 	const userResult = useQuery(userByIdQuery(params.userId));
 	const user = userResult.data;
 	const queryClient = useQueryClient();
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+	const [pendingData, setPendingData] = useState<EditUserSchema | null>(null);
 
 	const form = useForm<EditUserSchema>({
 		resolver: zodResolver(editUserSchema),
@@ -59,6 +72,7 @@ function RouteComponent(): JSX.Element {
 			lastName: user?.lastName,
 			userId: user?.id || "",
 			role: user?.role.code,
+			isActive: user?.isActive,
 		},
 		mode: "onTouched",
 	});
@@ -76,8 +90,33 @@ function RouteComponent(): JSX.Element {
 			return;
 		}
 
-		value.userId = user.id;
-		mutation.mutate(value);
+		setIsSubmitting(true);
+		try {
+			if (value.email && value.email !== user.email) {
+				const exists = await checkEmailExists(value.email);
+				if (exists) {
+					form.setError("email", {
+						type: "manual",
+						message: "Email is in use. Try another",
+					});
+					return;
+				}
+			}
+
+			setPendingData(value);
+			setIsConfirmOpen(true);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsSubmitting(false);
+		}
+	}
+
+	function handleConfirm() {
+		if (pendingData) {
+			mutation.mutate(pendingData);
+		}
+		setIsConfirmOpen(false);
 	}
 
 	const imageFile = form.watch("avatar");
@@ -314,8 +353,12 @@ function RouteComponent(): JSX.Element {
 
 								<Button
 									type="submit"
-									className="w-full shadow-nonei mt-6"
-									disabled={!form.formState.isValid || mutation.isPending}
+									className="w-full shadow-none mt-6"
+									disabled={
+										!form.formState.isValid ||
+										mutation.isPending ||
+										isSubmitting
+									}
 								>
 									Confirm
 								</Button>
@@ -324,6 +367,28 @@ function RouteComponent(): JSX.Element {
 					</form>
 				</Form>
 			</section>
+
+			<Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>
+							Are you sure you want to edit this user's details?
+						</DialogTitle>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="secondary"
+							className="w-25"
+							onClick={() => setIsConfirmOpen(false)}
+						>
+							No
+						</Button>
+						<Button onClick={handleConfirm} className="w-25">
+							Yes
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

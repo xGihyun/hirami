@@ -32,6 +32,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /login", api.Handler(s.Login))
 	mux.Handle("POST /logout", api.Handler(s.Logout))
 	mux.Handle("GET /users", api.Handler(s.getAll))
+	mux.Handle("GET /users/exists", api.Handler(s.Exists))
 	mux.Handle("GET /users/{id}", api.Handler(s.Get))
 	mux.Handle("PATCH /users/{id}", api.Handler(s.Update))
 
@@ -39,6 +40,41 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /password-reset", api.Handler(s.ResetPassword))
 
 	mux.Handle("GET /sessions", api.Handler(s.GetSession))
+}
+
+func (s *Server) Exists(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		return api.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Email is required.",
+		}
+	}
+
+	_, err := s.repository.GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return api.Response{
+				Code:    http.StatusOK,
+				Message: "Email is available.",
+				Data:    false,
+			}
+		}
+
+		return api.Response{
+			Error:   fmt.Errorf("exists: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to check email existence.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Email is already in use.",
+		Data:    true,
+	}
 }
 
 const (

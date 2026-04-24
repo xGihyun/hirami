@@ -45,7 +45,7 @@ export function HistorySearch(): JSX.Element {
 				placeholder="Search for items"
 				value={inputValue}
 				onChange={(e) => setInputValue(e.target.value)}
-                className="w-2xl"
+                className="w-full md:w-2xl"
 			/>
 		</form>
 	);

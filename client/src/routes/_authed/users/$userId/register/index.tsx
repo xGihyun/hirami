@@ -37,9 +37,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { UserRole } from "@/lib/user";
+import { checkEmailExists, UserRole } from "@/lib/user";
 import { PasswordInput } from "@/components/password-input";
 import { ErrExistingAccount } from "@/lib/user/error";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/users/$userId/register/")({
 	component: RouteComponent,
@@ -47,6 +48,7 @@ export const Route = createFileRoute("/_authed/users/$userId/register/")({
 
 function RouteComponent(): JSX.Element {
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const form = useForm<RegisterUser>({
 		resolver: zodResolver(registerUserSchema),
@@ -66,7 +68,22 @@ function RouteComponent(): JSX.Element {
 	});
 
 	async function onSubmit(value: RegisterUser): Promise<void> {
-		mutation.mutate(value);
+		setIsSubmitting(true);
+		try {
+			const exists = await checkEmailExists(value.email);
+			if (exists) {
+				form.setError("email", {
+					type: "manual",
+					message: "Email is in use. Try another",
+				});
+				return;
+			}
+			mutation.mutate(value);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsSubmitting(false);
+		}
 	}
 
 	const imageFile = form.watch("avatar");
@@ -354,7 +371,7 @@ function RouteComponent(): JSX.Element {
 								<Button
 									type="submit"
 									className="w-full shadow-none"
-									disabled={!form.formState.isValid || mutation.isPending}
+									disabled={!form.formState.isValid || mutation.isPending || isSubmitting}
 								>
 									Confirm
 								</Button>

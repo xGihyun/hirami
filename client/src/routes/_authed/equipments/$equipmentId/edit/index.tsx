@@ -24,6 +24,14 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft, IconEdit, IconPen, IconUserPen } from "@/lib/icons";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -90,6 +98,10 @@ function RouteComponent(): JSX.Element {
 	const [previewUrl, setPreviewUrl] = useState<string | null>(
 		toImageUrl(equipmentType.data?.imageUrl) || null,
 	);
+	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+	const [pendingData, setPendingData] = useState<EditEquipmentSchema | null>(
+		null,
+	);
 
 	const form = useForm<EditEquipmentSchema>({
 		resolver: zodResolver(editEquipmentSchema),
@@ -114,7 +126,15 @@ function RouteComponent(): JSX.Element {
 	});
 
 	async function onSubmit(value: EditEquipmentSchema): Promise<void> {
-		mutation.mutate(value);
+		setPendingData(value);
+		setIsConfirmOpen(true);
+	}
+
+	function handleConfirm() {
+		if (pendingData) {
+			mutation.mutate(pendingData);
+		}
+		setIsConfirmOpen(false);
 	}
 
 	function reset(): void {
@@ -457,6 +477,28 @@ function RouteComponent(): JSX.Element {
 					<ReallocateForm equipmentType={equipmentType.data!} />
 				</section>
 			</div>
+
+			<Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>
+							Are you sure you want to edit this equipment?
+						</DialogTitle>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="secondary"
+							className="w-25"
+							onClick={() => setIsConfirmOpen(false)}
+						>
+							No
+						</Button>
+						<Button onClick={handleConfirm} className="w-25">
+							Yes
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

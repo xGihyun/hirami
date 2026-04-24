@@ -79,7 +79,7 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<main className="space-y-4">
+		<main className="space-y-4 min-w-0 overflow-x-hidden">
 			<header className="flex flex-col w-full justify-between gap-4">
 				<H2 className="text-center md:hidden block">Users</H2>
 				<H1 className="text-start md:block hidden">Users</H1>

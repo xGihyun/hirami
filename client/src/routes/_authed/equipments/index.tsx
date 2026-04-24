@@ -124,7 +124,7 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<div className="relative space-y-4">
+		<div className="relative space-y-4 min-w-0 overflow-x-hidden">
 			<CatalogHeader user={auth.user!} />
 			<CatalogSearch user={auth.user!} />
 			<CatalogCategories categories={equipmentNames.data || []} />
