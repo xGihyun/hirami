@@ -45,7 +45,7 @@ export function getNavOptions(role?: UserRole, isMobile: boolean = false) {
 		];
 	}
 
-	return [
+	const managerLinks = [
 		{
 			to: "/equipments",
 			label: "Manage",
@@ -62,10 +62,15 @@ export function getNavOptions(role?: UserRole, isMobile: boolean = false) {
 			icon: isMobile ? IconQrCode : IconFileScan,
 		},
 		historyOption,
-		{
+	];
+
+	if (!isMobile) {
+		managerLinks.push({
 			to: "/users",
 			label: "Users",
 			icon: isMobile ? IconUserRoundCog : IconUser,
-		},
-	];
+		});
+	}
+
+	return managerLinks;
 }

@@ -24,6 +24,7 @@ import IconGitPullRequestArrow from "~icons/lucide/git-pull-request-arrow";
 import IconFileScan from "~icons/lucide/file-scan";
 import IconUser from "~icons/lucide/user";
 import IconEllipsis from "~icons/lucide/ellipsis";
+import IconLogOut from "~icons/lucide/log-out";
 
 export {
 	IconRoundArrowDown,
@@ -52,4 +53,5 @@ export {
 	IconFileScan,
 	IconUser,
 	IconEllipsis,
+	IconLogOut,
 };

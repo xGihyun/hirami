@@ -100,7 +100,7 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="flex flex-col justify-between gap-4">
-			<div className="space-y-6">
+			<div className="space-y-6 max-w-sm w-full mx-auto">
 				<H2 className="text-center">Profile</H2>
 
 				<Form {...form}>
@@ -243,7 +243,7 @@ function RouteComponent(): JSX.Element {
 							<Button
 								type="button"
 								onClick={handleLogout}
-								className="w-full"
+								className="w-full block md:hidden"
 								variant="secondary"
 								disabled={mutation.isPending}
 							>

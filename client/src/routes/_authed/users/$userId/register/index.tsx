@@ -6,8 +6,8 @@ import {
 } from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft, IconEdit, IconUserPen } from "@/lib/icons";
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState, type JSX } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, type JSX } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -21,14 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
-import { ChevronDownIcon } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { ComponentLoading, FullScreenLoading } from "@/components/loading";
+import { ComponentLoading } from "@/components/loading";
 import { Failed } from "@/components/failed";
 import { Success } from "@/components/success";
 import {
@@ -40,13 +33,13 @@ import { registerUser } from "@/lib/user/auth";
 import {
 	Select,
 	SelectContent,
-	SelectGroup,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
 import { UserRole } from "@/lib/user";
 import { PasswordInput } from "@/components/password-input";
+import { ErrExistingAccount } from "@/lib/user/error";
 
 export const Route = createFileRoute("/_authed/users/$userId/register/")({
 	component: RouteComponent,
@@ -95,7 +88,7 @@ function RouteComponent(): JSX.Element {
 		return <ComponentLoading className="w-full h-full" />;
 	}
 
-	if (mutation.isError) {
+	if (mutation.isError && !(mutation.error instanceof ErrExistingAccount)) {
 		return (
 			<Failed
 				backLink={`/users`}
@@ -132,7 +125,7 @@ function RouteComponent(): JSX.Element {
 				</Link>
 			</Button>
 
-			<header className="text-center mb-15">
+			<header className="text-center mb-15 space-y-2">
 				<H1>Register User</H1>
 				<TitleSmall>
 					Enter the details required to add a new user to the system.

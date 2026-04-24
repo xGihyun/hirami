@@ -10,17 +10,30 @@ import {
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { getNavOptions } from "@/lib/constant";
-import { Link, linkOptions } from "@tanstack/react-router";
+import { Link, linkOptions, useNavigate } from "@tanstack/react-router";
 import { LabelLarge, TitleSmall } from "./typography";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { IconChevronArrowDownUp } from "@/lib/icons";
+import { IconChevronArrowDownUp, IconLogOut, IconProfile } from "@/lib/icons";
 import { HiramiLogoDark } from "@/lib/assets/logo-dark";
 import type { JSX } from "react";
 import { toImageUrl } from "@/lib/api";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 export function AppSidebar(): JSX.Element {
 	const auth = useAuth();
 	const navOptions = linkOptions(getNavOptions(auth.user?.role.code));
+
+	const navigate = useNavigate();
+	async function handleLogout(): Promise<void> {
+		await auth.logout();
+		await navigate({ to: "/onboarding" });
+	}
 
 	return (
 		<Sidebar className="w-72">
@@ -56,21 +69,41 @@ export function AppSidebar(): JSX.Element {
 			<SidebarFooter>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton className="h-fit items-center flex">
-							<Avatar className="size-8 bg-gradient-to-b from-accent to-muted rounded-md">
-								<AvatarImage
-									src={toImageUrl(auth.user?.avatarUrl)}
-									className="object-cover rounded-md"
-								/>
-								<AvatarFallback className="rounded-md" />
-							</Avatar>
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<SidebarMenuButton className="h-fit items-center flex">
+									<Avatar className="size-8 bg-gradient-to-b from-accent to-muted rounded-md">
+										<AvatarImage
+											src={toImageUrl(auth.user?.avatarUrl)}
+											className="object-cover rounded-md"
+										/>
+										<AvatarFallback className="rounded-md" />
+									</Avatar>
 
-							<TitleSmall className="font-montserrat-semibold">
-								{auth.user?.firstName} {auth.user?.lastName}
-							</TitleSmall>
+									<TitleSmall className="font-montserrat-semibold">
+										{auth.user?.firstName} {auth.user?.lastName}
+									</TitleSmall>
 
-							<IconChevronArrowDownUp className="ml-auto" />
-						</SidebarMenuButton>
+									<IconChevronArrowDownUp className="ml-auto" />
+								</SidebarMenuButton>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent side="top" align="start" className="w-56">
+								<DropdownMenuItem asChild>
+									<Link to="/profile" className="flex items-center gap-2">
+										<IconProfile className="size-4" />
+										<TitleSmall>Profile</TitleSmall>
+									</Link>
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									onClick={handleLogout}
+									className="flex items-center gap-2 text-destructive"
+								>
+									<IconLogOut className="size-4 text-destructive focus:text-destructive" />
+									<TitleSmall>Logout</TitleSmall>
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
 					</SidebarMenuItem>
 				</SidebarMenu>
 			</SidebarFooter>

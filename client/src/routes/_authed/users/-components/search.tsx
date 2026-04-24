@@ -45,6 +45,7 @@ export function Search(): JSX.Element {
 				placeholder="Search for users"
 				value={inputValue}
 				onChange={(e) => setInputValue(e.target.value)}
+                className="w-2xl"
 			/>
 		</form>
 	);

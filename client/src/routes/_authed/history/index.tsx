@@ -91,7 +91,6 @@ function History(): JSX.Element {
 	}
 
 	if (history.isError) {
-        console.log(history)
 		return (
 			<LabelMedium className="text-muted text-center mt-10">
 				Failed to load history.

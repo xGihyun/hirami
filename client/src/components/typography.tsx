@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { JSX, ReactNode } from "react";
+import type { JSX } from "react";
 
 type Props = React.ComponentProps<"p">;
 
