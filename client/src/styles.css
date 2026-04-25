@@ -111,6 +111,15 @@ code {
   --sidebar-accent-foreground: oklch(0.2375 0.0391 60.76);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.871 0.006 286.286);
+
+  --reserved: oklch(0.5882 0.1758 269.11);
+  --reserved-foreground: oklch(1 0 0);
+  --maintenance: oklch(0.6444 0.1292 37.59);
+  --maintenance-foreground: oklch(1 0 0);
+  --lost: oklch(0.3959 0.0211 262.24);
+  --lost-foreground: oklch(1 0 0);
+  --disposed: oklch(0.4468 0.0384 254.49);
+  --disposed-foreground: oklch(1 0 0);
 }
 
 .dark {
@@ -191,6 +200,15 @@ code {
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-reserved: var(--reserved);
+  --color-reserved-foreground: var(--reserved-foreground);
+  --color-maintenance: var(--maintenance);
+  --color-maintenance-foreground: var(--maintenance-foreground);
+  --color-lost: var(--lost);
+  --color-lost-foreground: var(--lost-foreground);
+  --color-disposed: var(--disposed);
+  --color-disposed-foreground: var(--disposed-foreground);
 
   --font-montserrat-bold: montserrat-bold, sans-serif;
   --font-montserrat-semibold: montserrat-semibold, sans-serif;

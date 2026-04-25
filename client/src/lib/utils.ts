@@ -36,12 +36,18 @@ export function getEquipmentBadgeVariant(
 	switch (status) {
 		case EquipmentStatus.Available:
 			return "success";
+		case EquipmentStatus.Reserved:
+			return "reserved";
 		case EquipmentStatus.Borrowed:
 			return "warning";
 		case EquipmentStatus.Damaged:
 			return "destructive";
+		case EquipmentStatus.Maintenance:
+			return "maintenance";
+		case EquipmentStatus.Lost:
+			return "lost";
 		case EquipmentStatus.Disposed:
-			return "warning";
+			return "disposed";
 	}
 
 	return "default";
