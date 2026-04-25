@@ -88,21 +88,26 @@ type signInResponse struct {
 	Token string `json:"token"`
 }
 
-var errInvalidPassword = errors.New("invalid password")
+var ErrInvalidPassword = errors.New("invalid password")
 
 func (r *repository) login(ctx context.Context, arg loginRequest) (signInResponse, error) {
-	query := "SELECT password_hash FROM person WHERE email = ($1)"
+	query := "SELECT password_hash, is_active FROM person WHERE email = ($1)"
 
 	var passwordHash string
+	var isActive bool
 
 	row := r.querier.QueryRow(ctx, query, arg.Email)
-	if err := row.Scan(&passwordHash); err != nil {
+	if err := row.Scan(&passwordHash, &isActive); err != nil {
 		return signInResponse{}, err
+	}
+
+	if !isActive {
+		return signInResponse{}, ErrInvalidPassword
 	}
 
 	isMatch := checkPasswordHash(arg.Password, passwordHash)
 	if !isMatch {
-		return signInResponse{}, errInvalidPassword
+		return signInResponse{}, ErrInvalidPassword
 	}
 
 	person, err := r.GetByEmail(ctx, arg.Email)

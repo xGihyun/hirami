@@ -186,7 +186,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) api.Response {
 
 	res, err := s.repository.login(ctx, data)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, errInvalidPassword) {
+		if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, ErrInvalidPassword) {
 			return api.Response{
 				Error:   fmt.Errorf("sign in: %w", err),
 				Code:    http.StatusUnauthorized,

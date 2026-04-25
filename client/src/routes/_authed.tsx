@@ -30,9 +30,16 @@ export const Route = createFileRoute("/_authed")({
 
 function RouteComponent(): JSX.Element {
 	const auth = useAuth();
+	const navigate = Route.useNavigate();
 
 	useEffect(() => {
-		if (auth.user?.role.code === UserRole.EquipmentManager) {
+		if (auth.user === null) {
+			navigate({ to: "/onboarding" });
+		}
+	}, [auth.user, navigate]);
+
+	useEffect(() => {
+		if (!auth.user || auth.user.role.code === UserRole.EquipmentManager) {
 			return;
 		}
 
@@ -64,7 +71,11 @@ function RouteComponent(): JSX.Element {
 			);
 			eventSource.close();
 		};
-	}, []);
+	}, [auth.user]);
+
+	if (!auth.user) {
+		return <></>;
+	}
 
 	return (
 		<SidebarProvider>
