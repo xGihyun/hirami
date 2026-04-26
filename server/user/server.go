@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -436,13 +438,41 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
 			Message: "Failed to reset password.",
 		}
 	}
-	fullName := fmt.Sprintf("%s %s", user.FirstName, user.LastName)
+	fullName := html.EscapeString(fmt.Sprintf("%s %s", user.FirstName, user.LastName))
 
-	// TODO: Use environment variable for client URL
-	// NOTE: Hardcoded client URL
-	// resetLink := fmt.Sprintf("hirami://password-reset/%s", rawToken) // Mobile URL
-	resetLink := fmt.Sprintf("http://localhost:3000/password-reset/%s", rawToken) // Web URL
+	webClientURL := os.Getenv("WEB_CLIENT_URL")
+	if webClientURL == "" {
+		webClientURL = "http://localhost:3000/password-reset"
+	}
+	mobileClientURL := os.Getenv("MOBILE_CLIENT_URL")
+	if mobileClientURL == "" {
+		mobileClientURL = "hirami://password-reset"
+	}
+
+	userAgent := r.Header.Get("User-Agent")
+	// "Mobi" is the standard recommendation from MDN for detecting mobile devices.
+	// We also specifically check for "Android" since you mentioned Tauri on Android.
+	ua := strings.ToLower(userAgent)
+	isMobile := strings.Contains(ua, "mobi") || strings.Contains(ua, "android")
+
+	// Use Web URL for the primary button because Gmail strips custom protocols like hirami://
+	resetLink := fmt.Sprintf("%s/%s", webClientURL, rawToken)
+	mobileDeepLink := fmt.Sprintf("%s/%s", mobileClientURL, rawToken)
+
 	subject := "Password Reset Request"
+	
+	// Add a mobile-specific deep link hint ONLY if we are fairly sure it's a mobile device
+	// and the mobile URL is actually a custom protocol (not just another web link).
+	mobileHint := ""
+	if isMobile && !strings.HasPrefix(mobileClientURL, "http") {
+		mobileHint = fmt.Sprintf(`
+          <tr>
+            <td style="padding-top:16px;font-size:12px;color:#6b7280;text-align:center;">
+              If the button doesn't open the app, <a href="%s" style="color:#92400e;text-decoration:underline;">click here to open Hirami directly</a>.
+            </td>
+          </tr>`, mobileDeepLink)
+	}
+
 	bodyHTML := fmt.Sprintf(`
 <!DOCTYPE html>
 <html lang="en">
@@ -451,16 +481,16 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Password Reset Request</title>
 </head>
-<body style="margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:oklch(0.9746 0.009 78.28);">
+<body style="margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#f9fafb;">
   <table width="100%%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
     <tr>
       <td align="center">
-        <table width="380" cellpadding="0" cellspacing="0" style="background-color:oklch(0.9746 0.009 78.28);border-radius:16px;overflow:hidden;padding:40px 32px;max-width:380px;">
+        <table width="380" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;padding:40px 32px;max-width:380px;border:1px solid #e5e7eb;">
 
           <!-- Title -->
           <tr>
             <td align="center" style="padding-bottom:24px;">
-              <h1 style="margin:0;font-size:26px;font-weight:700;color:#1a1a1a;line-height:1.3;">
+              <h1 style="margin:0;font-size:26px;font-weight:700;color:#111827;line-height:1.3;">
                 Password Reset Request
               </h1>
             </td>
@@ -468,38 +498,31 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
 
           <!-- Body text -->
           <tr>
-            <td style="padding-bottom:28px;color:#333333;font-size:14px;line-height:1.6;text-align:justify;">
+            <td style="padding-bottom:28px;color:#374151;font-size:14px;line-height:1.6;text-align:justify;">
               <p style="margin:0 0 8px 0;">
                 Hello <strong>%s</strong>,
               </p>
               <p style="margin:0;">
                 We received a request to reset the password for your account.
                 To securely change your password, please click the button below.
-                This is an important security step, and your password will not be
-                changed unless you click the link and create a new one. For your
-                security, this link will expire in 24 hours. If you did not request
-                this change, you can safely ignore this email.
+                This link will expire in 24 hours. If you did not request this change, 
+                you can safely ignore this email.
               </p>
             </td>
           </tr>
 
           <!-- CTA Button -->
           <tr>
-            <td align="center" style="padding-bottom:32px;">
-            <a
-                href="%s"
-                target="_blank"
-                rel="noreferrer"
-                style="display:block;width:100%%;padding:16px 0;background-color:oklch(0.5701 0.1162 60.64);color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;"
-              >
-                Change Password
-              </a>
+            <td align="center">
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Change Password</a>
             </td>
           </tr>
 
+          %s
+
           <!-- Sign-off -->
           <tr>
-            <td style="font-size:14px;color:#333333;line-height:1.6;">
+            <td style="padding-top:32px;font-size:14px;color:#374151;line-height:1.6;">
               Sincerely,<br/>
               The Hirami Team
             </td>
@@ -511,7 +534,7 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
   </table>
 </body>
 </html>
-	`, fullName, resetLink)
+	`, fullName, resetLink, mobileHint)
 
 	if err := api.SendGmail(s.gmailService, data.Email, subject, bodyHTML); err != nil {
 		return api.Response{
