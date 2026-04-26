@@ -43,6 +43,7 @@ import {
 	createBorrowRequestSchema,
 	type CreateBorrowRequest,
 } from "../-function";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { DialogClose } from "@radix-ui/react-dialog";
 import { Success } from "@/components/success";
 import { FullScreenLoading } from "@/components/loading";
@@ -309,8 +310,18 @@ export function BorrowEquipmentForm(
 												<p>
 													I have read and agreed to the{" "}
 													<a
-														href="#"
+														href="/hirami-policy.pdf"
+														target="_blank"
+														rel="noopener noreferrer"
 														className="font-montserrat-semibold underline"
+														onClick={async (e) => {
+															if ((window as any).__TAURI_INTERNALS__) {
+																e.preventDefault();
+																await openUrl(
+																	`${window.location.origin}/hirami-policy.pdf`,
+																);
+															}
+														}}
 													>
 														Sports Equipment Borrowing Policy
 													</a>
