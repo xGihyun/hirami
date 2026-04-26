@@ -258,7 +258,7 @@ export function ReallocateForm(props: Props): JSX.Element {
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>
-							Are you sure you want to reallocate this equipment?
+							Are you sure you want to edit this equipment?
 						</DialogTitle>
 					</DialogHeader>
 					<DialogFooter>
