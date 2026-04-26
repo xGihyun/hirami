@@ -17,6 +17,7 @@ type Props = {
 	className?: string;
 	isSelected?: boolean;
 	maxQuantity?: number;
+	quantity: number;
 };
 
 enum DueStatus {
@@ -67,13 +68,17 @@ export function BorrowedItem(props: Props): JSX.Element {
 
 				<div className="flex flex-col w-full">
 					<LabelLarge>
-						{props.item.equipment.brand}
+						{props.item.equipment.brand || "No Brand"}
 						{props.item.equipment.model
 							? ` ${props.item.equipment.model}`
 							: null}
 					</LabelLarge>
 
 					<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground">
+						{props.item.equipment.name}
+					</LabelSmall>
+
+					<LabelSmall className="text-foreground group-has-data-[state=checked]:text-primary-foreground">
 						Due: {format(props.transaction.expectedReturnAt, "h:mm a")} on{" "}
 						{format(props.transaction.expectedReturnAt, "MM/dd/yyyy")}
 					</LabelSmall>
@@ -94,7 +99,7 @@ export function BorrowedItem(props: Props): JSX.Element {
 			<NumberInput
 				isDisabled={!props.isSelected}
 				className="w-48"
-				defaultValue={1}
+				value={props.quantity}
 				maxValue={props.maxQuantity ?? props.item.equipment.quantity}
 				onClick={stopPropagation}
 				onPointerDown={stopPropagation}

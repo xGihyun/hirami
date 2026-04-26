@@ -6,14 +6,13 @@ import {
 	type BorrowRequestItem,
 } from "@/lib/equipment/model";
 import { borrowHistoryQuery, getBorrowedItemsQuery } from "@/lib/equipment/api";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type JSX } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { useMutation } from "@tanstack/react-query";
 import type { SelectedBorrowedEquipment } from "../-model.ts";
 import { cn } from "@/lib/utils";
 import type { CheckedState } from "@radix-ui/react-checkbox";
@@ -69,6 +68,7 @@ async function returnEquipments(
 export function BorrowedItemList(): JSX.Element {
 	const search = useSearch({ from: "/_authed/return/" });
 	const auth = useAuth();
+	const queryClient = useQueryClient();
 	const borrowHistory = useQuery(
 		borrowHistoryQuery({
 			userId: auth.user?.id,
@@ -140,6 +140,17 @@ export function BorrowedItemList(): JSX.Element {
 
 	const mutation = useMutation({
 		mutationFn: returnEquipments,
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["borrow-history"],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["borrowed-items"],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["return-requests"],
+			});
+		},
 	});
 
 	function resetState(): void {
@@ -274,7 +285,7 @@ export function BorrowedItemList(): JSX.Element {
 											value={item.id}
 											checked={isChecked}
 											onCheckedChange={(checked) =>
-												handleSelect(item, maxQuantity, checked)
+												handleSelect(item, 1, checked)
 											}
 										/>
 
@@ -285,6 +296,11 @@ export function BorrowedItemList(): JSX.Element {
 											className="cursor-pointer group-has-data-[state=checked]:bg-primary group-has-data-[state=checked]:text-primary-foreground"
 											isSelected={isChecked}
 											maxQuantity={maxQuantity}
+											quantity={
+												selectedEquipments.find(
+													(selected) => selected.item.id === item.id,
+												)?.quantity ?? 1
+											}
 										/>
 									</label>
 								);

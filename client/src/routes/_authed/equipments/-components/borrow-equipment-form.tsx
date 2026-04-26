@@ -168,7 +168,7 @@ export function BorrowEquipmentForm(
 
 												<div className="flex flex-col">
 													<LabelLarge>
-														{equipment.brand}
+														{equipment.brand || "No Brand"}
 														{equipment.model ? ` ${equipment.model}` : null}
 													</LabelLarge>
 

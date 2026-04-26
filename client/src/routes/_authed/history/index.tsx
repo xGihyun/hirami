@@ -63,7 +63,7 @@ function RouteComponent() {
 	}, []);
 
 	return (
-		<div className="relative space-y-4 min-w-0 overflow-x-hidden">
+		<div className="relative space-y-4 min-w-0 ">
 			<header className="flex flex-col w-full justify-between gap-4">
 				<H2 className="text-center md:hidden block">History</H2>
 				<H1 className="text-start md:block hidden">History</H1>

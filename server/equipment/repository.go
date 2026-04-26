@@ -2018,9 +2018,10 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 	updateReturnRequestItemQuery := `
 	UPDATE return_request_item
 	SET reviewed_by = $1, remarks = $2
+	WHERE return_request_id = $3
 	`
 
-	if _, err := tx.Exec(ctx, updateReturnRequestItemQuery, arg.ReviewedBy, arg.Remarks); err != nil {
+	if _, err := tx.Exec(ctx, updateReturnRequestItemQuery, arg.ReviewedBy, arg.Remarks, arg.ReturnRequestID); err != nil {
 		return confirmReturnRequest{}, err
 	}
 
@@ -2426,8 +2427,6 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	LEFT JOIN person person_borrow_reviewer ON person_borrow_reviewer.person_id = borrow_request.reviewed_by
 	LEFT JOIN anomaly_result ON anomaly_result.borrow_request_id = borrow_request.borrow_request_id
 	LEFT JOIN borrow_request_otp ON borrow_request_otp.borrow_request_id = borrow_request.borrow_request_id
-	LEFT JOIN borrow_request_item ON borrow_request_item.borrow_request_id = borrow_request.borrow_request_id  
-	LEFT JOIN equipment_type ON equipment_type.equipment_type_id = borrow_request_item.equipment_type_id      
 	LEFT JOIN LATERAL (
 		SELECT jsonb_agg( 
 			jsonb_build_object(
@@ -2481,7 +2480,13 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	}
 
 	if params.category != nil && *params.category != "" {
-		query += fmt.Sprintf(" AND equipment_type.name = $%d", argIdx)
+		query += fmt.Sprintf(` 
+		AND borrow_request.borrow_request_id IN (
+			SELECT borrow_request_id 
+			FROM borrow_request_item 
+			JOIN equipment_type USING (equipment_type_id)
+			WHERE equipment_type.name = $%d
+		)`, argIdx)
 		args = append(args, *params.category)
 		argIdx++
 	}
@@ -2490,9 +2495,14 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		searchTerm := "%" + strings.ToLower(*params.search) + "%"
 		query += fmt.Sprintf(` 
 		AND (
-			LOWER(equipment_type.name) LIKE $%d 
-			OR LOWER(equipment_type.brand) LIKE $%d 
-			OR LOWER(equipment_type.model) LIKE $%d
+			borrow_request.borrow_request_id IN (
+				SELECT borrow_request_id 
+				FROM borrow_request_item 
+				JOIN equipment_type USING (equipment_type_id)
+				WHERE LOWER(equipment_type.name) LIKE $%d 
+				OR LOWER(equipment_type.brand) LIKE $%d 
+				OR LOWER(equipment_type.model) LIKE $%d
+			)
 			OR LOWER(person.first_name) LIKE $%d
 			OR LOWER(person.middle_name) LIKE $%d
 			OR LOWER(person.last_name) LIKE $%d
@@ -2533,8 +2543,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		anomaly_result.anomaly_result_id,
 		borrow_request_otp.borrow_request_otp_id,
 		return_confirmation_agg.return_confirmations,
-		requested_items_agg.items_agg,
-		equipment_type.equipment_type_id
+		requested_items_agg.items_agg
 	`
 
 	sortByColumn := "borrow_request.created_at"
@@ -2610,7 +2619,6 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 	LEFT JOIN LATERAL (
 		SELECT COALESCE(SUM(rri.quantity), 0) AS total_returned
 		FROM return_request_item rri
-		JOIN return_transaction rt ON rt.return_request_item_id = rri.return_request_item_id
 		WHERE rri.borrow_request_item_id = borrow_request_item.borrow_request_item_id
 	) returned_qty ON TRUE
 	WHERE borrow_request.requested_by = $1 
