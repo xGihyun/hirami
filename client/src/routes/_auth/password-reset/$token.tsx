@@ -18,9 +18,14 @@ import { PasswordInput } from "@/components/password-input";
 import { H1, LabelSmall, TitleSmall } from "@/components/typography";
 import { IconArrowLeft } from "@/lib/icons";
 import { PaddingLayout } from "@/routes/-components/padding-layout";
-import { accessDeniedIllustration, doneIllustration, unlockIllustration } from "@/lib/assets";
+import {
+	accessDeniedIllustration,
+	doneIllustration,
+	unlockIllustration,
+} from "@/lib/assets";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
+import { FullScreenLoading } from "@/components/loading";
 
 export const Route = createFileRoute("/_auth/password-reset/$token")({
 	component: RouteComponent,
@@ -89,16 +94,6 @@ function RouteComponent() {
 
 	const mutation = useMutation({
 		mutationFn: resetPassword,
-		onMutate: () => {
-			return toast.loading("Resetting password");
-		},
-		onSuccess: async (result, _variables, toastId) => {
-			toast.success(result.message, { id: toastId });
-			await navigate({ to: "/login" });
-		},
-		onError: (error, _variables, toastId) => {
-			toast.error(error.message, { id: toastId });
-		},
 	});
 
 	async function onSubmit(value: z.infer<typeof formSchema>): Promise<void> {
@@ -106,6 +101,10 @@ function RouteComponent() {
 	}
 
 	const newPassword = form.watch("newPassword");
+
+	if (mutation.isPending) {
+		return <FullScreenLoading />;
+	}
 
 	if (mutation.isSuccess) {
 		return (
@@ -139,7 +138,7 @@ function RouteComponent() {
 							variant="ghost"
 							size="icon"
 							className="size-15 absolute inset-0"
-                            asChild
+							asChild
 						>
 							<Link to="/onboarding">
 								<IconArrowLeft className="size-8" />
@@ -162,7 +161,7 @@ function RouteComponent() {
 							variant="ghost"
 							size="icon"
 							className="size-15 block md:hidden"
-                            asChild
+							asChild
 						>
 							<Link to="/onboarding">
 								<IconArrowLeft className="size-8" />

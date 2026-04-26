@@ -81,7 +81,6 @@ export function LoginForm(): JSX.Element {
 		mutationFn: login,
 		onSuccess: async (result) => {
 			setCookie("session", result.data.token);
-			toast("Log in Successful");
 			await navigate({ to: "/equipments" });
 		},
 	});
