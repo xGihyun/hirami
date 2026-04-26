@@ -169,7 +169,7 @@ export const returnRequestSchema = z.object({
 	id: z.uuid(),
 	createdAt: z.coerce.date(),
 	borrower: userBasicInfoSchema,
-	equipments: equipmentSchema.array(),
+	equipments: equipmentSchema.omit({ status: true }).array(),
 	expectedReturnAt: z.coerce.date(),
 	otp: otpSchema.optional(),
 });
