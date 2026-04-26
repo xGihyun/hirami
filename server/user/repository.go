@@ -44,6 +44,7 @@ type RegisterRequest struct {
 	MiddleName *string `json:"middleName"`
 	LastName   string  `json:"lastName"`
 	AvatarURL  *string `json:"avatarUrl"`
+	Role       *Role   `json:"role"`
 }
 
 func (r *repository) Register(ctx context.Context, arg RegisterRequest) (string, error) {
@@ -52,9 +53,14 @@ func (r *repository) Register(ctx context.Context, arg RegisterRequest) (string,
 		return "", err
 	}
 
+	role := Borrower
+	if arg.Role != nil {
+		role = *arg.Role
+	}
+
 	query := `
 	INSERT INTO person (email, password_hash, first_name, middle_name, last_name, person_role_id, avatar_url)
-	VALUES ($1, $2, $3, $4, $5, $6, $7)
+	VALUES ($1, $2, $3, $4, $5, (SELECT person_role_id FROM person_role WHERE code = $6), $7)
 	RETURNING person_id
 	`
 
@@ -68,7 +74,7 @@ func (r *repository) Register(ctx context.Context, arg RegisterRequest) (string,
 		arg.FirstName,
 		arg.MiddleName,
 		arg.LastName,
-		Borrower,
+		role.Code(),
 		arg.AvatarURL,
 	)
 	if err := row.Scan(&userID); err != nil {

@@ -140,6 +140,22 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 		middleName = &middleNameValue
 	}
 
+	var role *Role
+	if roleStr := r.FormValue("role"); roleStr != "" {
+		roleStr = strings.TrimSpace(strings.ToLower(roleStr))
+
+		roleVal, ok := stringToRole[roleStr]
+		if !ok {
+			return api.Response{
+				Error:   fmt.Errorf("sign up: invalid role %s", roleStr),
+				Code:    http.StatusBadRequest,
+				Message: "Invalid role. Must be 'borrower' or 'equipment_manager'.",
+			}
+		}
+
+		role = &roleVal
+	}
+
 	data := RegisterRequest{
 		Email:      r.FormValue("email"),
 		Password:   r.FormValue("password"),
@@ -147,6 +163,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 		MiddleName: middleName,
 		LastName:   r.FormValue("lastName"),
 		AvatarURL:  avatarURL,
+		Role:       role,
 	}
 
 	userID, err := s.repository.Register(ctx, data)

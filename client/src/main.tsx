@@ -78,12 +78,14 @@ function handleDeepLink(url: string): void {
 // handleDeepLink(startUrls[0]);
 // }
 
-await onOpenUrl((urls) => {
-	console.log("onOpenUrl triggered with:", urls);
-	if (urls && urls.length > 0) {
-		handleDeepLink(urls[0]);
-	}
-});
+(async () => {
+	await onOpenUrl((urls) => {
+		console.log("onOpenUrl triggered with:", urls);
+		if (urls && urls.length > 0) {
+			handleDeepLink(urls[0]);
+		}
+	});
+})();
 
 function App() {
 	const auth = useAuth();

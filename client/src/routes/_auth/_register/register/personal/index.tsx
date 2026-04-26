@@ -144,6 +144,7 @@ function RouteComponent(): JSX.Element {
 			<Success
 				header="You have successfully created an account."
 				backLink="/login"
+                className="fixed inset-0"
 			/>
 		);
 	}
@@ -155,6 +156,7 @@ function RouteComponent(): JSX.Element {
 				backLink="/onboarding"
 				backMessage="or return to Welcome Page"
 				retry={form.handleSubmit(onSubmit)}
+                className="fixed inset-0"
 			/>
 		);
 	}

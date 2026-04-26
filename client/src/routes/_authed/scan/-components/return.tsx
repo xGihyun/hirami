@@ -122,7 +122,9 @@ export function Return(props: Props): JSX.Element {
 	);
 }
 
-function EquipmentList({ equipments }: { equipments: Equipment[] }) {
+function EquipmentList({
+	equipments,
+}: { equipments: Omit<Equipment, "status">[] }) {
 	return (
 		<div className="space-y-2.5">
 			{equipments.map((equipment) => {

@@ -59,6 +59,7 @@ function RouteComponent(): JSX.Element {
 			password: "",
 			confirmPassword: "",
 			email: "",
+			role: UserRole.Borrower,
 		},
 		mode: "onTouched",
 	});

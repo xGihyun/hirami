@@ -1,4 +1,3 @@
-import type { RegisterData } from "@/routes/_auth/_register/-context";
 import type { User } from ".";
 import { BACKEND_URL, type ApiResponse } from "../api";
 import type { RegisterUser } from "./model";

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { borrowRequestByIdQuery } from "@/lib/equipment/api";
-import { type Equipment } from "@/lib/equipment/model";
+import { type BorrowRequestItem } from "@/lib/equipment/model";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { SHOW_ANOMALY, toImageUrl } from "@/lib/api";
 import { capitalizeWords, cn, getBorrowRequestBadgeVariant } from "@/lib/utils";
@@ -116,7 +116,7 @@ function RouteComponent(): JSX.Element {
 }
 
 type EquipmentProps = {
-	equipment: Equipment;
+	equipment: BorrowRequestItem["equipment"];
 	className?: string;
 };
 
