@@ -8,6 +8,7 @@ import {
 	type BorrowRequest,
 } from "@/lib/equipment/model";
 import { UserRole } from "@/lib/user";
+import { getFullName } from "@/lib/user/helper";
 import { capitalizeWords, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { JSX } from "react";
@@ -19,8 +20,8 @@ type Props = {
 };
 
 export function HistoryItem(props: Props): JSX.Element {
-    const auth = useAuth()
-    const equipment = props.item.equipment;
+	const auth = useAuth();
+	const equipment = props.item.equipment;
 	const equipmentImage = equipment.imageUrl
 		? `${BACKEND_URL}${equipment.imageUrl}`
 		: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
@@ -54,7 +55,6 @@ export function HistoryItem(props: Props): JSX.Element {
 						alt={`${equipment.name} ${equipment.brand}`}
 						className="w-full h-full object-cover"
 					/>
-
 				</div>
 
 				<div className="flex flex-col w-full">
@@ -108,6 +108,13 @@ export function HistoryItem(props: Props): JSX.Element {
 							{props.transaction.review.reviewedBy.lastName}
 						</LabelSmall>
 					) : null}
+
+					{props?.transaction.returnConfirmations[0]?.confirmedBy && (
+						<LabelSmall>
+							<span className="font-montserrat-bold">Return confirmed by:</span>{" "}
+							{getFullName(props.transaction.returnConfirmations[0].confirmedBy)}
+						</LabelSmall>
+					)}
 
 					<Badge
 						className="mt-1"

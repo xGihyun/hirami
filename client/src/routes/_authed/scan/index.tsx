@@ -56,6 +56,7 @@ function RouteComponent(): JSX.Element {
 		null,
 	);
 	const scannerRef = useRef<QrScanner | null>(null);
+	const [error, setError] = useState(false);
 
 	const form = useForm<FormSchema>({
 		resolver: zodResolver(formSchema),
@@ -65,19 +66,24 @@ function RouteComponent(): JSX.Element {
 	});
 
 	async function onSubmit(value: FormSchema): Promise<void> {
-		if (value.otp[0] === "B") {
-			const request = await queryClient.fetchQuery(
-				borrowRequestByOtpQuery(value.otp),
-			);
-			setBorrowRequest(request);
-		} else {
-			const request = await queryClient.fetchQuery(
-				returnRequestByOtpQuery(value.otp),
-			);
-			setReturnRequest(request);
+		setError(false);
+		try {
+			if (value.otp[0] === "B") {
+				const request = await queryClient.fetchQuery(
+					borrowRequestByOtpQuery(value.otp),
+				);
+				setBorrowRequest(request);
+			} else {
+				const request = await queryClient.fetchQuery(
+					returnRequestByOtpQuery(value.otp),
+				);
+				setReturnRequest(request);
+			}
+			form.reset();
+		} catch (e) {
+			console.error(e);
+			setError(true);
 		}
-
-		form.reset();
 	}
 
 	useEffect(() => {
@@ -96,6 +102,18 @@ function RouteComponent(): JSX.Element {
 			eventSource.close();
 		};
 	}, []);
+
+	if (error) {
+		return (
+			<Failed
+				header="Failed to retrieve request."
+				fn={() => setError(false)}
+				retry={form.handleSubmit(onSubmit)}
+				backLink="/scan"
+                backMessage="or return to scan"
+			/>
+		);
+	}
 
 	return (
 		<main className="relative space-y-4 flex w-full items-center justify-center flex-col">
