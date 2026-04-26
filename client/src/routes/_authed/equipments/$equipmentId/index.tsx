@@ -52,7 +52,7 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<main className="space-y-4">
-			<Button variant="ghost" size="icon" className="size-15 mb-0">
+			<Button variant="ghost" size="icon" className="size-15 mb-0" asChild>
 				<Link to="/equipments">
 					<IconArrowLeft className="size-8" />
 				</Link>

@@ -162,6 +162,7 @@ function RouteComponent() {
 							variant="ghost"
 							size="icon"
 							className="size-15 block md:hidden"
+                            asChild
 						>
 							<Link to="/onboarding">
 								<IconArrowLeft className="size-8" />
