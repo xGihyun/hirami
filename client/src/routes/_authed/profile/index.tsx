@@ -21,11 +21,7 @@ import { IconUserPen } from "@/lib/icons";
 import { H2 } from "@/components/typography";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
-import {
-	editUser,
-	editUserSchema,
-	type EditUserSchema,
-} from "@/lib/user";
+import { editUser, editUserSchema, type EditUserSchema } from "@/lib/user";
 
 export const Route = createFileRoute("/_authed/profile/")({
 	component: RouteComponent,
@@ -47,7 +43,8 @@ function RouteComponent(): JSX.Element {
 			middleName: auth.user?.middleName || "",
 			lastName: auth.user?.lastName,
 			userId: auth.user?.id || "",
-            role: auth.user?.role.code
+			role: auth.user?.role.code,
+			isActive: auth.user?.isActive,
 		},
 		mode: "onTouched",
 	});
