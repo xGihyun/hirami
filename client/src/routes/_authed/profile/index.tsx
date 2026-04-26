@@ -232,7 +232,7 @@ function RouteComponent(): JSX.Element {
 							<Button
 								type="submit"
 								className="w-full"
-								disabled={mutation.isPending}
+								disabled={!form.formState.isDirty || !form.formState.isValid || mutation.isPending}
 							>
 								Update Profile
 							</Button>
