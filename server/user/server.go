@@ -40,6 +40,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 
 	mux.Handle("POST /password-reset-request", api.Handler(s.RequestPasswordReset))
 	mux.Handle("POST /password-reset", api.Handler(s.ResetPassword))
+	mux.HandleFunc("GET /app-redirect", s.AppRedirect)
 
 	mux.Handle("GET /sessions", api.Handler(s.GetSession))
 }
@@ -451,7 +452,13 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
 
 	// Use Web URL for the primary button because Gmail strips custom protocols like hirami://
 	resetLink := fmt.Sprintf("%s/%s", webClientURL, rawToken)
-	mobileDeepLink := fmt.Sprintf("%s/%s", mobileClientURL, rawToken)
+	
+	serverURL := os.Getenv("SERVER_URL")
+	if serverURL == "" {
+		serverURL = "http://localhost:3002"
+	}
+	// Proxy the deep link through the server to prevent Gmail from stripping the href
+	mobileProxyLink := fmt.Sprintf("%s/app-redirect?token=%s", serverURL, rawToken)
 
 	subject := "Password Reset Request"
 
@@ -501,8 +508,8 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
           </tr>
 
           <tr>
-            <td align="center">
-              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Open in Mobile App</a>
+            <td align="center" style="padding-top:12px;">
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#ffffff;color:#92400e;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;border:1px solid #92400e;">Open in Mobile App</a>
             </td>
           </tr>
 
@@ -520,7 +527,7 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
   </table>
 </body>
 </html>
-	`, fullName, resetLink, mobileDeepLink)
+	`, fullName, resetLink, mobileProxyLink)
 
 	if err := api.SendGmail(s.gmailService, data.Email, subject, bodyHTML); err != nil {
 		return api.Response{
@@ -534,6 +541,40 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
 		Code:    http.StatusOK,
 		Message: "Password reset email sent successfully.",
 	}
+}
+
+func (s *Server) AppRedirect(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	mobileClientURL := os.Getenv("MOBILE_CLIENT_URL")
+	if mobileClientURL == "" {
+		mobileClientURL = "hirami://password-reset"
+	}
+	deepLink := fmt.Sprintf("%s/%s", mobileClientURL, token)
+
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprintf(w, `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirecting to Hirami...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f9fafb; color: #374151; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #92400e; border-radius: 50%%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0%% { transform: rotate(0deg); } 100%% { transform: rotate(360deg); } }
+        a { color: #92400e; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="loader"></div>
+    <p>Redirecting to Hirami app...</p>
+    <p style="font-size: 14px;">If the app doesn't open automatically, <a href="%s">click here</a>.</p>
+    <script>
+        window.location.href = "%s";
+    </script>
+</body>
+</html>
+	`, deepLink, deepLink)
 }
 
 func (s *Server) ResetPassword(w http.ResponseWriter, r *http.Request) api.Response {
