@@ -310,18 +310,10 @@ export function BorrowEquipmentForm(
 												<p>
 													I have read and agreed to the{" "}
 													<a
-														href="/hirami-policy.pdf"
+														href="https://docs.google.com/document/d/1GxszQoxUPmQq0sthSyEe9qRqnNHkvac6yJC0uFdBOgs/edit?usp=sharing"
 														target="_blank"
-														rel="noopener noreferrer"
+														rel="noreferrer"
 														className="font-montserrat-semibold underline"
-														onClick={async (e) => {
-															if ((window as any).__TAURI_INTERNALS__) {
-																e.preventDefault();
-																await openUrl(
-																	`${window.location.origin}/hirami-policy.pdf`,
-																);
-															}
-														}}
 													>
 														Sports Equipment Borrowing Policy
 													</a>

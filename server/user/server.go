@@ -449,29 +449,11 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
 		mobileClientURL = "hirami://password-reset"
 	}
 
-	userAgent := r.Header.Get("User-Agent")
-	// "Mobi" is the standard recommendation from MDN for detecting mobile devices.
-	// We also specifically check for "Android" since you mentioned Tauri on Android.
-	ua := strings.ToLower(userAgent)
-	isMobile := strings.Contains(ua, "mobi") || strings.Contains(ua, "android")
-
 	// Use Web URL for the primary button because Gmail strips custom protocols like hirami://
 	resetLink := fmt.Sprintf("%s/%s", webClientURL, rawToken)
 	mobileDeepLink := fmt.Sprintf("%s/%s", mobileClientURL, rawToken)
 
 	subject := "Password Reset Request"
-	
-	// Add a mobile-specific deep link hint ONLY if we are fairly sure it's a mobile device
-	// and the mobile URL is actually a custom protocol (not just another web link).
-	mobileHint := ""
-	if isMobile && !strings.HasPrefix(mobileClientURL, "http") {
-		mobileHint = fmt.Sprintf(`
-          <tr>
-            <td style="padding-top:16px;font-size:12px;color:#6b7280;text-align:center;">
-              If the button doesn't open the app, <a href="%s" style="color:#92400e;text-decoration:underline;">click here to open Hirami directly</a>.
-            </td>
-          </tr>`, mobileDeepLink)
-	}
 
 	bodyHTML := fmt.Sprintf(`
 <!DOCTYPE html>
@@ -514,11 +496,15 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
           <!-- CTA Button -->
           <tr>
             <td align="center">
-              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Change Password</a>
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Open in Browser</a>
             </td>
           </tr>
 
-          %s
+          <tr>
+            <td align="center">
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Open in Mobile App</a>
+            </td>
+          </tr>
 
           <!-- Sign-off -->
           <tr>
@@ -534,7 +520,7 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
   </table>
 </body>
 </html>
-	`, fullName, resetLink, mobileHint)
+	`, fullName, resetLink, mobileDeepLink)
 
 	if err := api.SendGmail(s.gmailService, data.Email, subject, bodyHTML); err != nil {
 		return api.Response{
