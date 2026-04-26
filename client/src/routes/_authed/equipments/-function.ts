@@ -12,6 +12,9 @@ export const createBorrowRequestSchema = z.object({
 	purpose: z.string().nonempty(),
 	expectedReturnAt: z.date(),
 	requestedBy: z.string().nonempty(),
+	agreedToPolicy: z.boolean().refine((v) => v === true, {
+		message: "You must agree to the borrowing policy",
+	}),
 });
 
 export type CreateBorrowRequest = z.infer<typeof createBorrowRequestSchema>;

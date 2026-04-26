@@ -24,7 +24,7 @@ import { BACKEND_URL } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 import type { SelectedEquipment } from "..";
 import { useAuth } from "@/auth";
-import { H1, LabelLarge, LabelSmall } from "@/components/typography";
+import { H1, LabelLarge, LabelSmall, P } from "@/components/typography";
 import { Separator } from "@/components/ui/separator";
 import type { Equipment } from "@/lib/equipment/model";
 import { Calendar } from "@/components/ui/calendar";
@@ -37,6 +37,7 @@ import { ChevronDownIcon } from "lucide-react";
 import { useState } from "react";
 import { IconArrowLeft } from "@/lib/icons";
 import { NumberInput } from "@/components/number-input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	createBorrowRequest,
 	createBorrowRequestSchema,
@@ -69,6 +70,7 @@ export function BorrowEquipmentForm(
 			location: "",
 			purpose: "",
 			requestedBy: auth.user?.id,
+			agreedToPolicy: false,
 		},
 		mode: "onTouched",
 	});
@@ -291,6 +293,34 @@ export function BorrowEquipmentForm(
 								)}
 							/>
 
+							<FormField
+								control={form.control}
+								name="agreedToPolicy"
+								render={({ field }) => (
+									<FormItem className="flex flex-row items-center space-x-1 space-y-0">
+										<FormControl>
+											<Checkbox
+												checked={field.value}
+												onCheckedChange={field.onChange}
+											/>
+										</FormControl>
+										<div className="space-y-1 leading-none">
+											<FormLabel className="font-montserrat-medium data-[error=true]:text-destructive">
+												<p>
+													I have read and agreed to the{" "}
+													<a
+														href="#"
+														className="font-montserrat-semibold underline"
+													>
+														Sports Equipment Borrowing Policy
+													</a>
+												</p>
+											</FormLabel>
+										</div>
+									</FormItem>
+								)}
+							/>
+
 							<Dialog>
 								<DialogTrigger asChild>
 									<Button
@@ -320,11 +350,7 @@ export function BorrowEquipmentForm(
 											</Button>
 										</DialogClose>
 
-										<Button
-											disabled={!form.formState.isValid}
-											type="submit"
-											form="borrow-request-form"
-										>
+										<Button type="submit" form="borrow-request-form">
 											Confirm
 										</Button>
 									</DialogFooter>
