@@ -253,7 +253,10 @@ function RouteComponent(): JSX.Element {
 					</LabelMedium>
 				)}
 
-				<DrawerContent className="space-y-4 h-full">
+				<DrawerContent
+					className="space-y-4 h-full"
+					onCloseAutoFocus={(e) => e.preventDefault()}
+				>
 					{selectedRequest ? (
 						<BorrowRequestReviewContent
 							selectedRequest={selectedRequest}

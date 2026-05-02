@@ -67,7 +67,10 @@ export function Return(props: Props): JSX.Element {
 	}
 
 	return (
-		<DrawerContent className="space-y-4 h-full md:h-auto">
+		<DrawerContent
+			className="space-y-4 h-full md:h-auto"
+			onCloseAutoFocus={(e) => e.preventDefault()}
+		>
 			<DrawerHeader className="md:max-w-sm md:w-full md:mx-auto md:p-0 md:mb-0">
 				<DrawerTitle className="items-center flex flex-col">
 					<Avatar className="size-12">
