@@ -14,7 +14,7 @@ import { EquipmentServerEvent } from "@/lib/equipment/sse";
 const searchSchema = z.object({
 	category: z.string().optional(),
 	sort: z.enum(Sort).default(Sort.Asc),
-	sortBy: z.string().optional(),
+	sortBy: z.string().default("borrowedAt"),
 	search: z.string().optional(),
 });
 

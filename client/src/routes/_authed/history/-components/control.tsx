@@ -1,7 +1,7 @@
 import type { JSX } from "react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button.tsx";
-import { IconArrowDownUp } from "@/lib/icons.ts";
+import { IconArrowDown, IconArrowDownUp, IconArrowUp } from "@/lib/icons.ts";
 import { Sort } from "@/lib/api.ts";
 import {
 	DropdownMenu,
@@ -17,25 +17,38 @@ export function Control(): JSX.Element {
 
 	type SortField = "borrowedAt" | "returnedAt" | "status";
 
-	async function toggleSort(field: SortField, order: Sort): Promise<void> {
-		const newOrder = order === Sort.Asc ? Sort.Desc : Sort.Asc;
-
+	async function updateSort(field: SortField, order: Sort): Promise<void> {
 		await navigate({
 			search: (prev) => ({
 				...prev,
 				sortBy: field,
-				sort: newOrder,
+				sort: order,
 			}),
 		});
 	}
 
 	function handleSortChange(field: SortField) {
 		if (search.sortBy === field) {
-			toggleSort(field, search.sort);
+			const newOrder = search.sort === Sort.Asc ? Sort.Desc : Sort.Asc;
+			updateSort(field, newOrder);
 			return;
 		}
 
-		toggleSort(field, Sort.Asc);
+		updateSort(field, Sort.Asc);
+	}
+
+	function renderSortIcon(field: SortField) {
+		return (
+			<div className="flex items-center justify-center size-6 mr-1">
+				{search.sortBy === field ? (
+					search.sort === Sort.Desc ? (
+						<IconArrowDown className="size-4" />
+					) : (
+						<IconArrowUp className="size-4" />
+					)
+				) : null}
+			</div>
+		);
 	}
 
 	return (
@@ -48,14 +61,17 @@ export function Control(): JSX.Element {
 						<IconArrowDownUp className="size-5" />
 					</Button>
 				</DropdownMenuTrigger>
-				<DropdownMenuContent>
+				<DropdownMenuContent align="end">
 					<DropdownMenuItem onClick={() => handleSortChange("borrowedAt")}>
+						{renderSortIcon("borrowedAt")}
 						Date and Time Borrowed
 					</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => handleSortChange("returnedAt")}>
+						{renderSortIcon("returnedAt")}
 						Date and Time Returned
 					</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => handleSortChange("status")}>
+						{renderSortIcon("status")}
 						Status
 					</DropdownMenuItem>
 				</DropdownMenuContent>
