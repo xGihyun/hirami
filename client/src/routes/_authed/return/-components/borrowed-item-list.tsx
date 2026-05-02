@@ -5,20 +5,20 @@ import {
 	BorrowRequestStatus,
 	type BorrowRequestItem,
 } from "@/lib/equipment/model";
-import { borrowHistoryQuery } from "@/lib/equipment/api";
-import { useQuery } from "@tanstack/react-query";
+import { borrowHistoryQuery, getBorrowedItemsQuery } from "@/lib/equipment/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { useMutation } from "@tanstack/react-query";
 import type { SelectedBorrowedEquipment } from "../-model.ts";
 import { cn } from "@/lib/utils";
 import type { CheckedState } from "@radix-ui/react-checkbox";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BorrowedItem } from "./borrowed-item";
+
 import {
 	Dialog,
 	DialogClose,
@@ -68,6 +68,7 @@ async function returnEquipments(
 export function BorrowedItemList(): JSX.Element {
 	const search = useSearch({ from: "/_authed/return/" });
 	const auth = useAuth();
+	const queryClient = useQueryClient();
 	const borrowHistory = useQuery(
 		borrowHistoryQuery({
 			userId: auth.user?.id,
@@ -77,8 +78,17 @@ export function BorrowedItemList(): JSX.Element {
 		}),
 	);
 
+	const borrowedItems = useQuery(
+		getBorrowedItemsQuery({
+			userId: auth.user?.id,
+			sort: search.dueDateSort,
+			category: search.category,
+		}),
+	);
+
 	const form = useForm<ReturnEquipmentSchema>({
 		resolver: zodResolver(formSchema),
+		mode: "onChange",
 		defaultValues: {
 			items: [],
 		},
@@ -88,6 +98,17 @@ export function BorrowedItemList(): JSX.Element {
 		SelectedBorrowedEquipment[]
 	>([]);
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+	useEffect(() => {
+		form.setValue(
+			"items",
+			selectedEquipments.map((selected) => ({
+				borrowRequestItemId: selected.item.id,
+				quantity: selected.quantity,
+			})),
+			{ shouldValidate: true },
+		);
+	}, [selectedEquipments, form.setValue]);
 
 	function handleSelect(
 		item: BorrowRequestItem,
@@ -119,6 +140,17 @@ export function BorrowedItemList(): JSX.Element {
 
 	const mutation = useMutation({
 		mutationFn: returnEquipments,
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: ["borrow-history"],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["borrowed-items"],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["return-requests"],
+			});
+		},
 	});
 
 	function resetState(): void {
@@ -148,6 +180,17 @@ export function BorrowedItemList(): JSX.Element {
 		0,
 	);
 
+	useEffect(() => {
+		form.setValue(
+			"items",
+			selectedEquipments.map((selected) => ({
+				borrowRequestItemId: selected.item.id,
+				quantity: selected.quantity,
+			})),
+			{ shouldValidate: true },
+		);
+	}, [selectedEquipments, form.setValue]);
+
 	if (mutation.isPending) {
 		return <FullScreenLoading />;
 	}
@@ -160,6 +203,7 @@ export function BorrowedItemList(): JSX.Element {
 				retry={form.handleSubmit(onSubmit)}
 				backLink="/return"
 				backMessage="or return to Return Page"
+				className="fixed inset-0"
 			/>
 		);
 	}
@@ -170,15 +214,16 @@ export function BorrowedItemList(): JSX.Element {
 				header="Return request submitted successfully"
 				fn={reset}
 				backLink="/return"
+				className="fixed inset-0"
 			/>
 		);
 	}
 
-	if (borrowHistory.isLoading) {
+	if (borrowHistory.isLoading || borrowedItems.isLoading) {
 		return <ComponentLoading />;
 	}
 
-	if (borrowHistory.isError) {
+	if (borrowHistory.isError || borrowedItems.isError) {
 		return (
 			<LabelMedium className="text-muted text-center mt-10">
 				Failed to load borrowed equipments.
@@ -186,7 +231,20 @@ export function BorrowedItemList(): JSX.Element {
 		);
 	}
 
-	if (!borrowHistory.data || borrowHistory.data.length === 0) {
+	const displayHistory = (borrowHistory.data || [])
+		.map((history) => {
+			const itemsToReturn = history.requestedItems.filter((item) => {
+				const borrowedItem = borrowedItems.data?.find(
+					(bi) => bi.id === item.id,
+				);
+				return (borrowedItem?.equipment.quantity ?? 0) > 0;
+			});
+
+			return { ...history, requestedItems: itemsToReturn };
+		})
+		.filter((history) => history.requestedItems.length > 0);
+
+	if (displayHistory.length === 0) {
 		return (
 			<LabelMedium className="text-muted text-center mt-10">
 				No borrowed equipment found.
@@ -201,14 +259,20 @@ export function BorrowedItemList(): JSX.Element {
 				onSubmit={form.handleSubmit(onSubmit)}
 				className={cn("space-y-4")}
 			>
-				{borrowHistory.data.map((history) => {
+				{displayHistory.map((history) => {
 					return (
 						<div className="flex flex-col gap-3.5" key={history.id}>
 							{history.requestedItems.map((item) => {
-								const equipment = item.equipment;
 								const isChecked = selectedEquipments.some(
 									(selected) => selected.item.id === item.id,
 								);
+
+								const borrowedItem = borrowedItems.data?.find(
+									(bi) => bi.id === item.id,
+								);
+
+								const maxQuantity = borrowedItem?.equipment.quantity ?? 0;
+
 								return (
 									<label
 										key={item.id}
@@ -221,7 +285,7 @@ export function BorrowedItemList(): JSX.Element {
 											value={item.id}
 											checked={isChecked}
 											onCheckedChange={(checked) =>
-												handleSelect(item, equipment.quantity, checked)
+												handleSelect(item, 1, checked)
 											}
 										/>
 
@@ -231,6 +295,12 @@ export function BorrowedItemList(): JSX.Element {
 											handleUpdateQuantity={handleUpdateQuantity}
 											className="cursor-pointer group-has-data-[state=checked]:bg-primary group-has-data-[state=checked]:text-primary-foreground"
 											isSelected={isChecked}
+											maxQuantity={maxQuantity}
+											quantity={
+												selectedEquipments.find(
+													(selected) => selected.item.id === item.id,
+												)?.quantity ?? 1
+											}
 										/>
 									</label>
 								);

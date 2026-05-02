@@ -23,6 +23,14 @@ var stringToRole = map[string]Role{
 	"equipment_manager": EquipmentManager,
 }
 
+func (r Role) Code() string {
+	roles := map[Role]string{
+		Borrower:         "borrower",
+		EquipmentManager: "equipment_manager",
+	}
+	return roles[r]
+}
+
 func (r Role) MarshalJSON() ([]byte, error) {
 	roles := map[Role]string{
 		Borrower:         "borrower",

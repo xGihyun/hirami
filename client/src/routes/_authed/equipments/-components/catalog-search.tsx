@@ -51,7 +51,7 @@ export function CatalogSearch(props: Props): JSX.Element {
 	}, [inputValue]);
 
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col md:flex-col-reverse gap-4">
 			<section>
 				<TitleSmall className="text-muted">
 					Welcome back {props.user.firstName},
@@ -64,6 +64,7 @@ export function CatalogSearch(props: Props): JSX.Element {
 					placeholder="Search for items"
 					value={inputValue}
 					onChange={(e) => setInputValue(e.target.value)}
+					className="w-full md:w-2xl"
 				/>
 			</form>
 		</div>

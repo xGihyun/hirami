@@ -332,21 +332,21 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 	}
 
 	var (
-		brand *string
-		model *string
+		brand string = r.FormValue("brand")
+		model string = r.FormValue("model")
 	)
-	if brandValue := strings.TrimSpace(r.FormValue("brand")); brandValue != "" {
-		brand = &brandValue
-	}
-	if modelValue := strings.TrimSpace(r.FormValue("model")); modelValue != "" {
-		model = &modelValue
-	}
+	// if brandValue := strings.TrimSpace(r.FormValue("brand")); brandValue != "" {
+	// 	brand = &brandValue
+	// }
+	// if modelValue := strings.TrimSpace(r.FormValue("model")); modelValue != "" {
+	// 	model = &modelValue
+	// }
 
 	data := updateRequest{
 		EquipmentTypeID: r.PathValue("equipmentTypeId"),
 		Name:            strings.TrimSpace(r.FormValue("name")),
-		Brand:           brand,
-		Model:           model,
+		Brand:           &brand,
+		Model:           &model,
 		ImageURL:        imageURL,
 	}
 

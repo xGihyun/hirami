@@ -1554,14 +1554,17 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 			) 
 		END AS review,
 
-		jsonb_agg( 
-			jsonb_build_object(
-				'id', all_return_confirmation.return_request_item_id,
-				'confirmedBy', all_return_confirmation.confirmed_by,
-				'confirmedAt', all_return_confirmation.created_at,
-				'equipments', all_return_confirmation.equipments,
-				'remarks', all_return_confirmation.remarks
-			)
+		COALESCE(
+			jsonb_agg( 
+				jsonb_build_object(
+					'id', all_return_confirmation.return_request_item_id,
+					'confirmedBy', all_return_confirmation.confirmed_by,
+					'confirmedAt', all_return_confirmation.created_at,
+					'equipments', all_return_confirmation.equipments,
+					'remarks', all_return_confirmation.remarks
+				)
+			) FILTER (WHERE all_return_confirmation.return_request_item_id IS NOT NULL),
+			'[]'::jsonb
 		) AS return_confirmations,
 
 		COALESCE(requested_items_agg.items_agg, '[]'::jsonb) AS requested_items,
@@ -2015,9 +2018,10 @@ func (r *repository) confirmReturnRequest(ctx context.Context, arg confirmReturn
 	updateReturnRequestItemQuery := `
 	UPDATE return_request_item
 	SET reviewed_by = $1, remarks = $2
+	WHERE return_request_id = $3
 	`
 
-	if _, err := tx.Exec(ctx, updateReturnRequestItemQuery, arg.ReviewedBy, arg.Remarks); err != nil {
+	if _, err := tx.Exec(ctx, updateReturnRequestItemQuery, arg.ReviewedBy, arg.Remarks, arg.ReturnRequestID); err != nil {
 		return confirmReturnRequest{}, err
 	}
 
@@ -2034,7 +2038,7 @@ type returnRequest struct {
 	Borrower         user.BasicInfo `json:"borrower"`
 	Equipments       []equipment    `json:"equipments"`
 	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
-	OTP              OTP            `json:"otp"`
+	OTP              OTP            `json:"otp,omitzero"`
 }
 
 type getReturnRequestParams struct {
@@ -2274,7 +2278,7 @@ type returnedEquipment struct {
 
 type returnConfirmation struct {
 	ReturnRequestItemID string              `json:"id"`
-	ConfirmedBy         user.BasicInfo      `json:"confirmedBy"`
+	ConfirmedBy         *user.BasicInfo     `json:"confirmedBy"`
 	ConfirmedAt         time.Time           `json:"confirmedAt"`
 	Equipments          []returnedEquipment `json:"equipments"`
 	Remarks             *string             `json:"remarks"`
@@ -2327,13 +2331,16 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 			return_request.borrow_request_id,
 			return_request.return_request_id,
 			return_request.created_at,
-			jsonb_build_object(
-				'id', person.person_id,
-				'firstName', person.first_name,
-				'middleName', person.middle_name,
-				'lastName', person.last_name,
-				'avatarUrl', person.avatar_url
-			) AS confirmed_by,
+			CASE WHEN person.person_id IS NULL THEN NULL
+			ELSE
+				jsonb_build_object(
+					'id', person.person_id,
+					'firstName', person.first_name,
+					'middleName', person.middle_name,
+					'lastName', person.last_name,
+					'avatarUrl', person.avatar_url
+				)
+			END AS confirmed_by,
 			jsonb_agg(
 				jsonb_build_object(
 					'id', equipment_type.equipment_type_id,
@@ -2473,7 +2480,13 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	}
 
 	if params.category != nil && *params.category != "" {
-		query += fmt.Sprintf(" AND equipment_type.name = $%d", argIdx)
+		query += fmt.Sprintf(` 
+		AND borrow_request.borrow_request_id IN (
+			SELECT borrow_request_id 
+			FROM borrow_request_item 
+			JOIN equipment_type USING (equipment_type_id)
+			WHERE equipment_type.name = $%d
+		)`, argIdx)
 		args = append(args, *params.category)
 		argIdx++
 	}
@@ -2482,9 +2495,14 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		searchTerm := "%" + strings.ToLower(*params.search) + "%"
 		query += fmt.Sprintf(` 
 		AND (
-			LOWER(equipment_type.name) LIKE $%d 
-			OR LOWER(equipment_type.brand) LIKE $%d 
-			OR LOWER(equipment_type.model) LIKE $%d
+			borrow_request.borrow_request_id IN (
+				SELECT borrow_request_id 
+				FROM borrow_request_item 
+				JOIN equipment_type USING (equipment_type_id)
+				WHERE LOWER(equipment_type.name) LIKE $%d 
+				OR LOWER(equipment_type.brand) LIKE $%d 
+				OR LOWER(equipment_type.model) LIKE $%d
+			)
 			OR LOWER(person.first_name) LIKE $%d
 			OR LOWER(person.middle_name) LIKE $%d
 			OR LOWER(person.last_name) LIKE $%d
@@ -2580,7 +2598,7 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 			'brand', equipment_type.brand,
 			'model', equipment_type.model,
 			'imageUrl', equipment_type.image_url,
-			'quantity', borrow_request_item.quantity,
+			'quantity', borrow_request_item.quantity - COALESCE(returned_qty.total_returned, 0),
 			'status', equipment_status_agg.status
 		) AS equipment
 	FROM equipment_type
@@ -2598,7 +2616,14 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 			AND equipment.equipment_status_id = $3
 		LIMIT 1
 	) equipment_status_agg ON TRUE
-	WHERE borrow_request.requested_by = $1 AND borrow_request.borrow_request_status_id = $2
+	LEFT JOIN LATERAL (
+		SELECT COALESCE(SUM(rri.quantity), 0) AS total_returned
+		FROM return_request_item rri
+		WHERE rri.borrow_request_item_id = borrow_request_item.borrow_request_item_id
+	) returned_qty ON TRUE
+	WHERE borrow_request.requested_by = $1 
+		AND borrow_request.borrow_request_status_id = $2
+		AND (borrow_request_item.quantity - COALESCE(returned_qty.total_returned, 0)) > 0
 	`
 
 	var args []any = []any{params.userID, claimed, borrowed}

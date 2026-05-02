@@ -1,7 +1,5 @@
 import { LabelLarge, LabelMedium, LabelSmall } from "@/components/typography";
-import {
-	DEFAULT_EQUIPMENT_IMAGE,
-} from "@/lib/equipment/constant";
+import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment/constant";
 import {
 	EquipmentStatus,
 	type Equipment,
@@ -18,6 +16,15 @@ import { useAuth } from "@/auth";
 import { UserRole } from "@/lib/user";
 import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type Props = {
 	equipments: EquipmentWithBorrower[];
@@ -65,30 +72,35 @@ export function Catalog(props: Props): JSX.Element {
 
 	return (
 		<section className="pb-15 !mb-0">
-			<div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+			<div className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2">
 				{props.equipments.map(({ equipment }) => {
 					const key = `${equipment.id}-${equipment.status?.code}`;
 					const equipmentImage = equipment.imageUrl
 						? toImageUrl(equipment.imageUrl)
 						: DEFAULT_EQUIPMENT_IMAGE;
 
-					const CardContent = (props: { className?: string }) => (
+					const cardContent = (className?: string) => (
 						<Card
 							className={cn(
 								"group space-y-2 border-input has-data-[state=checked]:border-primary/50 has-data-[state=checked]:bg-primary has-data-[state=checked]:text-primary-foreground relative flex cursor-pointer flex-col gap-1 rounded-md border p-2 shadow-xs outline-none",
-								props.className,
+								"md:bg-background",
+								className,
 							)}
 						>
-							<Checkbox
-								id={key}
-								checked={isChecked(equipment)}
-								className={`sr-only ${isEquipmentManager ? "hidden" : ""}`}
-								value={equipment.id}
-								onCheckedChange={(checked) =>
-									handleSelect(equipment, 1, checked)
-								}
-								disabled={equipment.status?.code !== EquipmentStatus.Available}
-							/>
+							{!isEquipmentManager && (
+								<Checkbox
+									id={key}
+									checked={isChecked(equipment)}
+									className="sr-only"
+									value={equipment.id}
+									onCheckedChange={(checked) =>
+										handleSelect(equipment, 1, checked)
+									}
+									disabled={
+										equipment.status?.code !== EquipmentStatus.Available
+									}
+								/>
+							)}
 
 							<div className="space-y-1">
 								<div className="w-full h-28 overflow-hidden rounded-md relative">
@@ -96,22 +108,69 @@ export function Catalog(props: Props): JSX.Element {
 									<img
 										src={equipmentImage}
 										alt={`${equipment.name} ${equipment.brand}`}
-										className="w-full object-contain aspect-[164/112]"
+										className="w-full object-contain aspect-[164/112] h-full"
 									/>
 								</div>
 								<div className="flex flex-col">
-									<LabelLarge>
+									<LabelLarge className="line-clamp-1">
 										{equipment.brand ? equipment.brand : "No Brand"}
 										{equipment.model ? " " : null}
 										{equipment.model}
 									</LabelLarge>
-									<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground">
+									<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground line-clamp-1">
 										{equipment.name}
 									</LabelSmall>
 								</div>
 							</div>
 						</Card>
 					);
+
+					if (
+						isEquipmentManager &&
+						(equipment.status?.code === EquipmentStatus.Borrowed ||
+							equipment.status?.code === EquipmentStatus.Reserved)
+					) {
+						return (
+							<Dialog>
+								<DialogTrigger>
+									{cardContent(
+										"text-start hover:bg-tertiary transition active:bg-tertiary",
+									)}
+								</DialogTrigger>
+
+								<DialogContent>
+									<DialogHeader>
+										<DialogTitle>
+											{equipment.brand} {equipment.model}
+										</DialogTitle>
+										<DialogDescription>{equipment.name}</DialogDescription>
+									</DialogHeader>
+
+									<div className="flex gap-2">
+										<Button asChild>
+											<Link
+												key={key}
+												to="/equipments/$equipmentId/edit"
+												params={{ equipmentId: equipment.id }}
+											>
+												Edit Equipment
+											</Link>
+										</Button>
+
+										<Button variant="secondary" asChild>
+											<Link
+												key={key}
+												to="/equipments/$equipmentId"
+												params={{ equipmentId: equipment.id }}
+											>
+												View Borrowers
+											</Link>
+										</Button>
+									</div>
+								</DialogContent>
+							</Dialog>
+						);
+					}
 
 					if (isEquipmentManager) {
 						return (
@@ -120,7 +179,7 @@ export function Catalog(props: Props): JSX.Element {
 								to="/equipments/$equipmentId/edit"
 								params={{ equipmentId: equipment.id }}
 							>
-								<CardContent className="hover:bg-tertiary transition active:bg-tertiary" />
+								{cardContent("hover:bg-tertiary transition active:bg-tertiary")}
 							</Link>
 						);
 					}
@@ -135,7 +194,7 @@ export function Catalog(props: Props): JSX.Element {
 								to="/equipments/$equipmentId"
 								params={{ equipmentId: equipment.id }}
 							>
-								<CardContent className="hover:bg-tertiary transition active:bg-tertiary" />
+								{cardContent("hover:bg-tertiary transition active:bg-tertiary")}
 							</Link>
 						);
 					}
@@ -146,7 +205,7 @@ export function Catalog(props: Props): JSX.Element {
 							key={key}
 							className="focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-md"
 						>
-							<CardContent />
+							{cardContent()}
 						</label>
 					);
 				})}

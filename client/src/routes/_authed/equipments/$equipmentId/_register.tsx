@@ -1,5 +1,6 @@
 import {
 	createFileRoute,
+	Link,
 	linkOptions,
 	Outlet,
 	useRouterState,
@@ -53,7 +54,7 @@ function RouteComponent(): JSX.Element {
 	async function handleBack(): Promise<void> {
 		const previousStep = getPreviousStep();
 		if (!previousStep) {
-			await navigate({ to: "/onboarding" });
+			await navigate({ to: "/equipments" });
 			return;
 		}
 
@@ -65,7 +66,7 @@ function RouteComponent(): JSX.Element {
 			<Button
 				variant="ghost"
 				size="icon"
-				className="size-15"
+				className="size-15 flex md:hidden"
 				onClick={handleBack}
 			>
 				{isFirstStep() ? (
@@ -75,7 +76,18 @@ function RouteComponent(): JSX.Element {
 				)}
 			</Button>
 
-			<main className="mt-10 pb-10">
+			{/* <Button */}
+			{/* 	variant="ghost" */}
+			{/* 	size="icon" */}
+			{/* 	className="size-15 hidden md:flex" */}
+			{/* 	asChild */}
+			{/* > */}
+			{/* 	<Link to="/equipments"> */}
+			{/* 		<IconArrowLeft className="size-8" /> */}
+			{/* 	</Link> */}
+			{/* </Button> */}
+
+			<main>
 				<Outlet />
 			</main>
 		</RegisterEquipmentProvider>

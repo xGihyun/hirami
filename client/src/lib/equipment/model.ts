@@ -23,7 +23,7 @@ export const equipmentSchema = z.object({
 	model: z.string().nullable(),
 	imageUrl: z.string().nullable(),
 	quantity: z.number().nonnegative(),
-	status: enumDetailSchema(EquipmentStatus).optional(),
+	status: enumDetailSchema(EquipmentStatus),
 });
 export type Equipment = z.infer<typeof equipmentSchema>;
 
@@ -86,7 +86,9 @@ export type EquipmentWithBorrower = z.infer<typeof equipmentWithBorrowerSchema>;
 
 export const borrowRequestItemSchema = z.object({
 	id: z.uuidv4(),
-	equipment: equipmentSchema,
+	equipment: equipmentSchema.omit({
+		status: true,
+	}),
 });
 export type BorrowRequestItem = z.infer<typeof borrowRequestItemSchema>;
 
@@ -97,7 +99,7 @@ const returnedEquipmentSchema = z.object({
 
 const returnConfirmationSchema = z.object({
 	id: z.uuid(),
-	confirmedBy: userBasicInfoSchema,
+	confirmedBy: userBasicInfoSchema.nullable(),
 	confirmedAt: z.coerce.date(),
 	equipments: returnedEquipmentSchema.array(),
 	remarks: z.string().nullable(),
@@ -167,8 +169,8 @@ export const returnRequestSchema = z.object({
 	id: z.uuid(),
 	createdAt: z.coerce.date(),
 	borrower: userBasicInfoSchema,
-	equipments: equipmentSchema.array(),
+	equipments: equipmentSchema.omit({ status: true }).array(),
 	expectedReturnAt: z.coerce.date(),
-	otp: otpSchema,
+	otp: otpSchema.optional(),
 });
 export type ReturnRequest = z.infer<typeof returnRequestSchema>;

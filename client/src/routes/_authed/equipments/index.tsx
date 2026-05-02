@@ -124,7 +124,7 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<div className="relative space-y-4">
+		<div className="relative space-y-4 min-w-0 overflow-x-hidden">
 			<CatalogHeader user={auth.user!} />
 			<CatalogSearch user={auth.user!} />
 			<CatalogCategories categories={equipmentNames.data || []} />
@@ -145,11 +145,11 @@ function RouteComponent(): JSX.Element {
 
 			{auth.user?.role.code === UserRole.EquipmentManager ? (
 				<Button
-					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow"
+					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow md:w-92 md:left-auto md:right-8 md:bottom-10"
 					asChild
 				>
 					<Link
-						to="/equipments/$equipmentId/register/name"
+						to="/equipments/$equipmentId/register"
 						params={{ equipmentId: uuidv4() }}
 					>
 						Register New Equipment

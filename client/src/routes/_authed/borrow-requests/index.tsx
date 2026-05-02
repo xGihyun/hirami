@@ -27,6 +27,7 @@ import {
 } from "@/lib/api";
 import {
 	Caption,
+	H1,
 	H2,
 	LabelLarge,
 	LabelMedium,
@@ -188,7 +189,8 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="relative space-y-4">
-			<H2 className="text-center">Request List</H2>
+			<H2 className="text-center md:hidden block">Request List</H2>
+			<H1 className="text-start md:block hidden">Request List</H1>
 
 			<Drawer
 				open={isDrawerOpen}
@@ -200,48 +202,56 @@ function RouteComponent(): JSX.Element {
 					}
 				}}
 			>
-				<div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
-					{borrowRequests.data?.map((request) => {
-						const borrowerInitials = `${request.borrower.firstName[0]}${request.borrower.lastName[0]}`;
-						const borrowerName = `${request.borrower.firstName} ${request.borrower.lastName}`;
-						const requestedAt = `${format(request.requestedAt, "h:mm a")} at ${format(request.requestedAt, "MM/dd/yyyy")}`;
-						const anomalyResult = request.anomaly;
-						return (
-							<DrawerTrigger asChild key={request.id}>
-								<button
-									onClick={() => {
-										setSelectedRequest(request);
-										setReviewedBorrowRequest(null);
-									}}
-									className="flex items-center gap-2 bg-card rounded-2xl p-4 shadow-item text-start cursor-pointer active:bg-tertiary hover:bg-tertiary transition"
-								>
-									<Avatar className="size-16">
-										<AvatarImage src={toImageUrl(request.borrower.avatarUrl)} />
-										<AvatarFallback className="font-montserrat-bold">
-											{borrowerInitials}
-										</AvatarFallback>
-									</Avatar>
+				{borrowRequests.data && borrowRequests.data.length > 0 ? (
+					<div className="grid grid-cols-1 gap-2">
+						{borrowRequests.data?.map((request) => {
+							const borrowerInitials = `${request.borrower.firstName[0]}${request.borrower.lastName[0]}`;
+							const borrowerName = `${request.borrower.firstName} ${request.borrower.lastName}`;
+							const requestedAt = `${format(request.requestedAt, "h:mm a")} at ${format(request.requestedAt, "MM/dd/yyyy")}`;
+							const anomalyResult = request.anomaly;
+							return (
+								<DrawerTrigger asChild key={request.id}>
+									<button
+										onClick={() => {
+											setSelectedRequest(request);
+											setReviewedBorrowRequest(null);
+										}}
+										className="flex items-center gap-2 bg-card rounded-2xl p-4 shadow-item text-start cursor-pointer active:bg-tertiary hover:bg-tertiary transition"
+									>
+										<Avatar className="size-16">
+											<AvatarImage
+												src={toImageUrl(request.borrower.avatarUrl)}
+											/>
+											<AvatarFallback className="font-montserrat-bold">
+												{borrowerInitials}
+											</AvatarFallback>
+										</Avatar>
 
-									<div className="flex flex-col">
-										<p className="font-montserrat-bold">{borrowerName}</p>
-										<p className="text-sm font-montserrat">
-											<span className="font-montserrat-bold">Requested:</span>{" "}
-											{requestedAt}
-										</p>
+										<div className="flex flex-col">
+											<p className="font-montserrat-bold">{borrowerName}</p>
+											<p className="text-sm font-montserrat">
+												<span className="font-montserrat-bold">Requested:</span>{" "}
+												{requestedAt}
+											</p>
 
-										{anomalyResult &&
-										anomalyResult.isAnomaly &&
-										SHOW_ANOMALY ? (
-											<Badge className="mt-1" variant="destructive">
-												Anomaly
-											</Badge>
-										) : null}
-									</div>
-								</button>
-							</DrawerTrigger>
-						);
-					})}
-				</div>
+											{anomalyResult &&
+											anomalyResult.isAnomaly &&
+											SHOW_ANOMALY ? (
+												<Badge className="mt-1" variant="destructive">
+													Anomaly
+												</Badge>
+											) : null}
+										</div>
+									</button>
+								</DrawerTrigger>
+							);
+						})}
+					</div>
+				) : (
+					<LabelMedium className="text-muted text-center mt-10">
+						No requests found.
+					</LabelMedium>
+				)}
 
 				<DrawerContent className="space-y-4 h-full">
 					{selectedRequest ? (
@@ -306,144 +316,149 @@ function BorrowRequestReviewContent(
 	const request = props.selectedRequest;
 
 	return (
-		<div className="h-full overflow-y-auto">
-			<DrawerHeader>
-				<DrawerTitle className="items-center flex flex-col">
-					<Avatar className="size-16">
-						<AvatarImage src={toImageUrl(request.borrower.avatarUrl)} />
-						<AvatarFallback className="font-montserrat-bold">
-							{borrowerInitials}
-						</AvatarFallback>
-					</Avatar>
+		<div className="h-full overflow-y-auto w-full">
+			<div className="h-full md:max-w-sm w-full mx-auto">
+				<DrawerHeader>
+					<DrawerTitle className="items-center flex flex-col">
+						<Avatar className="size-16">
+							<AvatarImage src={toImageUrl(request.borrower.avatarUrl)} />
+							<AvatarFallback className="font-montserrat-bold">
+								{borrowerInitials}
+							</AvatarFallback>
+						</Avatar>
 
-					<TitleSmall>
-						{request?.borrower.firstName} {request?.borrower.lastName}
-					</TitleSmall>
-				</DrawerTitle>
+						<TitleSmall>
+							{request?.borrower.firstName} {request?.borrower.lastName}
+						</TitleSmall>
+					</DrawerTitle>
 
-				<div>
-					<Caption className="text-muted">
-						Requested on {format(request.requestedAt, "MMMM d, yyyy - hh:mm a")}
-					</Caption>
+					<div>
+						<Caption className="text-muted">
+							Requested on{" "}
+							{format(request.requestedAt, "MMMM d, yyyy - hh:mm a")}
+						</Caption>
 
-					<Caption className="text-muted">
-						Will return on{" "}
-						{format(request.expectedReturnAt, "MMMM d, yyyy - hh:mm a")}
-					</Caption>
+						<Caption className="text-muted">
+							Will return on{" "}
+							{format(request.expectedReturnAt, "MMMM d, yyyy - hh:mm a")}
+						</Caption>
 
-					{props.selectedRequest.anomaly &&
-					props.selectedRequest.anomaly.isAnomaly &&
-					SHOW_ANOMALY ? (
-						<Badge className="mt-1" variant="destructive">
-							Anomaly
-						</Badge>
-					) : null}
-				</div>
-			</DrawerHeader>
+						{props.selectedRequest.anomaly &&
+						props.selectedRequest.anomaly.isAnomaly &&
+						SHOW_ANOMALY ? (
+							<Badge className="mt-1" variant="destructive">
+								Anomaly
+							</Badge>
+						) : null}
+					</div>
+				</DrawerHeader>
 
-			<div className="px-4 space-y-2.5 mb-4">
-				{request.requestedItems.map(({ id, equipment }) => {
-					const equipmentImage = equipment.imageUrl
-						? `${BACKEND_URL}${equipment.imageUrl}`
-						: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
+				<div className="px-4 space-y-2.5 mb-4">
+					{request.requestedItems.map(({ id, equipment }) => {
+						const equipmentImage = equipment.imageUrl
+							? `${BACKEND_URL}${equipment.imageUrl}`
+							: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 
-					return (
-						<div
-							key={id}
-							className="flex items-center gap-3 bg-card rounded-2xl p-4 shadow-item text-start"
-						>
-							<img
-								src={equipmentImage}
-								alt={`${equipment.name} ${equipment.brand}`}
-								className="size-20 object-cover rounded-lg"
-							/>
+						return (
+							<div
+								key={id}
+								className="flex items-center gap-3 bg-card rounded-2xl p-4 shadow-item text-start"
+							>
+								<img
+									src={equipmentImage}
+									alt={`${equipment.name} ${equipment.brand}`}
+									className="size-20 object-cover rounded-lg"
+								/>
 
-							<div className="flex flex-col">
-								<LabelLarge>
-									{equipment.brand}
-									{equipment.model ? " " : null}
-									{equipment.model}
-								</LabelLarge>
+								<div className="flex flex-col">
+									<LabelLarge>
+										{equipment.brand}
+										{equipment.model ? " " : null}
+										{equipment.model}
+									</LabelLarge>
 
-								<LabelSmall className="text-muted">{equipment.name}</LabelSmall>
+									<LabelSmall className="text-muted">
+										{equipment.name}
+									</LabelSmall>
 
-								<Caption className="font-open-sans-bold">
-									{equipment.quantity} pcs.
-								</Caption>
+									<Caption className="font-open-sans-bold">
+										{equipment.quantity} pcs.
+									</Caption>
+								</div>
 							</div>
-						</div>
-					);
-				})}
+						);
+					})}
+				</div>
+
+				<div className="px-4 space-y-2.5">
+					<div className="space-y-1">
+						<LabelMedium>Location</LabelMedium>
+						<Input value={request.location} readOnly />
+					</div>
+
+					<div className="space-y-1">
+						<LabelMedium>Purpose</LabelMedium>
+						<Input value={request.purpose} readOnly />
+					</div>
+
+					<div className="space-y-1">
+						<LabelMedium>Remarks</LabelMedium>
+						<Textarea
+							className="min-h-24"
+							placeholder="Add your remarks here"
+							onChange={(v) => props.setRemarks(v.currentTarget.value)}
+							value={props.remarks}
+						/>
+					</div>
+				</div>
+
+				<DrawerFooter>
+					<div className="flex w-full gap-2">
+						<Button
+							className="flex-1"
+							onClick={() => {
+								if (!auth.user) {
+									toast.error("Please log in to review borrow request");
+									return;
+								}
+								props.handleReview(
+									request,
+									auth.user,
+									BorrowRequestStatus.Approved,
+									props.remarks,
+								);
+							}}
+						>
+							Accept
+						</Button>
+
+						<Button
+							className="flex-1"
+							onClick={() => {
+								if (!auth.user) {
+									toast.error("Please log in to review borrow request");
+									return;
+								}
+								props.handleReview(
+									request,
+									auth.user,
+									BorrowRequestStatus.Rejected,
+									props.remarks,
+								);
+							}}
+							variant="destructive"
+						>
+							Reject
+						</Button>
+					</div>
+
+					<DrawerClose asChild>
+						<Button variant="secondary" onClick={props.onClose}>
+							Close
+						</Button>
+					</DrawerClose>
+				</DrawerFooter>
 			</div>
-
-			<div className="px-4 space-y-2.5">
-				<div className="space-y-1">
-					<LabelMedium>Location</LabelMedium>
-					<Input value={request.location} readOnly />
-				</div>
-
-				<div className="space-y-1">
-					<LabelMedium>Purpose</LabelMedium>
-					<Input value={request.purpose} readOnly />
-				</div>
-
-				<div className="space-y-1">
-					<LabelMedium>Remarks</LabelMedium>
-					<Textarea
-						className="min-h-24"
-						placeholder="Add your remarks here"
-						onChange={(v) => props.setRemarks(v.currentTarget.value)}
-						value={props.remarks}
-					/>
-				</div>
-			</div>
-
-			<DrawerFooter>
-				<div className="flex w-full gap-2">
-					<Button
-						className="flex-1"
-						onClick={() => {
-							if (!auth.user) {
-								toast.error("Please log in to review borrow request");
-								return;
-							}
-							props.handleReview(
-								request,
-								auth.user,
-								BorrowRequestStatus.Approved,
-								props.remarks,
-							);
-						}}
-					>
-						Accept
-					</Button>
-
-					<Button
-						className="flex-1"
-						onClick={() => {
-							if (!auth.user) {
-								toast.error("Please log in to review borrow request");
-								return;
-							}
-							props.handleReview(
-								request,
-								auth.user,
-								BorrowRequestStatus.Rejected,
-								props.remarks,
-							);
-						}}
-						variant="destructive"
-					>
-						Reject
-					</Button>
-				</div>
-
-				<DrawerClose asChild>
-					<Button variant="secondary" onClick={props.onClose}>
-						Close
-					</Button>
-				</DrawerClose>
-			</DrawerFooter>
 		</div>
 	);
 }

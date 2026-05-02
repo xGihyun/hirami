@@ -6,7 +6,7 @@ import {
 	LabelSmall,
 } from "@/components/typography";
 import { Badge } from "@/components/ui/badge";
-import { BACKEND_URL } from "@/lib/api";
+import { BACKEND_URL, toImageUrl } from "@/lib/api";
 import type { Equipment, ReturnRequest } from "@/lib/equipment/model";
 import { cn, getRemainingMs } from "@/lib/utils";
 import { format } from "date-fns";
@@ -94,14 +94,14 @@ export function ReturnRequestList(props: Props): JSX.Element {
 
 type ReturningItemProps = {
 	returnRequest: ReturnRequest;
-	equipment: Equipment;
+	equipment: Omit<Equipment, "status">;
 	className?: string;
 };
 
 function ReturningItem(props: ReturningItemProps): JSX.Element {
-	const equipmentImage = props.equipment.imageUrl
-		? `${BACKEND_URL}${props.equipment.imageUrl}`
-		: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
+	const equipmentImage =
+		toImageUrl(props.equipment.imageUrl) ||
+		"https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 
 	return (
 		<div
@@ -119,11 +119,15 @@ function ReturningItem(props: ReturningItemProps): JSX.Element {
 
 				<div className="flex flex-col w-full">
 					<LabelLarge>
-						{props.equipment.brand}
+						{props.equipment.brand || "No Brand"}
 						{props.equipment.model ? ` ${props.equipment.model}` : null}
 					</LabelLarge>
 
 					<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground">
+						{props.equipment.name}
+					</LabelSmall>
+
+					<LabelSmall className="text-foreground group-has-data-[state=checked]:text-primary-foreground">
 						Due: {format(props.returnRequest.expectedReturnAt, "h:mm a")} on{" "}
 						{format(props.returnRequest.expectedReturnAt, "MM/dd/yyyy")}
 					</LabelSmall>

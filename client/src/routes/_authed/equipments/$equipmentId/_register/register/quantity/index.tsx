@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { H1, LabelMedium, TitleSmall } from "@/components/typography";
 import { addFilesIllustration } from "@/lib/assets";
-import z from "zod";
 import { type JSX } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,8 +23,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { ChevronDownIcon } from "lucide-react";
 import {
 	useRegisterEquipment,
-	type RegisterEquipmentData,
 } from "../../-context";
+import { registerEquipmentQuantitySchema, type RegisterEquipmentQuantitySchema, type RegisterEquipmentSchema } from "../-schema";
 
 export const Route = createFileRoute(
 	"/_authed/equipments/$equipmentId/_register/register/quantity/",
@@ -33,12 +32,6 @@ export const Route = createFileRoute(
 	component: RouteComponent,
 });
 
-const registerEquipmentQuantitySchema = z.object({
-	acquisitionDate: z.date(),
-	quantity: z.number().positive(),
-});
-
-export type RegisterEquipmentQuantitySchema = z.infer<typeof registerEquipmentQuantitySchema>;
 
 function RouteComponent(): JSX.Element {
 	const navigate = Route.useNavigate();
@@ -57,7 +50,7 @@ function RouteComponent(): JSX.Element {
 	async function onSubmit(
 		value: RegisterEquipmentQuantitySchema,
 	): Promise<void> {
-		const data: RegisterEquipmentData = {
+		const data: RegisterEquipmentSchema = {
 			...registerEquipmentContext.value,
 			...value,
 		};

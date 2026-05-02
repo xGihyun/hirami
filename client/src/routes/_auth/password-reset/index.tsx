@@ -3,7 +3,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 import z from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +25,7 @@ import { H1, TitleSmall } from "@/components/typography";
 import { PaddingLayout } from "@/routes/-components/padding-layout";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
+import { FullScreenLoading } from "@/components/loading";
 
 export const Route = createFileRoute("/_auth/password-reset/")({
 	component: RouteComponent,
@@ -63,21 +63,14 @@ function RouteComponent() {
 
 	const mutation = useMutation({
 		mutationFn: requestPasswordReset,
-		onMutate: () => {
-			return toast.loading("Requesting for password reset.");
-		},
-		onSuccess: (result, _variables, toastId) => {
-			toast.success("A password reset link has been sent to your email.", {
-				id: toastId,
-			});
-		},
-		onError: (error, _variables, toastId) => {
-			toast.error(error.message, { id: toastId });
-		},
 	});
 
 	async function onSubmit(value: z.infer<typeof formSchema>): Promise<void> {
 		mutation.mutate(value);
+	}
+
+	if (mutation.isPending) {
+		return <FullScreenLoading />;
 	}
 
 	if (mutation.isSuccess) {
@@ -87,6 +80,7 @@ function RouteComponent() {
 				header="A password reset link has been sent to your email."
 				illustration={messageSentIllustration}
 				fn={mutation.reset}
+				className="md:bg-background md:p-5"
 			/>
 		);
 	}
@@ -100,6 +94,7 @@ function RouteComponent() {
 				backLink="/onboarding"
 				backMessage="or return to Welcome Page"
 				illustration={accessDeniedIllustration}
+				className="md:bg-background md:p-5"
 			/>
 		);
 	}
@@ -113,6 +108,7 @@ function RouteComponent() {
 							variant="ghost"
 							size="icon"
 							className="size-15 absolute inset-0"
+							asChild
 						>
 							<Link to="/onboarding">
 								<IconArrowLeft className="size-8" />
@@ -135,6 +131,7 @@ function RouteComponent() {
 							variant="ghost"
 							size="icon"
 							className="size-15 block md:hidden"
+							asChild
 						>
 							<Link to="/onboarding">
 								<IconArrowLeft className="size-8" />

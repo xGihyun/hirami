@@ -19,6 +19,7 @@ import {
 	type UpdateBorrowResponse,
 } from "./model";
 import z from "zod";
+import type { RegisterEquipmentSchema } from "@/routes/_authed/equipments/$equipmentId/_register/register/-schema";
 
 //
 // Equipment
@@ -58,13 +59,16 @@ export const equipmentsQuery = (params: GetEquipmentParams) =>
 		queryFn: () => getEquipments(params),
 	});
 
-async function getEquipmentById(id: string): Promise<EquipmentWithBorrower | null> {
+async function getEquipmentById(
+	id: string,
+): Promise<EquipmentWithBorrower | null> {
 	const url = new URL(`${BACKEND_URL}/equipments/${id}`);
 	const response = await fetch(url.toString(), {
 		method: "GET",
 	});
 
-	const result: ApiResponse<EquipmentInventoryStatus | null> = await response.json();
+	const result: ApiResponse<EquipmentInventoryStatus | null> =
+		await response.json();
 	if (!response.ok) {
 		throw new Error(result.message);
 	}
@@ -409,6 +413,30 @@ export async function confirmReturnRequest(
 			headers: { "Content-Type": "application/json" },
 		},
 	);
+	const result: ApiResponse = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result;
+}
+
+export async function registerEquipment(
+	value: RegisterEquipmentSchema,
+): Promise<ApiResponse> {
+	const formData = new FormData();
+	formData.append("name", value.name);
+	if (value.brand) formData.append("brand", value.brand);
+	if (value.model) formData.append("model", value.model);
+	formData.append("acquisitionDate", value.acquisitionDate.toISOString());
+	formData.append("quantity", value.quantity.toString());
+	if (value.image) formData.append("image", value.image);
+
+	const response = await fetch(`${BACKEND_URL}/equipments`, {
+		method: "POST",
+		body: formData,
+	});
+
 	const result: ApiResponse = await response.json();
 	if (!response.ok) {
 		throw new Error(result.message);

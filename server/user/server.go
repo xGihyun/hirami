@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,13 +34,50 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /login", api.Handler(s.Login))
 	mux.Handle("POST /logout", api.Handler(s.Logout))
 	mux.Handle("GET /users", api.Handler(s.getAll))
+	mux.Handle("GET /users/exists", api.Handler(s.Exists))
 	mux.Handle("GET /users/{id}", api.Handler(s.Get))
 	mux.Handle("PATCH /users/{id}", api.Handler(s.Update))
 
 	mux.Handle("POST /password-reset-request", api.Handler(s.RequestPasswordReset))
 	mux.Handle("POST /password-reset", api.Handler(s.ResetPassword))
+	mux.HandleFunc("GET /app-redirect", s.AppRedirect)
 
 	mux.Handle("GET /sessions", api.Handler(s.GetSession))
+}
+
+func (s *Server) Exists(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		return api.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Email is required.",
+		}
+	}
+
+	_, err := s.repository.GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return api.Response{
+				Code:    http.StatusOK,
+				Message: "Email is available.",
+				Data:    false,
+			}
+		}
+
+		return api.Response{
+			Error:   fmt.Errorf("exists: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to check email existence.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Email is already in use.",
+		Data:    true,
+	}
 }
 
 const (
@@ -100,6 +140,22 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 		middleName = &middleNameValue
 	}
 
+	var role *Role
+	if roleStr := r.FormValue("role"); roleStr != "" {
+		roleStr = strings.TrimSpace(strings.ToLower(roleStr))
+
+		roleVal, ok := stringToRole[roleStr]
+		if !ok {
+			return api.Response{
+				Error:   fmt.Errorf("sign up: invalid role %s", roleStr),
+				Code:    http.StatusBadRequest,
+				Message: "Invalid role. Must be 'borrower' or 'equipment_manager'.",
+			}
+		}
+
+		role = &roleVal
+	}
+
 	data := RegisterRequest{
 		Email:      r.FormValue("email"),
 		Password:   r.FormValue("password"),
@@ -107,6 +163,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 		MiddleName: middleName,
 		LastName:   r.FormValue("lastName"),
 		AvatarURL:  avatarURL,
+		Role:       role,
 	}
 
 	userID, err := s.repository.Register(ctx, data)
@@ -149,7 +206,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) api.Response {
 
 	res, err := s.repository.login(ctx, data)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, errInvalidPassword) {
+		if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, ErrInvalidPassword) {
 			return api.Response{
 				Error:   fmt.Errorf("sign in: %w", err),
 				Code:    http.StatusUnauthorized,
@@ -324,6 +381,15 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 		role = &r
 	}
 
+	isActive, err := strconv.ParseBool(r.FormValue("isActive"))
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update user: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid update user request.",
+		}
+	}
+
 	data := UpdateRequest{
 		PersonID:   r.FormValue("id"),
 		Email:      toOptionalString(r.FormValue("email")),
@@ -332,6 +398,7 @@ func (s *Server) Update(w http.ResponseWriter, r *http.Request) api.Response {
 		LastName:   toOptionalString(r.FormValue("lastName")),
 		Role:       role,
 		AvatarURL:  avatarURL,
+		IsActive:   &isActive,
 	}
 
 	user, err := s.repository.Update(ctx, data)
@@ -381,16 +448,103 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
 		}
 	}
 
-	// NOTE: Hardcoded client URL
-	resetLink := fmt.Sprintf("hirami://password-reset/%s", rawToken) // Mobile URL
-	// resetLink := fmt.Sprintf("http://localhost:3000/password-reset/%s", rawToken) // Web URL
+	user, err := s.repository.GetByEmail(ctx, data.Email)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("password reset: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to reset password.",
+		}
+	}
+	fullName := html.EscapeString(fmt.Sprintf("%s %s", user.FirstName, user.LastName))
+
+	webClientURL := os.Getenv("WEB_CLIENT_URL")
+	if webClientURL == "" {
+		webClientURL = "http://localhost:3000/password-reset"
+	}
+	mobileClientURL := os.Getenv("MOBILE_CLIENT_URL")
+	if mobileClientURL == "" {
+		mobileClientURL = "hirami://password-reset"
+	}
+
+	// Use Web URL for the primary button because Gmail strips custom protocols like hirami://
+	resetLink := fmt.Sprintf("%s/%s", webClientURL, rawToken)
+	
+	serverURL := os.Getenv("SERVER_URL")
+	if serverURL == "" {
+		serverURL = "http://localhost:3002"
+	}
+	// Proxy the deep link through the server to prevent Gmail from stripping the href
+	mobileProxyLink := fmt.Sprintf("%s/app-redirect?token=%s", serverURL, rawToken)
+
 	subject := "Password Reset Request"
+
 	bodyHTML := fmt.Sprintf(`
-	  <p>Click the button below to reset your password:</p>
-	  <p><a href="%s" style="display:inline-block;padding:10px 20px;background-color:#4CAF50;color:#fff;text-decoration:none;border-radius:5px;">Reset Password</a></p>
-	  <p>If the button doesn’t work, copy and paste this link into your browser:<br><code>%s</code></p>
-	  <p>This link will expire in 15 minutes.</p>
-	`, resetLink, resetLink)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Password Reset Request</title>
+</head>
+<body style="margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#f9fafb;">
+  <table width="100%%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="380" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;padding:40px 32px;max-width:380px;border:1px solid #e5e7eb;">
+
+          <!-- Title -->
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <h1 style="margin:0;font-size:26px;font-weight:700;color:#111827;line-height:1.3;">
+                Password Reset Request
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Body text -->
+          <tr>
+            <td style="padding-bottom:28px;color:#374151;font-size:14px;line-height:1.6;text-align:justify;">
+              <p style="margin:0 0 8px 0;">
+                Hello <strong>%s</strong>,
+              </p>
+              <p style="margin:0;">
+                We received a request to reset the password for your account.
+                To securely change your password, please click the button below.
+                This link will expire in 24 hours. If you did not request this change, 
+                you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td align="center">
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Open in Browser</a>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding-top:12px;">
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#ffffff;color:#92400e;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;border:1px solid #92400e;">Open in Mobile App</a>
+            </td>
+          </tr>
+
+          <!-- Sign-off -->
+          <tr>
+            <td style="padding-top:32px;font-size:14px;color:#374151;line-height:1.6;">
+              Sincerely,<br/>
+              The Hirami Team
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+	`, fullName, resetLink, mobileProxyLink)
 
 	if err := api.SendGmail(s.gmailService, data.Email, subject, bodyHTML); err != nil {
 		return api.Response{
@@ -404,6 +558,40 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
 		Code:    http.StatusOK,
 		Message: "Password reset email sent successfully.",
 	}
+}
+
+func (s *Server) AppRedirect(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	mobileClientURL := os.Getenv("MOBILE_CLIENT_URL")
+	if mobileClientURL == "" {
+		mobileClientURL = "hirami://password-reset"
+	}
+	deepLink := fmt.Sprintf("%s/%s", mobileClientURL, token)
+
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprintf(w, `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirecting to Hirami...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f9fafb; color: #374151; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #92400e; border-radius: 50%%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0%% { transform: rotate(0deg); } 100%% { transform: rotate(360deg); } }
+        a { color: #92400e; text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="loader"></div>
+    <p>Redirecting to Hirami app...</p>
+    <p style="font-size: 14px;">If the app doesn't open automatically, <a href="%s">click here</a>.</p>
+    <script>
+        window.location.href = "%s";
+    </script>
+</body>
+</html>
+	`, deepLink, deepLink)
 }
 
 func (s *Server) ResetPassword(w http.ResponseWriter, r *http.Request) api.Response {

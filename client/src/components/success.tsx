@@ -2,6 +2,7 @@ import { H1 } from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { homeRunIllustration } from "@/lib/assets";
 import { IconArrowLeft } from "@/lib/icons";
+import { cn } from "@/lib/utils";
 import { PaddingLayout } from "@/routes/-components/padding-layout";
 import { Link } from "@tanstack/react-router";
 import type { JSX } from "react";
@@ -11,11 +12,17 @@ type Props = {
 	header: string;
 	backLink: string;
 	illustration?: string;
+	className?: string;
 };
 
 export function Success(props: Props): JSX.Element {
 	return (
-		<PaddingLayout className="h-svh inset-0 fixed bg-background w-full z-50">
+		<PaddingLayout
+			className={cn(
+				"md:bg-white md:p-0 h-svh inset-0 bg-background w-full z-50",
+				props.className,
+			)}
+		>
 			<Button
 				variant="ghost"
 				size="icon"

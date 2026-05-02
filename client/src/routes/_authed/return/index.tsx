@@ -62,7 +62,7 @@ function RouteComponent(): JSX.Element {
 		}),
 	);
 	// NOTE: Getting the unique names should ideally be done on the server
-	const historyEquipmentNames = Array.from(
+	const borrowedItems = Array.from(
 		new Set(
 			borrowHistoryAllCategory.data?.flatMap(
 				(history) => history.equipment.name,
@@ -78,7 +78,7 @@ function RouteComponent(): JSX.Element {
 	);
 	const equipmentNames =
 		search.tab === ReturnTab.BorrowedItems
-			? historyEquipmentNames
+			? borrowedItems
 			: returnEquipmentNames;
 
 	const queryClient = useQueryClient();
@@ -123,7 +123,7 @@ function RouteComponent(): JSX.Element {
 		return (
 			<Success
 				fn={reset}
-				header="Successfully returned equipments."
+				header="Return confirmed successfully."
 				backLink="/return"
 			/>
 		);

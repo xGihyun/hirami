@@ -41,7 +41,12 @@ export function Borrow(props: Props): JSX.Element {
 
 	if (mutation.isError) {
 		return (
-			<Failed backLink="/scan" header="Failed to claim request." fn={reset} />
+			<Failed
+				backLink="/scan"
+				header="Failed to claim request."
+				fn={reset}
+				className="md:absolute md:inset-0 md:z-500"
+			/>
 		);
 	}
 
@@ -51,13 +56,14 @@ export function Borrow(props: Props): JSX.Element {
 				backLink="/scan"
 				header="Successfully claimed equipments."
 				fn={reset}
+				className="md:absolute md:inset-0 md:z-500"
 			/>
 		);
 	}
 
 	return (
-		<DrawerContent className="space-y-4 h-full">
-			<DrawerHeader>
+		<DrawerContent className="space-y-4 h-full md:h-auto">
+			<DrawerHeader className="md:max-w-sm md:w-full md:mx-auto md:p-0 md:mb-0">
 				<DrawerTitle className="items-center flex flex-col">
 					<Avatar className="size-12">
 						<AvatarImage src={toImageUrl(borrower.avatarUrl)} />
@@ -75,10 +81,10 @@ export function Borrow(props: Props): JSX.Element {
 					{format(props.transaction.requestedAt, "MMM d, yyyy - hh:mm a")}
 				</DrawerDescription>
 			</DrawerHeader>
-			<div className="px-4 py-4 overflow-y-auto space-y-4">
+			<div className="px-4 py-4 overflow-y-auto space-y-4 md:max-w-sm md:w-full md:mx-auto">
 				<EquipmentList equipments={props.transaction.requestedItems} />
 
-				<DrawerFooter>
+				<DrawerFooter className="p-0">
 					<Button
 						onClick={() =>
 							mutation.mutate({

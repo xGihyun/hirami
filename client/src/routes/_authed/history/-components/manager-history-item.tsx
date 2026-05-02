@@ -42,7 +42,7 @@ export function ManagerHistoryItem(props: Props): JSX.Element {
 	return (
 		<div
 			className={cn(
-				"flex items-center gap-2 justify-between bg-card rounded-2xl p-4 shadow-item",
+				"flex items-center gap-2 justify-between bg-card rounded-2xl p-4 shadow-item hover:bg-tertiary transition-colors",
 				props.className,
 			)}
 		>

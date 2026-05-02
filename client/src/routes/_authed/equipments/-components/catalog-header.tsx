@@ -11,7 +11,7 @@ type Props = {
 
 export function CatalogHeader(props: Props): JSX.Element {
 	return (
-		<header className="flex w-full items-center justify-between">
+		<header className="flex w-full items-center justify-between md:hidden">
 			<img src={hiramiLogoDark} alt="Hirami logo" className="size-8" />
 
 			<Link to="/profile">

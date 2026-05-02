@@ -1,12 +1,7 @@
 import { DisplayLarge, LabelMedium, TitleSmall } from "@/components/typography";
 import { Button } from "@/components/ui/button";
-import { hiramiLogoDark, morningWorkoutIllustration } from "@/lib/assets";
-import {
-	createFileRoute,
-	Link,
-	redirect,
-	useSearch,
-} from "@tanstack/react-router";
+import { morningWorkoutIllustration } from "@/lib/assets";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState, type JSX } from "react";
 import z from "zod";
 import { Onboarding } from "./-components/onboarding";
@@ -23,40 +18,44 @@ export const Route = createFileRoute("/_auth/onboarding/")({
 	component: RouteComponent,
 	validateSearch: searchSchema,
 	beforeLoad: ({ search }) => {
-		if (!search.step) {
-			return;
-		}
-
-		if (search.step < 1 || search.step > 3) {
-			throw redirect({ to: "/onboarding" });
+		if (search.step !== undefined && (search.step < 1 || search.step > 4)) {
+			throw redirect({ to: "/onboarding", search: { step: 1 } });
 		}
 	},
 });
 
 function RouteComponent(): JSX.Element {
-	const search = useSearch({ from: "/_auth/onboarding/" });
+	const search = Route.useSearch();
+	const navigate = Route.useNavigate();
 	const [phase, setPhase] = useState<"splash" | "fading" | "done">("splash");
 
 	useEffect(() => {
 		const fadeTimer = setTimeout(() => setPhase("fading"), 400);
 		const doneTimer = setTimeout(() => setPhase("done"), 500);
-
 		return () => {
 			clearTimeout(fadeTimer);
 			clearTimeout(doneTimer);
 		};
 	}, []);
 
-	const content = search.step ? (
-		<PaddingLayout>
-			<Onboarding />
-		</PaddingLayout>
-	) : (
-		<main className="flex h-svh">
-			<SideLogo />
-			<Welcome />
-		</main>
-	);
+	// After splash, redirect to step 1 if no step is set
+	useEffect(() => {
+		if (phase === "done" && search.step === undefined) {
+			navigate({ to: "/onboarding", search: { step: 1 } });
+		}
+	}, [phase, search.step]);
+
+	const content =
+		search.step === undefined ? null : search.step <= 3 ? (
+			<PaddingLayout>
+				<Onboarding />
+			</PaddingLayout>
+		) : (
+			<main className="flex h-svh">
+				<SideLogo />
+				<Welcome />
+			</main>
+		);
 
 	return (
 		<>
@@ -90,7 +89,8 @@ function Welcome(): JSX.Element {
 						<div className="space-y-1.5">
 							<DisplayLarge className="text-center">Hirami</DisplayLarge>
 							<TitleSmall className="text-center">
-								Log in or sign up to get started
+								Log in <span className="md:hidden">or sign up </span>
+								to get started
 							</TitleSmall>
 						</div>
 					</section>
@@ -99,7 +99,11 @@ function Welcome(): JSX.Element {
 						<Button className="w-full" asChild>
 							<Link to="/login">Log in</Link>
 						</Button>
-						<Button className="w-full flex md:hidden" variant="secondary" asChild>
+						<Button
+							className="w-full flex md:hidden"
+							variant="secondary"
+							asChild
+						>
 							<Link to="/register">Register</Link>
 						</Button>
 

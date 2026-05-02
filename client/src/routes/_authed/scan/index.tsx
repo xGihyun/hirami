@@ -9,7 +9,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type JSX } from "react";
 import { Drawer } from "@/components/ui/drawer";
 import { BACKEND_URL } from "@/lib/api";
-import { H2 } from "@/components/typography";
+import { H2, TitleSmall } from "@/components/typography";
 import { EventSource } from "eventsource";
 import QrScanner from "qr-scanner";
 import { Failed } from "@/components/failed";
@@ -56,6 +56,7 @@ function RouteComponent(): JSX.Element {
 		null,
 	);
 	const scannerRef = useRef<QrScanner | null>(null);
+	const [error, setError] = useState(false);
 
 	const form = useForm<FormSchema>({
 		resolver: zodResolver(formSchema),
@@ -65,19 +66,24 @@ function RouteComponent(): JSX.Element {
 	});
 
 	async function onSubmit(value: FormSchema): Promise<void> {
-		if (value.otp[0] === "B") {
-			const request = await queryClient.fetchQuery(
-				borrowRequestByOtpQuery(value.otp),
-			);
-			setBorrowRequest(request);
-		} else {
-			const request = await queryClient.fetchQuery(
-				returnRequestByOtpQuery(value.otp),
-			);
-			setReturnRequest(request);
+		setError(false);
+		try {
+			if (value.otp[0] === "B") {
+				const request = await queryClient.fetchQuery(
+					borrowRequestByOtpQuery(value.otp),
+				);
+				setBorrowRequest(request);
+			} else {
+				const request = await queryClient.fetchQuery(
+					returnRequestByOtpQuery(value.otp),
+				);
+				setReturnRequest(request);
+			}
+			form.reset();
+		} catch (e) {
+			console.error(e);
+			setError(true);
 		}
-
-		form.reset();
 	}
 
 	useEffect(() => {
@@ -97,11 +103,23 @@ function RouteComponent(): JSX.Element {
 		};
 	}, []);
 
+	if (error) {
+		return (
+			<Failed
+				header="Failed to retrieve request."
+				fn={() => setError(false)}
+				retry={form.handleSubmit(onSubmit)}
+				backLink="/scan"
+                backMessage="or return to scan"
+			/>
+		);
+	}
+
 	return (
 		<main className="relative space-y-4 flex w-full items-center justify-center flex-col">
 			<H2 className="text-center">Scan QR Code</H2>
 
-			<section className="relative w-full aspect-square">
+			<section className="relative w-full aspect-square max-w-lg md:mb-6">
 				<div className="relative w-full aspect-square bg-accent rounded-4xl overflow-clip">
 					<video
 						ref={videoRef}
@@ -127,16 +145,16 @@ function RouteComponent(): JSX.Element {
 				scannerRef={scannerRef}
 			/>
 
-			<section className="space-y-2 w-full">
+			<section className="space-y-2 w-full max-w-lg">
 				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 						<FormField
 							control={form.control}
 							name="otp"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-center mx-auto">
-										Or enter the code (e.g. B123456)
+									<FormLabel className="text-center mx-auto mb-6">
+										<TitleSmall>Or enter the code (e.g. B123456)</TitleSmall>
 									</FormLabel>
 
 									<FormControl>
@@ -259,6 +277,7 @@ function Scanner(props: ScannerProps) {
 				backLink="/scan"
 				fn={resetState}
 				header="Failed to scan QR code."
+				className="md:absolute md:inset-0"
 			/>
 		);
 	}
