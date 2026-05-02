@@ -40,10 +40,17 @@ function RouteComponent(): JSX.Element {
 
 	// After splash, redirect to step 1 if no step is set
 	useEffect(() => {
+		const key = "hasOpenedHirami";
 		if (phase === "done" && search.step === undefined) {
-			navigate({ to: "/onboarding", search: { step: 1 } });
+			const hasOpenedBefore = localStorage.getItem(key);
+			if (hasOpenedBefore) {
+				navigate({ to: "/onboarding", search: { step: 4 } });
+			} else {
+				navigate({ to: "/onboarding", search: { step: 1 } });
+				localStorage.setItem(key, "true");
+			}
 		}
-	}, [phase, search.step]);
+	}, [phase, search.step, navigate]);
 
 	const content =
 		search.step === undefined ? null : search.step <= 3 ? (
