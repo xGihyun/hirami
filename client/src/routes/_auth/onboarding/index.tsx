@@ -41,7 +41,7 @@ function RouteComponent(): JSX.Element {
 	// After splash, redirect to step 1 if no step is set
 	useEffect(() => {
 		if (phase === "done" && search.step === undefined) {
-			navigate({ to: "/onboarding", search: { step: 4 } });
+			navigate({ to: "/onboarding", search: { step: 1 } });
 		}
 	}, [phase, search.step]);
 

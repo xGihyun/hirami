@@ -120,7 +120,7 @@ function RouteComponent(): JSX.Element {
 		);
 	}
 
-	if (true) {
+	if (mutation.isSuccess) {
 		return (
 			<Success
 				header="Equipment has been successfully registered."

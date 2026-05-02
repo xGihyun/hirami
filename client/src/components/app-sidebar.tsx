@@ -97,10 +97,10 @@ export function AppSidebar(): JSX.Element {
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
 									onClick={handleLogout}
-									className="flex items-center gap-2 text-destructive"
+									className="flex items-center gap-2 text-destructive hover:text-destructive"
 								>
 									<IconLogOut className="size-4 text-destructive focus:text-destructive" />
-									<TitleSmall>Logout</TitleSmall>
+									<TitleSmall className="hover:text-destructive">Logout</TitleSmall>
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
