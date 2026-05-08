@@ -56,9 +56,7 @@ func migrate(dbURL string) {
 }
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		panic("Failed to load .env file.")
-	}
+	_ = godotenv.Load()
 
 	valkeyAddr, ok := os.LookupEnv("VALKEY_ADDRESS")
 	if !ok {
