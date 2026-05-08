@@ -22,9 +22,11 @@ import IconMoreHorizontal from "~icons/lucide/more-horizontal";
 import IconChevronArrowDownUp from "~icons/lucide/chevrons-up-down";
 import IconGitPullRequestArrow from "~icons/lucide/git-pull-request-arrow";
 import IconFileScan from "~icons/lucide/file-scan";
+import IconTags from "~icons/lucide/tags";
 import IconUser from "~icons/lucide/user";
 import IconEllipsis from "~icons/lucide/ellipsis";
 import IconLogOut from "~icons/lucide/log-out";
+import IconFilter from "~icons/lucide/filter";
 
 export {
 	IconRoundArrowDown,
@@ -51,7 +53,9 @@ export {
 	IconChevronArrowDownUp,
 	IconGitPullRequestArrow,
 	IconFileScan,
+	IconTags,
 	IconUser,
 	IconEllipsis,
 	IconLogOut,
+	IconFilter,
 };

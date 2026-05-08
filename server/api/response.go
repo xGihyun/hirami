@@ -11,9 +11,13 @@ type Response struct {
 	Data    any    `json:"data"`
 
 	Error error `json:"-"`
+	Raw   bool  `json:"-"`
 }
 
 func (r Response) Encode(w http.ResponseWriter) error {
+	if r.Raw {
+		return nil
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(r.Code)

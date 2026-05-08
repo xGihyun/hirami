@@ -16,6 +16,13 @@ export enum EquipmentStatus {
 	Disposed = "disposed",
 }
 
+export const categorySchema = z.object({
+	id: z.uuidv4(),
+	name: z.string(),
+	color: z.string().nullable(),
+});
+export type Category = z.infer<typeof categorySchema>;
+
 export const equipmentSchema = z.object({
 	id: z.uuidv4(),
 	name: z.string(),
@@ -23,6 +30,7 @@ export const equipmentSchema = z.object({
 	model: z.string().nullable(),
 	imageUrl: z.string().nullable(),
 	quantity: z.number().nonnegative(),
+	categories: categorySchema.array().nullable().default([]),
 	status: enumDetailSchema(EquipmentStatus),
 });
 export type Equipment = z.infer<typeof equipmentSchema>;
@@ -41,6 +49,7 @@ export const equipmentInventoryStatusSchema = z.object({
 	brand: z.string().nullable(),
 	model: z.string().nullable(),
 	imageUrl: z.string().nullable(),
+	categories: categorySchema.array().nullable().default([]),
 	statusQuantity: equipmentStatusQuantitySchema.array(),
 });
 export type EquipmentInventoryStatus = z.infer<

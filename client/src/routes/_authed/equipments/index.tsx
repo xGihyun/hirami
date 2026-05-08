@@ -1,5 +1,5 @@
 import {
-	equipmentNamesQuery,
+	categoriesQuery,
 	equipmentsQuery,
 } from "@/lib/equipment/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_authed/equipments/")({
 	component: RouteComponent,
 	loader: ({ context }) => {
 		context.queryClient.ensureQueryData(equipmentsQuery({ names: [] }));
-		context.queryClient.ensureQueryData(equipmentNamesQuery());
+		context.queryClient.ensureQueryData(categoriesQuery);
 	},
 	validateSearch: searchSchema,
 });
@@ -50,7 +50,7 @@ function RouteComponent(): JSX.Element {
 			names: search.categories,
 		}),
 	);
-	const equipmentNames = useQuery(equipmentNamesQuery());
+	const categories = useQuery(categoriesQuery);
 	const auth = useAuth();
 	const [isBorrowing, setIsBorrowing] = useState(false);
 
@@ -83,7 +83,7 @@ function RouteComponent(): JSX.Element {
 
 		function handleEquipmentInvalidation(_: MessageEvent): void {
 			queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
-			queryClient.invalidateQueries(equipmentNamesQuery());
+			queryClient.invalidateQueries(categoriesQuery);
 		}
 
 		function handleEquipmentRellocation(_: MessageEvent): void {
@@ -127,7 +127,7 @@ function RouteComponent(): JSX.Element {
 		<div className="relative space-y-4 min-w-0 overflow-x-hidden">
 			<CatalogHeader user={auth.user!} />
 			<CatalogSearch user={auth.user!} />
-			<CatalogCategories categories={equipmentNames.data || []} />
+			<CatalogCategories categories={categories.data?.map(c => c.name) || []} />
 
 			{equipments.isPending ? (
 				<ComponentLoading />

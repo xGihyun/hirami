@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, type JSX } from "react";
 import { H1, H2, LabelMedium } from "@/components/typography";
+import { Button } from "@/components/ui/button";
+import { DownloadIcon } from "lucide-react";
 import { BACKEND_URL, Sort } from "@/lib/api";
 import { EventSource } from "eventsource";
 import z from "zod";
@@ -16,6 +18,9 @@ const searchSchema = z.object({
 	sort: z.enum(Sort).default(Sort.Asc),
 	sortBy: z.string().default("borrowedAt"),
 	search: z.string().optional(),
+	startDate: z.string().optional(),
+	endDate: z.string().optional(),
+	equipmentIds: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_authed/history/")({
@@ -32,6 +37,7 @@ export const Route = createFileRoute("/_authed/history/")({
 
 function RouteComponent() {
 	const queryClient = useQueryClient();
+	const search = Route.useSearch();
 
 	useEffect(() => {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
@@ -65,8 +71,30 @@ function RouteComponent() {
 	return (
 		<div className="relative space-y-4 min-w-0 ">
 			<header className="flex flex-col w-full justify-between gap-4">
-				<H2 className="text-center md:hidden block">History</H2>
-				<H1 className="text-start md:block hidden">History</H1>
+				<div className="flex justify-between items-center w-full">
+					<H2 className="text-center md:hidden block flex-1 pl-12">History</H2>
+					<H1 className="text-start md:block hidden">History</H1>
+					<Button
+						variant="outline"
+						size="sm"
+						className="gap-2"
+						onClick={() => {
+							const url = new URL(`${BACKEND_URL}/borrow-history/pdf`);
+							if (search.category)
+								url.searchParams.append("category", search.category);
+							if (search.sort) url.searchParams.append("sort", search.sort);
+							if (search.sortBy) url.searchParams.append("sortBy", search.sortBy);
+							if (search.search) url.searchParams.append("search", search.search);
+							if (search.startDate) url.searchParams.append("startDate", search.startDate);
+							if (search.endDate) url.searchParams.append("endDate", search.endDate);
+							if (search.equipmentIds) url.searchParams.append("equipmentIds", search.equipmentIds);
+							window.open(url.toString(), "_blank");
+						}}
+					>
+						<DownloadIcon className="size-4" />
+						Download PDF
+					</Button>
+				</div>
 				<Control />
 			</header>
 
@@ -83,6 +111,9 @@ function History(): JSX.Element {
 			sortBy: search.sortBy,
 			category: search.category,
 			search: search.search,
+			startDate: search.startDate,
+			endDate: search.endDate,
+			equipmentIds: search.equipmentIds,
 		}),
 	);
 

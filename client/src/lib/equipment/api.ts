@@ -17,6 +17,8 @@ import {
 	type ReviewBorrowResponse,
 	type UpdateBorrowRequest,
 	type UpdateBorrowResponse,
+	categorySchema,
+	type Category,
 } from "./model";
 import z from "zod";
 import type { RegisterEquipmentSchema } from "@/routes/_authed/equipments/$equipmentId/_register/register/-schema";
@@ -124,6 +126,70 @@ export const equipmentNamesQuery = () =>
 		queryFn: () => getEquipmentNames(),
 	});
 
+async function getCategories(): Promise<Category[]> {
+	const url = new URL(`${BACKEND_URL}/categories`);
+	const response = await fetch(url.toString(), {
+		method: "GET",
+	});
+
+	const result: ApiResponse<Category[]> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return categorySchema.array().parse(result.data);
+}
+
+export const categoriesQuery = queryOptions({
+	queryKey: ["categories"],
+	queryFn: getCategories,
+});
+
+export async function createCategory(value: {
+	name: string;
+	color?: string;
+}): Promise<ApiResponse<Category>> {
+	const response = await fetch(`${BACKEND_URL}/categories`, {
+		method: "POST",
+		body: JSON.stringify(value),
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	const result: ApiResponse<Category> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result;
+}
+
+export async function deleteCategory(id: string): Promise<ApiResponse> {
+	const response = await fetch(`${BACKEND_URL}/categories/${id}`, {
+		method: "DELETE",
+	});
+
+	const result: ApiResponse = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result;
+}
+
+export async function deleteEquipment(id: string, quantity?: number): Promise<ApiResponse> {
+	const url = new URL(`${BACKEND_URL}/equipments/${id}`);
+	if (quantity !== undefined) {
+		url.searchParams.append("quantity", quantity.toString());
+	}
+	const response = await fetch(url, {
+		method: "DELETE",
+	});
+
+	return response.json();
+}
+
 //
 // Borrow Request
 //
@@ -191,6 +257,9 @@ type GetBorrowHistoryParams = {
 	sortBy?: string;
 	category?: string;
 	search?: string;
+	startDate?: string;
+	endDate?: string;
+	equipmentIds?: string;
 };
 
 async function getBorrowHistory(
@@ -215,6 +284,15 @@ async function getBorrowHistory(
 	}
 	if (params.search) {
 		url.searchParams.append("search", params.search);
+	}
+	if (params.startDate) {
+		url.searchParams.append("startDate", params.startDate);
+	}
+	if (params.endDate) {
+		url.searchParams.append("endDate", params.endDate);
+	}
+	if (params.equipmentIds) {
+		url.searchParams.append("equipmentIds", params.equipmentIds);
 	}
 
 	const response = await fetch(url.toString(), {
@@ -431,6 +509,9 @@ export async function registerEquipment(
 	formData.append("acquisitionDate", value.acquisitionDate.toISOString());
 	formData.append("quantity", value.quantity.toString());
 	if (value.image) formData.append("image", value.image);
+	if (value.categoryIds && value.categoryIds.length > 0) {
+		formData.append("categoryIds", value.categoryIds.join(","));
+	}
 
 	const response = await fetch(`${BACKEND_URL}/equipments`, {
 		method: "POST",

@@ -20,6 +20,7 @@ import {
 	type RegisterEquipmentNameSchema,
 } from "../-schema";
 import { v4 as uuidv4 } from "uuid";
+import { CategorySelector } from "../../-components/category-selector";
 
 export const Route = createFileRoute(
 	"/_authed/equipments/$equipmentId/_register/register/name/",
@@ -48,6 +49,7 @@ function RouteComponent(): JSX.Element {
 			name: registerEquipmentContext.value.name,
 			brand: registerEquipmentContext.value.brand,
 			model: registerEquipmentContext.value.model,
+			categoryIds: registerEquipmentContext.value.categoryIds,
 		},
 		mode: "onTouched",
 	});
@@ -91,6 +93,23 @@ function RouteComponent(): JSX.Element {
 										<FormLabel>Equipment Name</FormLabel>
 										<FormControl>
 											<Input placeholder="Volleyball" {...field} />
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="categoryIds"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Categories</FormLabel>
+										<FormControl>
+											<CategorySelector
+												selectedCategoryIds={field.value}
+												onChange={field.onChange}
+											/>
 										</FormControl>
 										<FormMessage />
 									</FormItem>
