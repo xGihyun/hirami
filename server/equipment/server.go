@@ -482,13 +482,14 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
-	if err := s.detectAnomaly(context.Background(), res); err != nil {
-		return api.Response{
-			Error:   fmt.Errorf("create borrow request: %w", err),
-			Code:    http.StatusInternalServerError,
-			Message: "Failed to create borrow request anomaly result.",
-		}
-	}
+	// NOTE: Ignore anomaly errors for now since it is not required
+	s.detectAnomaly(context.Background(), res)
+	// 	return api.Response{
+	// 		Error:   fmt.Errorf("create borrow request: %w", err),
+	// 		Code:    http.StatusInternalServerError,
+	// 		Message: "Failed to create borrow request anomaly result.",
+	// 	}
+	// }
 
 	eventRes := sse.EventResponse{
 		Event: eventBorrowRequestCreate,
