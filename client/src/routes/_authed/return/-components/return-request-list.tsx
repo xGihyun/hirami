@@ -6,7 +6,7 @@ import {
 	LabelSmall,
 } from "@/components/typography";
 import { Badge } from "@/components/ui/badge";
-import { BACKEND_URL, toImageUrl } from "@/lib/api";
+import { toImageUrl } from "@/lib/api";
 import type { Equipment, ReturnRequest } from "@/lib/equipment/model";
 import { cn, getRemainingMs } from "@/lib/utils";
 import { format } from "date-fns";
@@ -54,12 +54,12 @@ export function ReturnRequestList(props: Props): JSX.Element {
 									<section className="space-y-8">
 										<div className="space-y-2">
 											<QRCodeSVG
-												value={request.otp.code}
+												value={request.otp?.code || ""}
 												className="size-64 mx-auto"
 												bgColor="transparent"
 											/>
 
-											<H2 className="text-center">{request.otp.code}</H2>
+											<H2 className="text-center">{request.otp?.code}</H2>
 										</div>
 
 										<div className="mx-auto text-center content-center space-y-2">
@@ -69,7 +69,7 @@ export function ReturnRequestList(props: Props): JSX.Element {
 												countdown
 												autoStart
 												startMs={getRemainingMs(
-													new Date(request.otp.expiresAt),
+													new Date(request.otp!.expiresAt),
 												)}
 											>
 												<H1>

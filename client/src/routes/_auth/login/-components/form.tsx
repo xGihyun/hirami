@@ -28,7 +28,6 @@ import {
 import { PasswordInput } from "@/components/password-input";
 import { ComponentLoading, FullScreenLoading } from "@/components/loading";
 import { HiramiLogoDark } from "@/lib/assets/logo-dark";
-import { toast } from "sonner";
 import { Failed } from "@/components/failed";
 import { ErrInvalidCredentials } from "@/lib/user/error";
 
@@ -201,39 +200,3 @@ export function LoginForm(): JSX.Element {
 		</div>
 	);
 }
-
-type FailedProps = {
-	onSubmit: () => Promise<void>;
-	reset: () => void;
-	header: string;
-};
-
-// function Failed(props: FailedProps): JSX.Element {
-// 	return (
-// 		<div className="h-full w-full flex flex-col gap-12">
-// 			<section className="space-y-3.5 content-center flex flex-col justify-center items-center h-full">
-// 				<img
-// 					src={accessDeniedIllustration}
-// 					alt="Failed illustration"
-// 					className="w-full max-w-xs mx-auto"
-// 				/>
-//
-// 				<div className="space-y-1.5">
-// 					<H1 className="text-center">{props.header}</H1>
-// 					<TitleSmall className="text-center">
-// 						A temporary issue occured. Please check your network and Try Again
-// 						in a moment.
-// 					</TitleSmall>
-// 				</div>
-// 			</section>
-//
-// 			<section className="w-full flex flex-col text-center gap-4">
-// 				<Button onClick={props.onSubmit}>Try Again</Button>
-//
-// 				<button onClick={props.reset} className="cursor-pointer w-fit mx-auto">
-// 					<LabelLarge>or return to Log In page</LabelLarge>
-// 				</button>
-// 			</section>
-// 		</div>
-// 	);
-// }

@@ -164,7 +164,7 @@ export function Catalog(props: Props): JSX.Element {
 									</LabelSmall>
 
 									<div className="flex flex-wrap gap-1 mt-1">
-										{equipment.categories.map((cat) => (
+										{equipment.categories?.map((cat) => (
 											<Badge
 												key={cat.id}
 												variant="secondary"
@@ -291,12 +291,11 @@ function EquipmentManagerDialogContent({
 					</LabelSmall>
 					<div className="flex items-end gap-2">
 						<div className="flex-1 space-y-1">
-							<LabelSmall htmlFor="delete-quantity">Quantity to delete</LabelSmall>
+							<LabelSmall>Quantity to delete</LabelSmall>
 							<NumberInput
 								id="delete-quantity"
 								value={deleteQuantity}
 								onChange={(val) => setDeleteQuantity(val || 1)}
-								min={1}
 								maxValue={equipment.quantity}
 							/>
 						</div>

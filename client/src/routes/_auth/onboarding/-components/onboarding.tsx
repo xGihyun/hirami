@@ -34,7 +34,7 @@ export function Onboarding(): JSX.Element {
 		},
 	];
 
-	const currentStepData = steps[currentStep - 1];
+	// const currentStepData = steps[currentStep - 1];
 
 	return (
 		<main className="h-full w-full max-w-4xl flex flex-col justify-center items-center mx-auto">

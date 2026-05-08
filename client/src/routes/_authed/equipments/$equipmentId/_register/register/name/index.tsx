@@ -20,7 +20,7 @@ import {
 	type RegisterEquipmentNameSchema,
 } from "../-schema";
 import { v4 as uuidv4 } from "uuid";
-import { CategorySelector } from "../../-components/category-selector";
+import { CategorySelector } from "@/routes/_authed/equipments/-components/category-selector";
 
 export const Route = createFileRoute(
 	"/_authed/equipments/$equipmentId/_register/register/name/",
