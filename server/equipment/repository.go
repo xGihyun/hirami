@@ -20,6 +20,8 @@ type Repository interface {
 	getEquipmentNames(ctx context.Context) ([]string, error)
 	update(ctx context.Context, arg updateRequest) error
 	reallocate(ctx context.Context, arg reallocateRequest) error
+	increaseQuantity(ctx context.Context, id string, quantity uint, acquisitionDate time.Time) error
+	deleteEquipment(ctx context.Context, id string) error
 
 	createBorrowRequest(ctx context.Context, arg createBorrowRequest) (createBorrowResponse, error)
 	reviewBorrowRequest(ctx context.Context, arg reviewBorrowRequest) (reviewBorrowResponse, error)
@@ -37,10 +39,20 @@ type Repository interface {
 	getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowRequest, error)
 	getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]borrowRequestItem, error)
 
+	createCategory(ctx context.Context, name string, color *string) (categoryDetail, error)
+	getCategories(ctx context.Context) ([]categoryDetail, error)
+	deleteCategory(ctx context.Context, id string) error
+
 	createAnomalyResult(ctx context.Context, arg anomaly) error
 
 	processExpiredBorrowRequests(ctx context.Context) error
 	renewExpiredReturnRequests(ctx context.Context) error
+}
+
+type categoryDetail struct {
+	CategoryID string  `json:"id"`
+	Name       string  `json:"name"`
+	Color      *string `json:"color"`
 }
 
 type repository struct {
@@ -60,35 +72,54 @@ type createRequest struct {
 	ImageURL        *string   `json:"imageUrl"`
 	AcquisitionDate time.Time `json:"acquisitionDate"`
 	Quantity        uint      `json:"quantity"`
+	CategoryIDs     []string  `json:"categoryIds"`
 }
 
 type createResponse struct {
-	EquipmentTypeID string    `json:"id"`
-	Name            string    `json:"name"`
-	Brand           *string   `json:"brand"`
-	Model           *string   `json:"model"`
-	ImageURL        *string   `json:"imageUrl"`
-	AcquisitionDate time.Time `json:"acquisitionDate"`
-	Quantity        uint      `json:"quantity"`
+	EquipmentTypeID string           `json:"id"`
+	Name            string           `json:"name"`
+	Brand           *string          `json:"brand"`
+	Model           *string          `json:"model"`
+	ImageURL        *string          `json:"imageUrl"`
+	AcquisitionDate time.Time        `json:"acquisitionDate"`
+	Quantity        uint             `json:"quantity"`
+	Categories      []categoryDetail `json:"categories"`
 }
 
+var ErrEquipmentAlreadyExists = fmt.Errorf("equipment already exists")
+
 func (r *repository) createEquipment(ctx context.Context, arg createRequest) (createResponse, error) {
+	tx, err := r.querier.Begin(ctx)
+	if err != nil {
+		return createResponse{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	// Check if equipment already exists
+	checkQuery := `
+	SELECT EXISTS(
+		SELECT 1 FROM equipment_type
+		WHERE name = $1 
+		AND COALESCE(lower(TRIM(BOTH FROM brand)), '') = COALESCE(lower(TRIM(BOTH FROM $2::text)), '')
+		AND COALESCE(lower(TRIM(BOTH FROM model)), '') = COALESCE(lower(TRIM(BOTH FROM $3::text)), '')
+	)
+	`
+	var exists bool
+	if err := tx.QueryRow(ctx, checkQuery, arg.Name, arg.Brand, arg.Model).Scan(&exists); err != nil {
+		return createResponse{}, err
+	}
+	if exists {
+		return createResponse{}, ErrEquipmentAlreadyExists
+	}
+
 	query := `
 	INSERT INTO equipment_type (name, brand, model, image_url)
 	VALUES ($1, $2, $3, $4)
-	ON CONFLICT (
-		name,
-		COALESCE(lower(TRIM(BOTH FROM brand)), ''),
-		COALESCE(lower(TRIM(BOTH FROM model)), '')
-	)
-	DO UPDATE SET 
-		equipment_type_id = equipment_type.equipment_type_id,
-		image_url = $4
 	RETURNING equipment_type_id, name, brand, model, image_url
 	`
 
 	var equipment createResponse
-	row := r.querier.QueryRow(ctx, query, arg.Name, arg.Brand, arg.Model, arg.ImageURL)
+	row := tx.QueryRow(ctx, query, arg.Name, arg.Brand, arg.Model, arg.ImageURL)
 	if err := row.Scan(
 		&equipment.EquipmentTypeID,
 		&equipment.Name,
@@ -101,12 +132,43 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) (cr
 	equipment.Quantity = arg.Quantity
 	equipment.AcquisitionDate = arg.AcquisitionDate
 
+	// Link categories
+	if len(arg.CategoryIDs) > 0 {
+		categoryQuery := `
+		INSERT INTO equipment_type_category (equipment_type_id, category_id)
+		SELECT $1, unnest($2::uuid[])
+		`
+		if _, err := tx.Exec(ctx, categoryQuery, equipment.EquipmentTypeID, arg.CategoryIDs); err != nil {
+			return createResponse{}, err
+		}
+
+		// Fetch linked categories for response
+		fetchCategoriesQuery := `
+		SELECT category_id, name, color
+		FROM category
+		JOIN equipment_type_category USING (category_id)
+		WHERE equipment_type_id = $1
+		`
+		rows, err := tx.Query(ctx, fetchCategoriesQuery, equipment.EquipmentTypeID)
+		if err != nil {
+			return createResponse{}, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var cat categoryDetail
+			if err := rows.Scan(&cat.CategoryID, &cat.Name, &cat.Color); err != nil {
+				return createResponse{}, err
+			}
+			equipment.Categories = append(equipment.Categories, cat)
+		}
+	}
+
 	query = `
 	INSERT INTO equipment (equipment_type_id, acquired_at, equipment_status_id)
 	SELECT $1, $2, $3
 	FROM generate_series(1, $4)
 	`
-	if _, err := r.querier.Exec(
+	if _, err := tx.Exec(
 		ctx,
 		query,
 		equipment.EquipmentTypeID,
@@ -114,6 +176,10 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) (cr
 		available,
 		arg.Quantity,
 	); err != nil {
+		return createResponse{}, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return createResponse{}, err
 	}
 
@@ -127,6 +193,7 @@ type equipment struct {
 	Model           *string               `json:"model"`
 	ImageURL        *string               `json:"imageUrl"`
 	Quantity        uint                  `json:"quantity"`
+	Categories      []categoryDetail      `json:"categories"`
 	Status          equipmentStatusDetail `json:"status,omitzero"`
 }
 
@@ -167,7 +234,8 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 			 	'code', equipment_status.code,
 			 	'label', equipment_status.label
 			),
-			'quantity', COUNT(equipment.equipment_id)
+			'quantity', COUNT(equipment.equipment_id),
+			'categories', COALESCE(categories_agg.categories, '[]'::jsonb)
 		) AS equipment,
 		CASE 
             WHEN equipment_status.equipment_status_id IN ($1, $2) 
@@ -177,6 +245,16 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 	FROM equipment_type
 	JOIN equipment USING (equipment_type_id)
 	JOIN equipment_status USING (equipment_status_id)
+	LEFT JOIN LATERAL (
+		SELECT jsonb_agg(jsonb_build_object(
+			'id', category.category_id,
+			'name', category.name,
+			'color', category.color
+		)) AS categories
+		FROM category
+		JOIN equipment_type_category USING (category_id)
+		WHERE equipment_type_category.equipment_type_id = equipment_type.equipment_type_id
+	) categories_agg ON TRUE
 	LEFT JOIN LATERAL (
 		SELECT
 			jsonb_agg(
@@ -239,7 +317,12 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 
 	if params.name != nil && *params.name != "" {
 		names := strings.Split(*params.name, ",")
-		query += fmt.Sprintf(" AND name IN (SELECT unnest($%d::text[]))", argIdx)
+		query += fmt.Sprintf(` AND equipment_type.equipment_type_id IN (
+			SELECT equipment_type_id 
+			FROM equipment_type_category 
+			JOIN category USING (category_id)
+			WHERE category.name IN (SELECT unnest($%d::text[]))
+		)`, argIdx)
 		args = append(args, names)
 		argIdx++
 	}
@@ -267,7 +350,8 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 		equipment_status.equipment_status_id,
 		equipment_status.code,
 		equipment_status.label,
-		active_borrow_request.borrowers
+		active_borrow_request.borrowers,
+		categories_agg.categories
 	`
 
 	rows, err := r.querier.Query(ctx, query, args...)
@@ -295,12 +379,23 @@ func (r *repository) getByID(ctx context.Context, id string) (equipmentWithBorro
 				'code', equipment_status.code,
 				'label', equipment_status.label
 			),
-			'quantity', COUNT(equipment.equipment_id)
+			'quantity', COUNT(equipment.equipment_id),
+			'categories', COALESCE(categories_agg.categories, '[]'::jsonb)
 		) AS equipment,
 		COALESCE(active_borrow_request.borrowers, '[]'::jsonb) AS requests
 	FROM equipment_type
 	JOIN equipment USING (equipment_type_id)
 	JOIN equipment_status USING (equipment_status_id)
+	LEFT JOIN LATERAL (
+		SELECT jsonb_agg(jsonb_build_object(
+			'id', category.category_id,
+			'name', category.name,
+			'color', category.color
+		)) AS categories
+		FROM category
+		JOIN equipment_type_category USING (category_id)
+		WHERE equipment_type_category.equipment_type_id = equipment_type.equipment_type_id
+	) categories_agg ON TRUE
 	LEFT JOIN LATERAL (
 		SELECT
 			jsonb_agg(
@@ -365,7 +460,8 @@ func (r *repository) getByID(ctx context.Context, id string) (equipmentWithBorro
 		equipment_status.equipment_status_id,
 		equipment_status.code,
 		equipment_status.label,
-		active_borrow_request.borrowers
+		active_borrow_request.borrowers,
+		categories_agg.categories
 	`
 
 	var result equipmentWithBorrower
@@ -2097,7 +2193,12 @@ func (r *repository) getReturnRequests(ctx context.Context, params getReturnRequ
 	}
 
 	if params.category != nil && *params.category != "" {
-		query += " AND equipment_type.name = $2"
+		query += ` AND EXISTS (
+			SELECT 1 FROM equipment_type_category 
+			JOIN category USING (category_id)
+			WHERE equipment_type_category.equipment_type_id = equipment_type.equipment_type_id
+			AND category.name = $2
+		)`
 		args = append(args, *params.category)
 	}
 
@@ -2484,8 +2585,9 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		AND borrow_request.borrow_request_id IN (
 			SELECT borrow_request_id 
 			FROM borrow_request_item 
-			JOIN equipment_type USING (equipment_type_id)
-			WHERE equipment_type.name = $%d
+			JOIN equipment_type_category USING (equipment_type_id)
+			JOIN category USING (category_id)
+			WHERE category.name = $%d
 		)`, argIdx)
 		args = append(args, *params.category)
 		argIdx++
@@ -2637,7 +2739,12 @@ func (r *repository) getBorrowedItems(ctx context.Context, params borrowedItemPa
 	}
 
 	if params.category != nil && *params.category != "" {
-		query += fmt.Sprintf(" AND equipment_type.name = $%d", argIdx)
+		query += fmt.Sprintf(` AND EXISTS (
+			SELECT 1 FROM equipment_type_category 
+			JOIN category USING (category_id)
+			WHERE equipment_type_category.equipment_type_id = equipment_type.equipment_type_id
+			AND category.name = $%d
+		)`, argIdx)
 		args = append(args, *params.category)
 		argIdx++
 	}
@@ -2677,4 +2784,52 @@ func (r *repository) createAnomalyResult(ctx context.Context, arg anomaly) error
 	}
 
 	return nil
+}
+
+func (r *repository) deleteEquipment(ctx context.Context, id string) error {
+	query := "DELETE FROM equipment_type WHERE equipment_type_id = $1"
+	_, err := r.querier.Exec(ctx, query, id)
+	return err
+}
+
+func (r *repository) createCategory(ctx context.Context, name string, color *string) (categoryDetail, error) {
+	query := "INSERT INTO category (name, color) VALUES ($1, $2) RETURNING category_id, name, color"
+	var res categoryDetail
+	err := r.querier.QueryRow(ctx, query, name, color).Scan(&res.CategoryID, &res.Name, &res.Color)
+	return res, err
+}
+
+func (r *repository) getCategories(ctx context.Context) ([]categoryDetail, error) {
+	query := "SELECT category_id, name, color FROM category ORDER BY name"
+	rows, err := r.querier.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var categories []categoryDetail
+	for rows.Next() {
+		var cat categoryDetail
+		if err := rows.Scan(&cat.CategoryID, &cat.Name, &cat.Color); err != nil {
+			return nil, err
+		}
+		categories = append(categories, cat)
+	}
+	return categories, nil
+}
+
+func (r *repository) deleteCategory(ctx context.Context, id string) error {
+	query := "DELETE FROM category WHERE category_id = $1"
+	_, err := r.querier.Exec(ctx, query, id)
+	return err
+}
+
+func (r *repository) increaseQuantity(ctx context.Context, id string, quantity uint, acquisitionDate time.Time) error {
+	query := `
+	INSERT INTO equipment (equipment_type_id, acquired_at, equipment_status_id)
+	SELECT $1, $2, $3
+	FROM generate_series(1, $4)
+	`
+	_, err := r.querier.Exec(ctx, query, id, acquisitionDate, available, quantity)
+	return err
 }

@@ -6,6 +6,7 @@ import {
 	IconProfile,
 	IconQrCode,
 	IconRoundArrowUp,
+	IconTags,
 	IconUser,
 	IconUserRoundCog,
 } from "@/lib/icons";
@@ -50,6 +51,11 @@ export function getNavOptions(role?: UserRole, isMobile: boolean = false) {
 			to: "/equipments",
 			label: "Manage",
 			icon: IconBox,
+		},
+		{
+			to: "/categories",
+			label: "Categories",
+			icon: IconTags,
 		},
 		{
 			to: "/borrow-requests",

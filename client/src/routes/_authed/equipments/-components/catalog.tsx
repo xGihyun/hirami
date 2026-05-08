@@ -7,6 +7,7 @@ import {
 } from "@/lib/equipment/model";
 import type { Dispatch, JSX, SetStateAction } from "react";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toImageUrl } from "@/lib/api";
 import { StatusBadge } from "./status-badge";
@@ -26,6 +27,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteEquipment, equipmentsQuery } from "@/lib/equipment/api";
+
 type Props = {
 	equipments: EquipmentWithBorrower[];
 	selectedEquipments: SelectedEquipment[];
@@ -34,6 +38,24 @@ type Props = {
 
 export function Catalog(props: Props): JSX.Element {
 	const auth = useAuth();
+	const queryClient = useQueryClient();
+
+	const deleteMutation = useMutation({
+		mutationFn: deleteEquipment,
+		onSuccess: () => {
+			queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
+		},
+	});
+
+	function handleDelete(id: string) {
+		if (
+			confirm(
+				"Are you sure you want to permanently delete this equipment and all its records?",
+			)
+		) {
+			deleteMutation.mutate(id);
+		}
+	}
 
 	function handleSelect(
 		equipment: Equipment,
@@ -120,21 +142,30 @@ export function Catalog(props: Props): JSX.Element {
 									<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground line-clamp-1">
 										{equipment.name}
 									</LabelSmall>
+
+									<div className="flex flex-wrap gap-1 mt-1">
+										{equipment.categories.map((cat) => (
+											<Badge
+												key={cat.id}
+												variant="secondary"
+												className="text-[0.65rem] px-1 py-0 h-4"
+												style={{ backgroundColor: cat.color || undefined }}
+											>
+												{cat.name}
+											</Badge>
+										))}
+									</div>
 								</div>
 							</div>
 						</Card>
 					);
 
-					if (
-						isEquipmentManager &&
-						(equipment.status?.code === EquipmentStatus.Borrowed ||
-							equipment.status?.code === EquipmentStatus.Reserved)
-					) {
+					if (isEquipmentManager) {
 						return (
-							<Dialog>
-								<DialogTrigger>
+							<Dialog key={key}>
+								<DialogTrigger className="w-full h-full text-start">
 									{cardContent(
-										"text-start hover:bg-tertiary transition active:bg-tertiary",
+										"hover:bg-tertiary transition active:bg-tertiary",
 									)}
 								</DialogTrigger>
 
@@ -146,10 +177,9 @@ export function Catalog(props: Props): JSX.Element {
 										<DialogDescription>{equipment.name}</DialogDescription>
 									</DialogHeader>
 
-									<div className="flex gap-2">
+									<div className="flex flex-wrap gap-2">
 										<Button asChild>
 											<Link
-												key={key}
 												to="/equipments/$equipmentId/edit"
 												params={{ equipmentId: equipment.id }}
 											>
@@ -159,28 +189,23 @@ export function Catalog(props: Props): JSX.Element {
 
 										<Button variant="secondary" asChild>
 											<Link
-												key={key}
 												to="/equipments/$equipmentId"
 												params={{ equipmentId: equipment.id }}
 											>
 												View Borrowers
 											</Link>
 										</Button>
+
+										<Button
+											variant="destructive"
+											onClick={() => handleDelete(equipment.id)}
+											disabled={deleteMutation.isPending}
+										>
+											Delete Permanent
+										</Button>
 									</div>
 								</DialogContent>
 							</Dialog>
-						);
-					}
-
-					if (isEquipmentManager) {
-						return (
-							<Link
-								key={key}
-								to="/equipments/$equipmentId/edit"
-								params={{ equipmentId: equipment.id }}
-							>
-								{cardContent("hover:bg-tertiary transition active:bg-tertiary")}
-							</Link>
 						);
 					}
 

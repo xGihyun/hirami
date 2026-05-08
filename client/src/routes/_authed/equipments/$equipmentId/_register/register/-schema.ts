@@ -5,6 +5,7 @@ export const registerEquipmentNameSchema = z.object({
 	name: z.string().nonempty(),
 	brand: z.string().optional(),
 	model: z.string().optional(),
+	categoryIds: z.array(z.string()).nonempty({ message: "At least one category is required." }),
 });
 
 export type RegisterEquipmentNameSchema = z.infer<

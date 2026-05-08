@@ -17,6 +17,8 @@ import {
 	type ReviewBorrowResponse,
 	type UpdateBorrowRequest,
 	type UpdateBorrowResponse,
+	categorySchema,
+	type Category,
 } from "./model";
 import z from "zod";
 import type { RegisterEquipmentSchema } from "@/routes/_authed/equipments/$equipmentId/_register/register/-schema";
@@ -123,6 +125,71 @@ export const equipmentNamesQuery = () =>
 		queryKey: ["equipment-names"],
 		queryFn: () => getEquipmentNames(),
 	});
+
+async function getCategories(): Promise<Category[]> {
+	const url = new URL(`${BACKEND_URL}/categories`);
+	const response = await fetch(url.toString(), {
+		method: "GET",
+	});
+
+	const result: ApiResponse<Category[]> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return categorySchema.array().parse(result.data);
+}
+
+export const categoriesQuery = queryOptions({
+	queryKey: ["categories"],
+	queryFn: getCategories,
+});
+
+export async function createCategory(value: {
+	name: string;
+	color?: string;
+}): Promise<ApiResponse<Category>> {
+	const response = await fetch(`${BACKEND_URL}/categories`, {
+		method: "POST",
+		body: JSON.stringify(value),
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	const result: ApiResponse<Category> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result;
+}
+
+export async function deleteCategory(id: string): Promise<ApiResponse> {
+	const response = await fetch(`${BACKEND_URL}/categories/${id}`, {
+		method: "DELETE",
+	});
+
+	const result: ApiResponse = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result;
+}
+
+export async function deleteEquipment(id: string): Promise<ApiResponse> {
+	const response = await fetch(`${BACKEND_URL}/equipments/${id}`, {
+		method: "DELETE",
+	});
+
+	const result: ApiResponse = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result;
+}
 
 //
 // Borrow Request
@@ -431,6 +498,9 @@ export async function registerEquipment(
 	formData.append("acquisitionDate", value.acquisitionDate.toISOString());
 	formData.append("quantity", value.quantity.toString());
 	if (value.image) formData.append("image", value.image);
+	if (value.categoryIds && value.categoryIds.length > 0) {
+		formData.append("categoryIds", value.categoryIds.join(","));
+	}
 
 	const response = await fetch(`${BACKEND_URL}/equipments`, {
 		method: "POST",

@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getEquipmentInventoryStatusQuery } from "@/lib/equipment/api";
 import { FullScreenLoading } from "@/components/loading";
-import { H1, H2, LabelMedium, TitleSmall } from "@/components/typography";
+import { H1, H2, LabelLarge, LabelMedium, TitleSmall } from "@/components/typography";
 import {
 	Form,
 	FormControl,
@@ -38,6 +38,7 @@ import { Separator } from "@/components/ui/separator";
 import { Failed } from "@/components/failed";
 import { Success } from "@/components/success";
 import { ReallocateForm } from "./-components/reallocate-form";
+import { IncreaseQuantityForm } from "./-components/increase-quantity-form";
 
 export const Route = createFileRoute("/_authed/equipments/$equipmentId/edit/")({
 	component: RouteComponent,
@@ -474,7 +475,15 @@ function RouteComponent(): JSX.Element {
 
 				<Separator />
 
-				<section>
+				<section className="space-y-4">
+					<LabelLarge>Increase Quantity</LabelLarge>
+					<IncreaseQuantityForm />
+				</section>
+
+				<Separator />
+
+				<section className="space-y-4">
+					<LabelLarge>Reallocate Items</LabelLarge>
 					<ReallocateForm equipmentType={equipmentType.data!} />
 				</section>
 			</div>

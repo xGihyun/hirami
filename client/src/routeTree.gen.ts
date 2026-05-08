@@ -22,6 +22,7 @@ import { Route as AuthedProfileIndexRouteImport } from './routes/_authed/profile
 import { Route as AuthedPersonalHistoryIndexRouteImport } from './routes/_authed/personal-history/index'
 import { Route as AuthedHistoryIndexRouteImport } from './routes/_authed/history/index'
 import { Route as AuthedEquipmentsIndexRouteImport } from './routes/_authed/equipments/index'
+import { Route as AuthedCategoriesIndexRouteImport } from './routes/_authed/categories/index'
 import { Route as AuthedBorrowRequestsIndexRouteImport } from './routes/_authed/borrow-requests/index'
 import { Route as AuthPasswordResetIndexRouteImport } from './routes/_auth/password-reset/index'
 import { Route as AuthOnboardingIndexRouteImport } from './routes/_auth/onboarding/index'
@@ -104,6 +105,11 @@ const AuthedHistoryIndexRoute = AuthedHistoryIndexRouteImport.update({
 const AuthedEquipmentsIndexRoute = AuthedEquipmentsIndexRouteImport.update({
   id: '/equipments/',
   path: '/equipments/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCategoriesIndexRoute = AuthedCategoriesIndexRouteImport.update({
+  id: '/categories/',
+  path: '/categories/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedBorrowRequestsIndexRoute =
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthOnboardingIndexRoute
   '/password-reset': typeof AuthPasswordResetIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
+  '/categories': typeof AuthedCategoriesIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
   '/personal-history': typeof AuthedPersonalHistoryIndexRoute
@@ -258,6 +265,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthOnboardingIndexRoute
   '/password-reset': typeof AuthPasswordResetIndexRoute
   '/borrow-requests': typeof AuthedBorrowRequestsIndexRoute
+  '/categories': typeof AuthedCategoriesIndexRoute
   '/equipments': typeof AuthedEquipmentsIndexRoute
   '/history': typeof AuthedHistoryIndexRoute
   '/personal-history': typeof AuthedPersonalHistoryIndexRoute
@@ -291,6 +299,7 @@ export interface FileRoutesById {
   '/_auth/onboarding/': typeof AuthOnboardingIndexRoute
   '/_auth/password-reset/': typeof AuthPasswordResetIndexRoute
   '/_authed/borrow-requests/': typeof AuthedBorrowRequestsIndexRoute
+  '/_authed/categories/': typeof AuthedCategoriesIndexRoute
   '/_authed/equipments/': typeof AuthedEquipmentsIndexRoute
   '/_authed/history/': typeof AuthedHistoryIndexRoute
   '/_authed/personal-history/': typeof AuthedPersonalHistoryIndexRoute
@@ -324,6 +333,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/password-reset'
     | '/borrow-requests'
+    | '/categories'
     | '/equipments'
     | '/history'
     | '/personal-history'
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/password-reset'
     | '/borrow-requests'
+    | '/categories'
     | '/equipments'
     | '/history'
     | '/personal-history'
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/_auth/onboarding/'
     | '/_auth/password-reset/'
     | '/_authed/borrow-requests/'
+    | '/_authed/categories/'
     | '/_authed/equipments/'
     | '/_authed/history/'
     | '/_authed/personal-history/'
@@ -501,6 +513,13 @@ declare module '@tanstack/react-router' {
       path: '/equipments'
       fullPath: '/equipments'
       preLoaderRoute: typeof AuthedEquipmentsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/categories/': {
+      id: '/_authed/categories/'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof AuthedCategoriesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/borrow-requests/': {
@@ -731,6 +750,7 @@ const AuthedEquipmentsEquipmentIdRouteWithChildren =
 
 interface AuthedRouteChildren {
   AuthedBorrowRequestsIndexRoute: typeof AuthedBorrowRequestsIndexRoute
+  AuthedCategoriesIndexRoute: typeof AuthedCategoriesIndexRoute
   AuthedEquipmentsIndexRoute: typeof AuthedEquipmentsIndexRoute
   AuthedHistoryIndexRoute: typeof AuthedHistoryIndexRoute
   AuthedPersonalHistoryIndexRoute: typeof AuthedPersonalHistoryIndexRoute
@@ -747,6 +767,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedBorrowRequestsIndexRoute: AuthedBorrowRequestsIndexRoute,
+  AuthedCategoriesIndexRoute: AuthedCategoriesIndexRoute,
   AuthedEquipmentsIndexRoute: AuthedEquipmentsIndexRoute,
   AuthedHistoryIndexRoute: AuthedHistoryIndexRoute,
   AuthedPersonalHistoryIndexRoute: AuthedPersonalHistoryIndexRoute,

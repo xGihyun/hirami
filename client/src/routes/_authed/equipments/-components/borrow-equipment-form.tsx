@@ -64,10 +64,21 @@ export function BorrowEquipmentForm(
 	const now = new Date();
 
 	const form = useForm<CreateBorrowRequest>({
-		resolver: zodResolver(createBorrowRequestSchema),
+		resolver: zodResolver(
+			createBorrowRequestSchema.refine(
+				(data) => {
+					const minTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
+					return data.expectedReturnAt >= minTime;
+				},
+				{
+					message: "Expected return time must be at least 2 hours from now.",
+					path: ["expectedReturnAt"],
+				},
+			),
+		),
 		defaultValues: {
 			equipments: [],
-			expectedReturnAt: now,
+			expectedReturnAt: new Date(Date.now() + 2 * 60 * 60 * 1000 + 60000), // Default to 2h 1m from now
 			location: "",
 			purpose: "",
 			requestedBy: auth.user?.id,
