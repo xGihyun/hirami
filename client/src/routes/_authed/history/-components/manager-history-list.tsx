@@ -75,17 +75,23 @@ export function ManagerHistoryList(props: Props): JSX.Element {
 							>
 								<ManagerHistoryItem transaction={transaction} />
 							</Link>
-							<DrawerTrigger
-								className="hidden md:block w-full text-start cursor-pointer"
-								onClick={() => setSelectedRequest(transaction)}
-							>
-								<ManagerHistoryItem transaction={transaction} />
+							<DrawerTrigger asChild>
+								<button
+									type="button"
+									className="hidden md:block w-full text-start cursor-pointer"
+									onClick={() => setSelectedRequest(transaction)}
+								>
+									<ManagerHistoryItem transaction={transaction} />
+								</button>
 							</DrawerTrigger>
 						</div>
 					))}
 				</div>
 
-				<DrawerContent className="space-y-4 h-full">
+				<DrawerContent
+					className="space-y-4 h-full"
+					onCloseAutoFocus={(e) => e.preventDefault()}
+				>
 					<div className="h-full overflow-y-auto md:max-w-sm w-full mx-auto">
 						<DrawerHeader>
 							<DrawerTitle className="items-center flex flex-col">
