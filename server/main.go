@@ -58,12 +58,17 @@ func migrate(dbURL string) {
 func main() {
 	_ = godotenv.Load()
 
-	valkeyAddr, ok := os.LookupEnv("VALKEY_ADDRESS")
+	valkeyURL, ok := os.LookupEnv("VALKEY_URL")
 	if !ok {
-		panic("VALKEY_ADDRESS not found.")
+		panic("VALKEY_URL not found.")
 	}
 
-	valkeyClient, err := valkey.NewClient(valkey.ClientOption{InitAddress: []string{valkeyAddr}})
+	opt, err := valkey.ParseURL(valkeyURL)
+	if err != nil {
+		panic(err)
+	}
+
+	valkeyClient, err := valkey.NewClient(opt)
 	if err != nil {
 		panic(err)
 	}
