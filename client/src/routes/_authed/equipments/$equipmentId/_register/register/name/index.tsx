@@ -1,7 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { H1, TitleSmall } from "@/components/typography";
 import { addFilesIllustration } from "@/lib/assets";
-import z from "zod";
 import { type JSX } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,22 +15,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRegisterEquipment } from "../../-context";
+import {
+	registerEquipmentNameSchema,
+	type RegisterEquipmentNameSchema,
+} from "../-schema";
+import { v4 as uuidv4 } from "uuid";
 
 export const Route = createFileRoute(
 	"/_authed/equipments/$equipmentId/_register/register/name/",
 )({
 	component: RouteComponent,
-});
+	beforeLoad: () => {
+		const isMobile = window.innerWidth < 768;
 
-const registerEquipmentNameSchema = z.object({
-	name: z.string().nonempty({ error: "This field must not be left blank." }),
-	brand: z.string().optional(),
-	model: z.string().optional(),
+		if (!isMobile) {
+			throw redirect({
+				to: "/equipments/$equipmentId/register",
+				params: { equipmentId: uuidv4() },
+			});
+		}
+	},
 });
-
-export type RegisterEquipmentNameSchema = z.infer<
-	typeof registerEquipmentNameSchema
->;
 
 function RouteComponent(): JSX.Element {
 	const navigate = Route.useNavigate();

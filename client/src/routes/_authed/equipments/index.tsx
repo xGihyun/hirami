@@ -1,8 +1,7 @@
 import {
 	equipmentNamesQuery,
 	equipmentsQuery,
-	type Equipment,
-} from "@/lib/equipment";
+} from "@/lib/equipment/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,8 @@ import { LabelMedium } from "@/components/typography";
 import { CatalogCategories } from "./-components/catalog-categories";
 import { v4 as uuidv4 } from "uuid";
 import { ComponentLoading } from "@/components/loading";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
+import type { Equipment } from "@/lib/equipment/model";
 
 const searchSchema = z.object({
 	categories: z.array(z.string()).optional().default([]),
@@ -90,21 +91,21 @@ function RouteComponent(): JSX.Element {
 		}
 
 		eventSource.addEventListener(
-			"equipment:create",
+			EquipmentServerEvent.EquipmentCreate,
 			handleEquipmentInvalidation,
 		);
 		eventSource.addEventListener(
-			"equipment:reallocate",
+			EquipmentServerEvent.EquipmentReallocate,
 			handleEquipmentRellocation,
 		);
 
 		return () => {
 			eventSource.removeEventListener(
-				"equipment:create",
+				EquipmentServerEvent.EquipmentCreate,
 				handleEquipmentInvalidation,
 			);
 			eventSource.removeEventListener(
-				"equipment:reallocate",
+				EquipmentServerEvent.EquipmentReallocate,
 				handleEquipmentRellocation,
 			);
 			eventSource.close();
@@ -123,7 +124,7 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<div className="relative space-y-4">
+		<div className="relative space-y-4 min-w-0 overflow-x-hidden">
 			<CatalogHeader user={auth.user!} />
 			<CatalogSearch user={auth.user!} />
 			<CatalogCategories categories={equipmentNames.data || []} />
@@ -144,11 +145,11 @@ function RouteComponent(): JSX.Element {
 
 			{auth.user?.role.code === UserRole.EquipmentManager ? (
 				<Button
-					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow"
+					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow md:w-92 md:left-auto md:right-8 md:bottom-10"
 					asChild
 				>
 					<Link
-						to="/equipments/$equipmentId/register/name"
+						to="/equipments/$equipmentId/register"
 						params={{ equipmentId: uuidv4() }}
 					>
 						Register New Equipment

@@ -37,7 +37,7 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
 
 		const authSession = await getAuthSession(token);
 		if (authSession.data === null) {
-			setUser(null);
+			await signOut();
 			return null;
 		}
 		setUser(authSession.data.user);
@@ -48,20 +48,19 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
 
 	async function signOut(): Promise<void> {
 		const token = getCookie("session");
-		if (!token || !user) {
-			return;
-		}
 
-		await fetch(`${BACKEND_URL}/logout`, {
-			method: "POST",
-			body: JSON.stringify({
-				token,
-				userId: user.id,
-			}),
-			headers: {
-				"Content-Type": "application/json",
-			},
-		});
+		if (token && user) {
+			await fetch(`${BACKEND_URL}/logout`, {
+				method: "POST",
+				body: JSON.stringify({
+					token,
+					userId: user.id,
+				}),
+				headers: {
+					"Content-Type": "application/json",
+				},
+			});
+		}
 
 		setUser(null);
 		deleteCookie("session");

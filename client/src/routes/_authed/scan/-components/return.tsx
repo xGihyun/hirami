@@ -1,9 +1,3 @@
-import {
-	BorrowRequestStatus,
-	updateBorrowRequest,
-	type BorrowedEquipment,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DrawerClose,
@@ -27,11 +21,8 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { Failed } from "@/components/failed";
 import { Success } from "@/components/success";
-import {
-	confirmReturnRequest,
-	type ReturnRequest,
-} from "@/lib/equipment/return";
-import type { Equipment } from "@/lib/equipment";
+import type { ReturnRequest, Equipment } from "@/lib/equipment/model";
+import { confirmReturnRequest } from "@/lib/equipment/api";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/auth";
 
@@ -55,7 +46,12 @@ export function Return(props: Props): JSX.Element {
 
 	if (mutation.isError) {
 		return (
-			<Failed backLink="/scan" header="Failed to confirm return." fn={reset} />
+			<Failed
+				backLink="/scan"
+				header="Return confirmation failed."
+				fn={reset}
+				className="md:absolute md:inset-0 md:z-500"
+			/>
 		);
 	}
 
@@ -63,15 +59,19 @@ export function Return(props: Props): JSX.Element {
 		return (
 			<Success
 				backLink="/scan"
-				header="Successfully returned equipments."
+				header="Return confirmed successfully."
 				fn={reset}
+				className="md:absolute md:inset-0 md:z-500"
 			/>
 		);
 	}
 
 	return (
-		<DrawerContent className="space-y-4 h-full">
-			<DrawerHeader>
+		<DrawerContent
+			className="space-y-4 h-full md:h-auto"
+			onCloseAutoFocus={(e) => e.preventDefault()}
+		>
+			<DrawerHeader className="md:max-w-sm md:w-full md:mx-auto md:p-0 md:mb-0">
 				<DrawerTitle className="items-center flex flex-col">
 					<Avatar className="size-12">
 						<AvatarImage src={toImageUrl(borrower.avatarUrl)} />
@@ -90,7 +90,7 @@ export function Return(props: Props): JSX.Element {
 				</DrawerDescription>
 			</DrawerHeader>
 
-			<div className="px-4 py-4 overflow-y-auto space-y-4">
+			<div className="px-4 py-4 overflow-y-auto space-y-4 md:max-w-sm md:w-full md:mx-auto">
 				<EquipmentList equipments={props.request.equipments} />
 
 				<div className="space-y-1">
@@ -103,7 +103,7 @@ export function Return(props: Props): JSX.Element {
 					/>
 				</div>
 
-				<DrawerFooter>
+				<DrawerFooter className="p-0">
 					<Button
 						onClick={() => {
 							if (!auth.user) return;
@@ -125,7 +125,9 @@ export function Return(props: Props): JSX.Element {
 	);
 }
 
-function EquipmentList({ equipments }: { equipments: Equipment[] }) {
+function EquipmentList({
+	equipments,
+}: { equipments: Omit<Equipment, "status">[] }) {
 	return (
 		<div className="space-y-2.5">
 			{equipments.map((equipment) => {

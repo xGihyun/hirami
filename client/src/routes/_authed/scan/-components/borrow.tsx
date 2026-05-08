@@ -1,9 +1,9 @@
+import { updateBorrowRequest } from "@/lib/equipment/api";
 import {
 	BorrowRequestStatus,
-	updateBorrowRequest,
-	type BorrowedEquipment,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
+	type BorrowRequestItem,
+	type BorrowRequest,
+} from "@/lib/equipment/model";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DrawerClose,
@@ -21,9 +21,10 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { Failed } from "@/components/failed";
 import { Success } from "@/components/success";
+import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment/constant";
 
 type Props = {
-	transaction: BorrowTransaction;
+	transaction: BorrowRequest;
 	reset: () => void;
 };
 
@@ -40,7 +41,12 @@ export function Borrow(props: Props): JSX.Element {
 
 	if (mutation.isError) {
 		return (
-			<Failed backLink="/scan" header="Failed to claim request." fn={reset} />
+			<Failed
+				backLink="/scan"
+				header="Failed to claim request."
+				fn={reset}
+				className="md:absolute md:inset-0 md:z-500"
+			/>
 		);
 	}
 
@@ -50,13 +56,17 @@ export function Borrow(props: Props): JSX.Element {
 				backLink="/scan"
 				header="Successfully claimed equipments."
 				fn={reset}
+				className="md:absolute md:inset-0 md:z-500"
 			/>
 		);
 	}
 
 	return (
-		<DrawerContent className="space-y-4 h-full">
-			<DrawerHeader>
+		<DrawerContent
+			className="space-y-4 h-full md:h-auto"
+			onCloseAutoFocus={(e) => e.preventDefault()}
+		>
+			<DrawerHeader className="md:max-w-sm md:w-full md:mx-auto md:p-0 md:mb-0">
 				<DrawerTitle className="items-center flex flex-col">
 					<Avatar className="size-12">
 						<AvatarImage src={toImageUrl(borrower.avatarUrl)} />
@@ -71,17 +81,17 @@ export function Borrow(props: Props): JSX.Element {
 				</DrawerTitle>
 				<DrawerDescription>
 					Requested on{" "}
-					{format(props.transaction.borrowedAt, "MMM d, yyyy - hh:mm a")}
+					{format(props.transaction.requestedAt, "MMM d, yyyy - hh:mm a")}
 				</DrawerDescription>
 			</DrawerHeader>
-			<div className="px-4 py-4 overflow-y-auto space-y-4">
-				<EquipmentList equipments={props.transaction.equipments} />
+			<div className="px-4 py-4 overflow-y-auto space-y-4 md:max-w-sm md:w-full md:mx-auto">
+				<EquipmentList equipments={props.transaction.requestedItems} />
 
-				<DrawerFooter>
+				<DrawerFooter className="p-0">
 					<Button
 						onClick={() =>
 							mutation.mutate({
-								id: props.transaction.borrowRequestId,
+								id: props.transaction.id,
 								status: BorrowRequestStatus.Claimed,
 							})
 						}
@@ -97,17 +107,15 @@ export function Borrow(props: Props): JSX.Element {
 	);
 }
 
-function EquipmentList({ equipments }: { equipments: BorrowedEquipment[] }) {
+function EquipmentList({ equipments }: { equipments: BorrowRequestItem[] }) {
 	return (
 		<div className="space-y-2.5">
-			{equipments.map((equipment) => {
-				const key = equipment.borrowRequestItemId;
+			{equipments.map(({ id, equipment }) => {
 				const equipmentImage =
-					toImageUrl(equipment.imageUrl) ||
-					"https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
+					toImageUrl(equipment.imageUrl) || DEFAULT_EQUIPMENT_IMAGE;
 
 				return (
-					<div className="flex flex-col gap-2 w-full" key={key}>
+					<div className="flex flex-col gap-2 w-full" key={id}>
 						<div className="flex items-center gap-3 justify-between p-4 bg-card rounded-2xl shadow-item">
 							<div className="flex items-center gap-2 w-full">
 								<img

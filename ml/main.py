@@ -14,8 +14,7 @@ import math
 
 
 class Equipment(BaseModel):
-    borrow_request_item_id: str = Field(alias="borrowRequestItemId")
-    equipment_type_id: str = Field(alias="equipmentTypeId")
+    id: str
     name: str
     brand: Optional[str]
     model: Optional[str]

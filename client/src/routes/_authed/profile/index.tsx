@@ -21,11 +21,7 @@ import { IconUserPen } from "@/lib/icons";
 import { H2 } from "@/components/typography";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
-import {
-	editUser,
-	editUserSchema,
-	type EditUserSchema,
-} from "@/lib/user";
+import { editUser, editUserSchema, type EditUserSchema } from "@/lib/user";
 
 export const Route = createFileRoute("/_authed/profile/")({
 	component: RouteComponent,
@@ -47,7 +43,8 @@ function RouteComponent(): JSX.Element {
 			middleName: auth.user?.middleName || "",
 			lastName: auth.user?.lastName,
 			userId: auth.user?.id || "",
-            role: auth.user?.role.code
+			role: auth.user?.role.code,
+			isActive: auth.user?.isActive,
 		},
 		mode: "onTouched",
 	});
@@ -100,7 +97,7 @@ function RouteComponent(): JSX.Element {
 
 	return (
 		<div className="flex flex-col justify-between gap-4">
-			<div className="space-y-6">
+			<div className="space-y-6 max-w-sm w-full mx-auto">
 				<H2 className="text-center">Profile</H2>
 
 				<Form {...form}>
@@ -235,7 +232,7 @@ function RouteComponent(): JSX.Element {
 							<Button
 								type="submit"
 								className="w-full"
-								disabled={mutation.isPending}
+								disabled={!form.formState.isDirty || !form.formState.isValid || mutation.isPending}
 							>
 								Update Profile
 							</Button>
@@ -243,7 +240,7 @@ function RouteComponent(): JSX.Element {
 							<Button
 								type="button"
 								onClick={handleLogout}
-								className="w-full"
+								className="w-full block md:hidden"
 								variant="secondary"
 								disabled={mutation.isPending}
 							>

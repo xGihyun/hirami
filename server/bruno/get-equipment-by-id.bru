@@ -1,0 +1,25 @@
+meta {
+  name: get-equipment-by-id
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/equipments
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~name: Volleyball
+}
+
+vars:post-response {
+  equipmentTypeId: {{res.body.data[0].id}}
+  equipmentTypes: {{res.body.data}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -10,10 +10,11 @@ import {
 import type { RegisterPasswordSchema } from "./register/password";
 import type { RegisterEmailSchema } from "./register/email";
 import type { RegisterPersonalSchema } from "./register/personal";
+import { UserRole } from "@/lib/user";
 
 export type RegisterData = RegisterEmailSchema &
 	RegisterPasswordSchema &
-	RegisterPersonalSchema;
+	RegisterPersonalSchema & { role: UserRole };
 
 export type RegisterContextValue = {
 	value: RegisterData;
@@ -34,6 +35,7 @@ export function RegisterProvider(props: RegisterProviderProps): JSX.Element {
 		middleName: "",
 		firstName: "",
 		lastName: "",
+		role: UserRole.Borrower,
 	});
 
 	return (

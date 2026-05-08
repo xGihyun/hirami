@@ -6,21 +6,20 @@ const borrowEquipmentItemSchema = z.object({
 	quantity: z.number().positive(),
 });
 
-export const borrowRequestSchema = z.object({
+export const createBorrowRequestSchema = z.object({
 	equipments: z.array(borrowEquipmentItemSchema),
-	location: z
-		.string()
-		.nonempty({ error: "This field must not be left blank." }),
-	purpose: z.string().nonempty({ error: "This field must not be left blank." }),
+	location: z.string().nonempty(),
+	purpose: z.string().nonempty(),
 	expectedReturnAt: z.date(),
-	requestedBy: z
-		.string()
-		.nonempty({ error: "This field must not be left blank." }),
+	requestedBy: z.string().nonempty(),
+	agreedToPolicy: z.boolean().refine((v) => v === true, {
+		message: "You must agree to the borrowing policy",
+	}),
 });
 
-export type BorrowRequestSchema = z.infer<typeof borrowRequestSchema>;
+export type CreateBorrowRequest = z.infer<typeof createBorrowRequestSchema>;
 
-export async function borrow(value: BorrowRequestSchema): Promise<ApiResponse> {
+export async function createBorrowRequest(value: CreateBorrowRequest): Promise<ApiResponse> {
 	const response = await fetch(`${BACKEND_URL}/borrow-requests`, {
 		method: "POST",
 		body: JSON.stringify(value),

@@ -35,11 +35,12 @@ func (suite *UserRepoTestSuite) SetupSuite() {
 	}
 	suite.pgContainer = pgContainer
 
-	server := *NewServer(NewRepository(pgContainer.Pool))
+	server := *NewServer(NewRepository(pgContainer.Pool), nil)
 
 	mux := http.NewServeMux()
 	mux.Handle("/register", api.Handler(server.Register))
 	mux.Handle("/login", api.Handler(server.Login))
+	mux.Handle("/sessions", api.Handler(server.GetSession))
 
 	suite.httpServer = httptest.NewServer(mux)
 }
@@ -138,8 +139,99 @@ func (suite *UserRepoTestSuite) TestLoginInvalidCredentials() {
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	suite.Require().NoError(err)
 
-	suite.Equal(http.StatusNotFound, resp.StatusCode)
+	suite.Equal(http.StatusUnauthorized, resp.StatusCode)
 	suite.Equal("Invalid credentials.", result.Message)
+}
+
+func (suite *UserRepoTestSuite) TestLoginDeactivatedUser() {
+	email := "deactivated@test.com"
+	password := "SecurePass123!"
+
+	err := RegisterTestUser(suite.httpServer.URL,
+		RegisterRequest{
+			Email:     email,
+			Password:  password,
+			FirstName: "Deactivated",
+			LastName:  "User",
+		},
+	)
+	suite.NoError(err)
+
+	// Deactivate the user
+	_, err = suite.pgContainer.Pool.Exec(suite.ctx, "UPDATE person SET is_active = false WHERE email = $1", email)
+	suite.NoError(err)
+
+	payload := loginRequest{
+		Email:    email,
+		Password: password,
+	}
+
+	jsonPayload, err := json.Marshal(payload)
+	suite.Require().NoError(err)
+
+	resp, err := http.Post(
+		suite.httpServer.URL+"/login",
+		"application/json",
+		bytes.NewBuffer(jsonPayload),
+	)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	var result api.Response
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	suite.Require().NoError(err)
+
+	suite.Equal(http.StatusUnauthorized, resp.StatusCode)
+	suite.Equal("Invalid credentials.", result.Message)
+}
+
+func (suite *UserRepoTestSuite) TestSessionValidationDeactivatedUser() {
+	email := "session_deactivated@test.com"
+	password := "SecurePass123!"
+
+	err := RegisterTestUser(suite.httpServer.URL,
+		RegisterRequest{
+			Email:     email,
+			Password:  password,
+			FirstName: "Session",
+			LastName:  "Deactivated",
+		},
+	)
+	suite.NoError(err)
+
+	// Login to get a token
+	payload := loginRequest{
+		Email:    email,
+		Password: password,
+	}
+	jsonPayload, _ := json.Marshal(payload)
+	resp, _ := http.Post(suite.httpServer.URL+"/login", "application/json", bytes.NewBuffer(jsonPayload))
+	var loginResult api.Response
+	json.NewDecoder(resp.Body).Decode(&loginResult)
+	resp.Body.Close()
+
+	token := loginResult.Data.(map[string]any)["token"].(string)
+
+	// Verify session is valid initially
+	resp, _ = http.Get(suite.httpServer.URL + "/sessions?token=" + token)
+	suite.Equal(http.StatusOK, resp.StatusCode)
+	resp.Body.Close()
+
+	// Deactivate the user
+	_, err = suite.pgContainer.Pool.Exec(suite.ctx, "UPDATE person SET is_active = false WHERE email = $1", email)
+	suite.NoError(err)
+
+	// Verify session is now invalid
+	resp, err = http.Get(suite.httpServer.URL + "/sessions?token=" + token)
+	suite.Require().NoError(err)
+	defer resp.Body.Close()
+
+	var result api.Response
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	suite.Require().NoError(err)
+
+	suite.Equal(http.StatusInternalServerError, resp.StatusCode)
+	suite.Equal("Failed to get user session.", result.Message)
 }
 
 func RegisterTestUser(serverURL string, data RegisterRequest) error {

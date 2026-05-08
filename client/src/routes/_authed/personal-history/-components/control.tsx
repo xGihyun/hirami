@@ -17,34 +17,38 @@ export function Control(): JSX.Element {
 
 	type SortField = "borrowedAt" | "returnedAt" | "status";
 
-	async function toggleSort(field: SortField, order: Sort): Promise<void> {
-		const newOrder = order === Sort.Asc ? Sort.Desc : Sort.Asc;
-
+	async function updateSort(field: SortField, order: Sort): Promise<void> {
 		await navigate({
 			search: (prev) => ({
 				...prev,
 				sortBy: field,
-				sort: newOrder,
+				sort: order,
 			}),
 		});
 	}
 
 	function handleSortChange(field: SortField) {
-		if (search.sort && search.sortBy === field) {
-			toggleSort(field, search.sort);
+		if (search.sortBy === field) {
+			const currentOrder = search.sort || Sort.Asc;
+			const newOrder = currentOrder === Sort.Asc ? Sort.Desc : Sort.Asc;
+			updateSort(field, newOrder);
 			return;
 		}
 
-		toggleSort(field, Sort.Asc);
+		updateSort(field, Sort.Asc);
 	}
 
 	function renderSortIcon(field: SortField) {
-		if (search.sortBy !== field) return null;
-
-		return search.sort === Sort.Desc ? (
-			<IconArrowDown className="mr-2 size-4" />
-		) : (
-			<IconArrowUp className="mr-2 size-4" />
+		return (
+			<div className="flex items-center justify-center size-6 mr-1">
+				{search.sortBy === field ? (
+					search.sort === Sort.Desc ? (
+						<IconArrowDown className="size-4" />
+					) : (
+						<IconArrowUp className="size-4" />
+					)
+				) : null}
+			</div>
 		);
 	}
 
@@ -58,7 +62,7 @@ export function Control(): JSX.Element {
 						<IconArrowDownUp className="size-5" />
 					</Button>
 				</DropdownMenuTrigger>
-				<DropdownMenuContent>
+				<DropdownMenuContent align="end">
 					<DropdownMenuItem onClick={() => handleSortChange("borrowedAt")}>
 						{renderSortIcon("borrowedAt")}
 						Date and Time Borrowed

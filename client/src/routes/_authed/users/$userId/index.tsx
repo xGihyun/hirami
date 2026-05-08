@@ -1,8 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { toImageUrl } from "@/lib/api";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,9 +13,9 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useRef, useState, type JSX } from "react";
-import { IconArrowLeft, IconUserPen } from "@/lib/icons";
-import { H2 } from "@/components/typography";
+import { useEffect, useMemo, useRef, type JSX } from "react";
+import { IconArrowLeft, IconEdit, IconUserPen } from "@/lib/icons";
+import { H1, LabelMedium, TitleSmall } from "@/components/typography";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
 import {
@@ -26,11 +24,27 @@ import {
 	userByIdQuery,
 	UserRole,
 	type EditUserSchema,
+	checkEmailExists,
 } from "@/lib/user";
 import {
-	NativeSelect,
-	NativeSelectOption,
-} from "@/components/ui/native-select";
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toImageUrl } from "@/lib/api";
+import { ComponentLoading } from "@/components/loading";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authed/users/$userId/")({
 	component: RouteComponent,
@@ -45,10 +59,9 @@ function RouteComponent(): JSX.Element {
 	const userResult = useQuery(userByIdQuery(params.userId));
 	const user = userResult.data;
 	const queryClient = useQueryClient();
-
-	const [previewUrl, setPreviewUrl] = useState<string | null>(
-		toImageUrl(user?.avatarUrl) || null,
-	);
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+	const [pendingData, setPendingData] = useState<EditUserSchema | null>(null);
 
 	const form = useForm<EditUserSchema>({
 		resolver: zodResolver(editUserSchema),
@@ -59,6 +72,7 @@ function RouteComponent(): JSX.Element {
 			lastName: user?.lastName,
 			userId: user?.id || "",
 			role: user?.role.code,
+			isActive: user?.isActive,
 		},
 		mode: "onTouched",
 	});
@@ -76,17 +90,63 @@ function RouteComponent(): JSX.Element {
 			return;
 		}
 
-		value.userId = user.id;
-		mutation.mutate(value);
+		setIsSubmitting(true);
+		try {
+			if (value.email && value.email !== user.email) {
+				const exists = await checkEmailExists(value.email);
+				if (exists) {
+					form.setError("email", {
+						type: "manual",
+						message: "Email is in use. Try another",
+					});
+					return;
+				}
+			}
+
+			setPendingData(value);
+			setIsConfirmOpen(true);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsSubmitting(false);
+		}
+	}
+
+	function handleConfirm() {
+		if (pendingData) {
+			mutation.mutate(pendingData);
+		}
+		setIsConfirmOpen(false);
+	}
+
+	const imageFile = form.watch("avatar");
+	const previewUrl = useMemo(() => {
+		if (user?.avatarUrl && !imageFile) {
+			return toImageUrl(user.avatarUrl);
+		}
+
+		if (!imageFile) return null;
+		const url = URL.createObjectURL(imageFile);
+		return url;
+	}, [imageFile]);
+
+	useEffect(() => {
+		return () => {
+			if (previewUrl) URL.revokeObjectURL(previewUrl);
+		};
+	}, [previewUrl]);
+
+	if (mutation.isPending) {
+		return <ComponentLoading className="w-full h-full" />;
 	}
 
 	if (mutation.isError) {
 		return (
 			<Failed
 				backLink={`/users/${params.userId}`}
-				header="User update failed."
+				header="User account update failed."
 				fn={form.handleSubmit(onSubmit)}
-				backMessage="or return to Profile"
+				backMessage="or return to User Management"
 				retry={form.handleSubmit(onSubmit)}
 			/>
 		);
@@ -96,7 +156,7 @@ function RouteComponent(): JSX.Element {
 		return (
 			<Success
 				backLink={`/users`}
-				header="User updated successfully."
+				header="User account updated successfully."
 				fn={() => {
 					mutation.reset();
 				}}
@@ -105,180 +165,230 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<div className="flex flex-col justify-between gap-4 relative">
+		<div>
 			<Button
 				variant="ghost"
 				size="icon"
-				className="size-15 mb-0 absolute inset-0"
+				className="size-15 hidden md:flex"
+				asChild
 			>
 				<Link to="/users">
 					<IconArrowLeft className="size-8" />
 				</Link>
 			</Button>
 
-			<div className="space-y-6">
-				<H2 className="text-center">Edit Profile</H2>
+			<header className="text-center mb-15 space-y-2">
+				<H1>Edit User</H1>
+				<TitleSmall>Enter the details required to edit this user.</TitleSmall>
+			</header>
 
+			<section className="bg-background p-6 rounded-xl">
 				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-						<FormField
-							control={form.control}
-							name="avatar"
-							render={({
-								field: { value, onChange, ...fieldProps },
-								fieldState,
-							}) => (
-								<FormItem>
-									<FormControl>
-										<div>
-											<div className="relative content-center w-fit mx-auto">
-												<div className="relative">
-													<Avatar className="size-50 bg-gradient-to-b from-accent to-muted">
-														<AvatarImage
-															src={previewUrl || ""}
-															className="object-cover"
-														/>
-													</Avatar>
+					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-7.5">
+						<div className="flex gap-7.5">
+							<section className="space-y-4">
+								<FormField
+									control={form.control}
+									name="avatar"
+									render={({
+										field: { value, onChange, ...fieldProps },
+										fieldState,
+									}) => (
+										<FormItem>
+											<FormControl>
+												<div className="relative group mb-2.5 w-fit mx-auto">
+													<div className="relative">
+														<Avatar className="size-[16.5rem]">
+															<AvatarImage
+																src={previewUrl || undefined}
+																className="object-cover"
+															/>
+															<AvatarFallback className="bg-gradient-to-b from-accent to-[#80786D]" />
+														</Avatar>
 
-													<div className="size-16 flex justify-center items-center absolute right-0 bottom-0 rounded-full bg-card z-10">
-														<IconUserPen className="size-10 text-primary" />
+														<div className="size-21 flex justify-center items-center absolute right-0 bottom-0 rounded-full bg-card z-10">
+															<IconUserPen className="size-12 text-primary" />
+														</div>
 													</div>
+
+													<button
+														type="button"
+														onClick={() => fileInputRef.current?.click()}
+														className="absolute inset-0 opacity-0 flex items-center justify-center cursor-pointer z-50"
+													>
+														<IconEdit className="size-6 text-white" />
+													</button>
+
+													<input
+														{...fieldProps}
+														ref={fileInputRef}
+														type="file"
+														accept="image/jpeg,image/jpg,image/png"
+														className="hidden"
+														onChange={(e) => {
+															const file = e.target.files?.[0];
+															if (file) {
+																form.setValue("avatar", file, {
+																	shouldValidate: true,
+																});
+																onChange(file);
+															}
+														}}
+													/>
 												</div>
+											</FormControl>
 
-												<button
-													type="button"
-													onClick={() => fileInputRef.current?.click()}
-													className="absolute inset-0 opacity-0 cursor-pointer z-50"
-												></button>
+											{fieldState.error ? (
+												<FormMessage className="text-center mt-1" />
+											) : value ? (
+												<LabelMedium className="text-muted text-center mt-1">
+													{value.name}
+												</LabelMedium>
+											) : (
+												<LabelMedium className="text-muted text-center mt-1">
+													Image must be in PNG or JPG, under 5MB
+												</LabelMedium>
+											)}
+										</FormItem>
+									)}
+								/>
+							</section>
 
-												<input
-													{...fieldProps}
-													ref={fileInputRef}
-													type="file"
-													accept="image/jpeg,image/jpg,image/png"
-													className="hidden"
-													onChange={(e) => {
-														const file = e.target.files?.[0];
-														if (file) {
-															form.setValue("avatar", file, {
-																shouldValidate: true,
-															});
-															const reader = new FileReader();
-															reader.onloadend = () => {
-																setPreviewUrl(reader.result as string);
-															};
-															reader.readAsDataURL(file);
-															onChange(file);
-														}
-													}}
-												/>
-											</div>
-										</div>
-									</FormControl>
+							<section className="space-y-4 w-full">
+								<FormField
+									control={form.control}
+									name="firstName"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>First Name</FormLabel>
+											<FormControl>
+												<Input placeholder="Enter your First Name" {...field} />
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
 
-									{fieldState.error ? (
-										<FormMessage className="text-center mt-1" />
-									) : value ? null : null}
+								<div className="grid grid-cols-2 gap-2.5">
+									<FormField
+										control={form.control}
+										name="middleName"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Middle Name</FormLabel>
+												<FormControl>
+													<Input
+														placeholder="Enter your Middle Name"
+														{...field}
+													/>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
 
-									<H2 className="text-center">
-										{user?.firstName} {user?.lastName}
-									</H2>
-								</FormItem>
-							)}
-						/>
+									<FormField
+										control={form.control}
+										name="lastName"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Last Name</FormLabel>
+												<FormControl>
+													<Input
+														placeholder="Enter your Last Name"
+														{...field}
+													/>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								</div>
 
-						<FormField
-							control={form.control}
-							name="email"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Email</FormLabel>
-									<FormControl>
-										<Input placeholder="hirami@gmail.com" {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+								<div className="grid grid-cols-2 gap-2.5">
+									<FormField
+										control={form.control}
+										name="email"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Email</FormLabel>
+												<FormControl>
+													<Input placeholder="Enter your email" {...field} />
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
 
-						<FormField
-							control={form.control}
-							name="firstName"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>First Name</FormLabel>
-									<FormControl>
-										<Input placeholder="Enter first name" {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
+									<FormField
+										control={form.control}
+										name="role"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Role</FormLabel>
+												<FormControl>
+													<Select
+														{...field}
+														value={field.value}
+														onValueChange={field.onChange}
+													>
+														<SelectTrigger className="w-full">
+															<SelectValue placeholder="Please select a role" />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value={UserRole.Borrower}>
+																Borrower
+															</SelectItem>
+															<SelectItem value={UserRole.EquipmentManager}>
+																Equipment Manager
+															</SelectItem>
+														</SelectContent>
+													</Select>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								</div>
 
-						<FormField
-							control={form.control}
-							name="middleName"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Middle Name</FormLabel>
-									<FormControl>
-										<Input placeholder="Enter middle name" {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						<FormField
-							control={form.control}
-							name="lastName"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Last Name</FormLabel>
-									<FormControl>
-										<Input placeholder="Enter last name" {...field} />
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						<FormField
-							control={form.control}
-							name="role"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Role</FormLabel>
-									<FormControl>
-										<NativeSelect
-											{...field}
-											onChange={(e) =>
-												field.onChange(e.currentTarget.value as UserRole)
-											}
-										>
-											<NativeSelectOption value={UserRole.Borrower}>
-												Borrower
-											</NativeSelectOption>
-											<NativeSelectOption value={UserRole.EquipmentManager}>
-												Equipment Manager
-											</NativeSelectOption>
-										</NativeSelect>
-									</FormControl>
-									<FormMessage />
-								</FormItem>
-							)}
-						/>
-
-						<Button
-							type="submit"
-							className="w-full"
-							disabled={mutation.isPending}
-						>
-							Update User
-						</Button>
+								<Button
+									type="submit"
+									className="w-full shadow-none mt-6"
+									disabled={
+										!form.formState.isValid ||
+										mutation.isPending ||
+										isSubmitting
+									}
+								>
+									Confirm
+								</Button>
+							</section>
+						</div>
 					</form>
 				</Form>
-			</div>
+			</section>
+
+			<Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>
+							Are you sure you want to edit this user's details?
+						</DialogTitle>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="secondary"
+							className="w-25"
+							onClick={() => setIsConfirmOpen(false)}
+						>
+							No
+						</Button>
+						<Button onClick={handleConfirm} className="w-25">
+							Yes
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

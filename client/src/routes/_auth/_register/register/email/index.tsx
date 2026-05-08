@@ -16,6 +16,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRegister } from "../../-context";
+import { checkEmailExists } from "@/lib/user";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_auth/_register/register/email/")({
 	component: RouteComponent,
@@ -24,7 +26,7 @@ export const Route = createFileRoute("/_auth/_register/register/email/")({
 const formSchema = z.object({
 	email: z
 		.string()
-		.nonempty({ error: "This field must not be left blank." })
+		.nonempty()
 		.email({ error: "Invalid email format." }),
 });
 
@@ -33,6 +35,7 @@ export type RegisterEmailSchema = z.infer<typeof formSchema>;
 function RouteComponent(): JSX.Element {
 	const navigate = Route.useNavigate();
 	const registerContext = useRegister();
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -43,12 +46,28 @@ function RouteComponent(): JSX.Element {
 	});
 
 	async function onSubmit(value: z.infer<typeof formSchema>): Promise<void> {
-		registerContext.setValue((prev) => ({
-			...prev,
-			...value,
-		}));
+		setIsSubmitting(true);
+		try {
+			const exists = await checkEmailExists(value.email);
+			if (exists) {
+				form.setError("email", {
+					type: "manual",
+					message: "Email is in use. Try another",
+				});
+				return;
+			}
 
-		await navigate({ to: "/register/password" });
+			registerContext.setValue((prev) => ({
+				...prev,
+				...value,
+			}));
+
+			await navigate({ to: "/register/password" });
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsSubmitting(false);
+		}
 	}
 
 	return (
@@ -88,7 +107,7 @@ function RouteComponent(): JSX.Element {
 						<Button
 							type="submit"
 							className="w-full"
-							disabled={!form.formState.isValid}
+							disabled={!form.formState.isValid || isSubmitting}
 						>
 							Confirm
 						</Button>

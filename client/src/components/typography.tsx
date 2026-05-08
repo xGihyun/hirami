@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { JSX, ReactNode } from "react";
+import type { JSX } from "react";
 
 type Props = React.ComponentProps<"p">;
 
@@ -86,6 +86,19 @@ export function TitleSmall(props: Props): JSX.Element {
 		<p
 			className={cn(
 				"font-montserrat-medium text-sm leading-5",
+				props.className,
+			)}
+		>
+			{props.children}
+		</p>
+	);
+}
+
+export function TitleMedium(props: Props): JSX.Element {
+	return (
+		<p
+			className={cn(
+				"font-montserrat-medium text-base leading-6",
 				props.className,
 			)}
 		>

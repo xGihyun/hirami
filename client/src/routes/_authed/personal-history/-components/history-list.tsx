@@ -1,28 +1,34 @@
 import {
 	BorrowRequestStatus,
-	type BorrowedEquipment,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
+	type BorrowRequestItem,
+	type BorrowRequest,
+} from "@/lib/equipment/model";
 import { useState, type JSX } from "react";
 import { HistoryItem } from "./history-item";
-import { Caption, H1, H2, LabelMedium, TitleSmall } from "@/components/typography";
+import {
+	Caption,
+	H1,
+	H2,
+	LabelMedium,
+	TitleSmall,
+} from "@/components/typography";
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft } from "@/lib/icons";
 import { toImageUrl } from "@/lib/api";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
-import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment";
+import { DEFAULT_EQUIPMENT_IMAGE } from "@/lib/equipment/constant";
 import { QRCodeSVG } from "qrcode.react";
 import { Timer } from "@ark-ui/react/timer";
 import { getRemainingMs } from "@/lib/utils";
 
 type Props = {
-	history: BorrowTransaction[];
+	history: BorrowRequest[];
 };
 
 type Selected = {
-	transaction: BorrowTransaction;
-	equipment: BorrowedEquipment;
+	transaction: BorrowRequest;
+	item: BorrowRequestItem;
 };
 
 export function HistoryList(props: Props): JSX.Element {
@@ -52,25 +58,26 @@ export function HistoryList(props: Props): JSX.Element {
 				<section className="space-y-2">
 					<img
 						src={
-							toImageUrl(selectedItem.equipment.imageUrl) ||
+							toImageUrl(selectedItem.item.equipment.imageUrl) ||
 							DEFAULT_EQUIPMENT_IMAGE
 						}
-						alt={`${selectedItem.equipment.name} ${selectedItem.equipment.brand}`}
+						alt={`${selectedItem.item.equipment.name} ${selectedItem.item.equipment.brand}`}
 						className="size-16 object-cover rounded-2xl mx-auto"
 					/>
 
 					<TitleSmall className="text-center">
-						{selectedItem.equipment.brand}{" "}
-						{selectedItem.equipment.model
-							? ` ${selectedItem.equipment.model}`
+						{selectedItem.item.equipment.name}{" "}
+						{selectedItem.item.equipment.brand}{" "}
+						{selectedItem.item.equipment.model
+							? ` ${selectedItem.item.equipment.model}`
 							: null}
 					</TitleSmall>
 
 					<div className="text-center text-muted">
 						<Caption>
 							Requested On{" "}
-							{format(selectedItem.transaction.borrowedAt, "h:mm a")} at{" "}
-							{format(selectedItem.transaction.borrowedAt, "MM/dd/yyyy")}
+							{format(selectedItem.transaction.requestedAt, "h:mm a")} at{" "}
+							{format(selectedItem.transaction.requestedAt, "MM/dd/yyyy")}
 						</Caption>
 
 						<Caption>
@@ -94,7 +101,7 @@ export function HistoryList(props: Props): JSX.Element {
 							readOnly
 							className="min-h-24"
 							placeholder="Remarks will show here if available"
-							value={selectedItem.transaction.remarks || undefined}
+							value={selectedItem.transaction.review?.remarks || undefined}
 						/>
 					</div>
 				</section>
@@ -140,18 +147,18 @@ export function HistoryList(props: Props): JSX.Element {
 		<section className="space-y-4">
 			{props.history.map((transaction) => {
 				return (
-					<div key={transaction.borrowRequestId} className="space-y-4">
-						{transaction.equipments.map((equipment, i) => {
+					<div key={transaction.id} className="space-y-4">
+						{transaction.requestedItems.map((item, i) => {
 							return (
 								<button
-									key={transaction.borrowRequestId + i}
+									key={transaction.id + i}
 									className="text-start w-full cursor-pointer"
-									onClick={() => setSelectedItem({ transaction, equipment })}
+									onClick={() => setSelectedItem({ transaction, item: item })}
 								>
 									<HistoryItem
 										transaction={transaction}
-										equipment={equipment}
-										key={equipment.borrowRequestItemId}
+										item={item}
+										key={item.id}
 									/>
 								</button>
 							);

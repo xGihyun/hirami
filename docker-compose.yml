@@ -1,13 +1,12 @@
 name: hirami
 
 networks:
-  hirami-net:
+  net:
     driver: bridge
 
 services:
   postgres:
-    image: postgres:latest
-    container_name: hirami-pg
+    image: postgres:18.1
     environment:
       POSTGRES_USER: hirami
       POSTGRES_PASSWORD: password
@@ -15,24 +14,23 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - hirami-pg:/var/lib/postgresql/data
+      - postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hirami"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
-      - hirami-net
+      - net
 
   valkey:
-    image: valkey/valkey-bundle:latest
-    container_name: hirami-valkey
+    image: valkey/valkey-bundle:9.0
     ports:
       - "6379:6379"
     volumes:
-      - hirami-valkey:/data
+      - valkey:/data
     networks:
-      - hirami-net
+      - net
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
@@ -40,33 +38,32 @@ services:
       retries: 5
 
   mailpit:
-    image: axllent/mailpit
-    container_name: hirami-mailpit
+    image: axllent/mailpit:v1.28
     restart: unless-stopped
     volumes:
-      - hirami-mailpit:/data
+      - mailpit:/data
     ports:
       - 8025:8025
       - 1025:1025
     networks:
-      - hirami-net
+      - net
 
   server:
     build:
-      context: .
+      context: ./server
       dockerfile: Dockerfile
     container_name: hirami-server
     ports:
       - 3002:3002
     env_file:
-      - .env
+      - ./server/.env
     depends_on:
       postgres:
         condition: service_healthy
       valkey:
         condition: service_healthy
     volumes:
-      - .:/app
+      - ./server:/app
     command: go run .
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3002/"]
@@ -75,10 +72,10 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - hirami-net
+      - net
 
   seed:
-    build: .
+    build: ./server
     depends_on:
       server:
         condition: service_healthy
@@ -88,23 +85,23 @@ services:
       - HOST=server
       - PORT=3002
     networks:
-      - hirami-net
+      - net
 
   ml:
     build:
-      context: ../ml
+      context: ./ml
       dockerfile: Dockerfile
     container_name: hirami-ml
     ports:
       - "8000:8000"
     volumes:
-      - ../ml:/app
+      - ./ml:/app
       - /app/.venv
     command: uv run uvicorn main:app --host 0.0.0.0
     networks:
-      - hirami-net
+      - net
 
 volumes:
-  hirami-pg:
-  hirami-valkey:
-  hirami-mailpit:
+  postgres:
+  valkey:
+  mailpit:

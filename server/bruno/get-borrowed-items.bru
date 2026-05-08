@@ -1,0 +1,16 @@
+meta {
+  name: get-borrowed-items
+  type: http
+  seq: 26
+}
+
+get {
+  url: {{baseUrl}}/users/{{userId}}/borrowed-equipments
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

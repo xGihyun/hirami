@@ -1,4 +1,4 @@
-import type { BorrowedEquipment } from "@/lib/equipment/borrow";
+import type { BorrowRequestItem } from "@/lib/equipment/model";
 
 export enum ReturnTab {
 	BorrowedItems = "borrowed-items",
@@ -6,6 +6,6 @@ export enum ReturnTab {
 }
 
 export type SelectedBorrowedEquipment = {
-	equipment: BorrowedEquipment;
+	item: BorrowRequestItem;
 	quantity: number;
 };

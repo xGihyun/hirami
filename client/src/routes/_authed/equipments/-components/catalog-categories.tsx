@@ -74,7 +74,7 @@ export function CatalogCategories(props: Props): JSX.Element {
 				</Dialog>
 			</div>
 
-			<ScrollArea>
+			<ScrollArea className="w-full">
 				<div className="flex gap-2 mb-2">
 					<Toggle
 						key={"All"}

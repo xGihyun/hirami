@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base32"
 	"encoding/hex"
+	"errors"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -105,6 +106,10 @@ func (r *repository) validateSessionToken(
 	user, err := r.get(ctx, session.UserID)
 	if err != nil {
 		return sessionValidationResponse{}, err
+	}
+
+	if !user.IsActive {
+		return sessionValidationResponse{}, errors.New("user is deactivated")
 	}
 
 	res := sessionValidationResponse{

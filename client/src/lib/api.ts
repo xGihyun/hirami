@@ -11,7 +11,7 @@ export const SHOW_ANOMALY: boolean = import.meta.env.VITE_SHOW_ANOMALY === "true
 export const IMAGE_SIZE_LIMIT = 5 * 1024 * 1024; // 5 MB
 export const IMAGE_FORMATS = ["image/jpeg", "image/jpg", "image/png"];
 
-export function toImageUrl(path?: string): string | undefined {
+export function toImageUrl(path?: string | null): string | undefined {
 	if (!path) {
 		return;
 	}

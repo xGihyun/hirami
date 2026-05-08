@@ -19,6 +19,10 @@ import (
 	"github.com/xGihyun/hirami/equipment"
 	"github.com/xGihyun/hirami/sse"
 	"github.com/xGihyun/hirami/user"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/gmail/v1"
+	"google.golang.org/api/option"
 )
 
 type app struct {
@@ -74,9 +78,44 @@ func main() {
 
 	migrate(dbURL)
 
-	// Run server
+	// Initiate GMail client
+	googleClientId, ok := os.LookupEnv("GOOGLE_CLIENT_ID")
+	if !ok {
+		panic("GOOGLE_CLIENT_ID not found.")
+	}
+
+	googleClientSecret, ok := os.LookupEnv("GOOGLE_CLIENT_SECRET")
+	if !ok {
+		panic("GOOGLE_CLIENT_SECRET not found.")
+	}
+
+	googleRefreshToken, ok := os.LookupEnv("GOOGLE_REFRESH_TOKEN")
+	if !ok {
+		panic("GOOGLE_REFRESH_TOKEN not found.")
+	}
 
 	ctx := context.Background()
+
+	cfg := &oauth2.Config{
+		ClientID:     googleClientId,
+		ClientSecret: googleClientSecret,
+		Endpoint:     google.Endpoint,
+		Scopes:       []string{gmail.GmailSendScope},
+	}
+
+	token := &oauth2.Token{
+		RefreshToken: googleRefreshToken,
+	}
+
+	httpClient := cfg.Client(ctx, token)
+
+	gmailService, err := gmail.NewService(ctx, option.WithHTTPClient(httpClient))
+	if err != nil {
+		slog.Error(err.Error())
+		panic("Failed to create gmail service")
+	}
+
+	// Run server
 
 	pool, err := pgxpool.New(ctx, dbURL)
 	if err != nil {
@@ -89,7 +128,7 @@ func main() {
 	router.HandleFunc("GET /", health)
 
 	app := app{
-		user:      *user.NewServer(user.NewRepository(pool)),
+		user:      *user.NewServer(user.NewRepository(pool), gmailService),
 		equipment: *equipment.NewServer(equipment.NewRepository(pool), valkeyClient),
 		sse:       *sse.NewServer(valkeyClient),
 	}

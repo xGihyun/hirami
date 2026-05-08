@@ -1,9 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-	borrowRequestByIdQuery,
-	type BorrowedEquipment,
-} from "@/lib/equipment/borrow";
+import { borrowRequestByIdQuery } from "@/lib/equipment/api";
+import { type BorrowRequestItem } from "@/lib/equipment/model";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { SHOW_ANOMALY, toImageUrl } from "@/lib/api";
 import { capitalizeWords, cn, getBorrowRequestBadgeVariant } from "@/lib/utils";
@@ -35,11 +33,11 @@ function RouteComponent(): JSX.Element {
 	const borrower = borrowRequest.data.borrower;
 	const borrowerInitials = borrower.firstName[0] + borrower.lastName[0];
 	const transaction = borrowRequest.data;
-	const anomalyResult = borrowRequest.data.anomalyResult;
+	const anomalyResult = borrowRequest.data.anomaly;
 
 	return (
 		<div className="space-y-4 pb-15 !mb-0">
-			<Button variant="ghost" size="icon" className="size-15 mb-0">
+			<Button variant="ghost" size="icon" className="size-15 mb-0" asChild>
 				<Link to="/history">
 					<IconArrowLeft className="size-8" />
 				</Link>
@@ -76,8 +74,8 @@ function RouteComponent(): JSX.Element {
 
 				<div>
 					<LabelSmall>
-						Borrowed On {format(transaction.borrowedAt, "h:mm a")} at{" "}
-						{format(transaction.borrowedAt, "MM/dd/yyyy")}
+						Borrowed On {format(transaction.requestedAt, "h:mm a")} at{" "}
+						{format(transaction.requestedAt, "MM/dd/yyyy")}
 					</LabelSmall>
 
 					<LabelSmall>
@@ -95,13 +93,8 @@ function RouteComponent(): JSX.Element {
 			</section>
 
 			<section className="space-y-2 h-full">
-				{borrowRequest.data.equipments.map((equipment) => {
-					return (
-						<EquipmentItem
-							key={equipment.borrowRequestItemId}
-							equipment={equipment}
-						/>
-					);
+				{borrowRequest.data.requestedItems.map(({ id, equipment }) => {
+					return <EquipmentItem key={id} equipment={equipment} />;
 				})}
 			</section>
 
@@ -123,7 +116,7 @@ function RouteComponent(): JSX.Element {
 }
 
 type EquipmentProps = {
-	equipment: BorrowedEquipment;
+	equipment: BorrowRequestItem["equipment"];
 	className?: string;
 };
 

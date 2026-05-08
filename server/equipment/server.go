@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/api"
 	"github.com/xGihyun/hirami/sse"
@@ -32,6 +32,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /equipments", api.Handler(s.createEquipment))
 	mux.Handle("GET /equipments", api.Handler(s.getAll))
 	mux.Handle("GET /equipments/{equipmentTypeId}", api.Handler(s.getEquipmentByID))
+	mux.Handle("GET /equipments/{equipmentTypeId}/status", api.Handler(s.getEquipmentInventoryStatusByID))
 	mux.Handle("GET /equipment-names", api.Handler(s.getEquipmentNames))
 	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
 	mux.Handle("POST /equipments/{equipmentTypeId}/reallocate", api.Handler(s.reallocate))
@@ -50,7 +51,8 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /return-requests/otp/{code}", api.Handler(s.getReturnRequestByOTP))
 
 	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
-	mux.Handle("GET /borrowed-items", api.Handler(s.getBorrowedItems))
+
+	mux.Handle("GET /users/{userId}/borrowed-equipments", api.Handler(s.getBorrowedItems))
 }
 
 const (
@@ -157,7 +159,7 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: eventEquipmentCreate,
 		Data:  equipment,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -213,6 +215,34 @@ func (s *Server) getAll(w http.ResponseWriter, r *http.Request) api.Response {
 }
 
 func (s *Server) getEquipmentByID(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	equipmentTypeID := r.PathValue("equipmentTypeId")
+	equipment, err := s.repository.getByID(ctx, equipmentTypeID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return api.Response{
+				Error:   fmt.Errorf("get equipment: %w", err),
+				Code:    http.StatusNotFound,
+				Message: "Equipment not found.",
+			}
+		}
+
+		return api.Response{
+			Error:   fmt.Errorf("get equipment: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get equipments.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched equipment.",
+		Data:    equipment,
+	}
+}
+
+func (s *Server) getEquipmentInventoryStatusByID(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
 	equipmentTypeID := r.PathValue("equipmentTypeId")
@@ -302,21 +332,21 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 	}
 
 	var (
-		brand *string
-		model *string
+		brand string = r.FormValue("brand")
+		model string = r.FormValue("model")
 	)
-	if brandValue := strings.TrimSpace(r.FormValue("brand")); brandValue != "" {
-		brand = &brandValue
-	}
-	if modelValue := strings.TrimSpace(r.FormValue("model")); modelValue != "" {
-		model = &modelValue
-	}
+	// if brandValue := strings.TrimSpace(r.FormValue("brand")); brandValue != "" {
+	// 	brand = &brandValue
+	// }
+	// if modelValue := strings.TrimSpace(r.FormValue("model")); modelValue != "" {
+	// 	model = &modelValue
+	// }
 
 	data := updateRequest{
 		EquipmentTypeID: r.PathValue("equipmentTypeId"),
 		Name:            strings.TrimSpace(r.FormValue("name")),
-		Brand:           brand,
-		Model:           model,
+		Brand:           &brand,
+		Model:           &model,
 		ImageURL:        imageURL,
 	}
 
@@ -358,7 +388,7 @@ func (s *Server) reallocate(w http.ResponseWriter, r *http.Request) api.Response
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:reallocate",
+		Event: eventEquipmentReallocate,
 	}
 	jsonData, err := json.Marshal(eventRes)
 	if err != nil {
@@ -423,14 +453,16 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
-	go func() {
-		if err := s.detectAnomaly(context.Background(), res); err != nil {
-			slog.Error(err.Error())
+	if err := s.detectAnomaly(context.Background(), res); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create borrow request anomaly result.",
 		}
-	}()
+	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: eventBorrowRequestCreate,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -491,7 +523,7 @@ func (s *Server) updateBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "borrow-request:update",
+		Event: eventBorrowRequestUpdate,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -560,7 +592,7 @@ func (s *Server) reviewBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "borrow-request:review",
+		Event: eventBorrowRequestReview,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -636,7 +668,7 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "equipment:create",
+		Event: eventEquipmentCreate,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -764,7 +796,7 @@ func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) ap
 	}
 
 	eventRes := sse.EventResponse{
-		Event: "return-request:confirm",
+		Event: eventReturnRequestConfirm,
 		Data:  res,
 	}
 	jsonData, err := json.Marshal(eventRes)
@@ -895,12 +927,12 @@ func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Re
 func (s *Server) getBorrowedItems(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 
-	userID := r.URL.Query().Get("userId")
+	userID := r.PathValue("userId")
 	status := r.URL.Query().Get("status")
 	sort := api.Sort(r.URL.Query().Get("sort"))
 	category := r.URL.Query().Get("category")
 	params := borrowedItemParams{
-		userID:   &userID,
+		userID:   userID,
 		status:   &status,
 		sort:     &sort,
 		category: &category,

@@ -6,8 +6,9 @@ import {
 	Outlet,
 	useRouterState,
 } from "@tanstack/react-router";
-import { useState, type JSX } from "react";
+import { type JSX } from "react";
 import { RegisterProvider } from "./_register/-context";
+import { PaddingLayout } from "../-components/padding-layout";
 
 export const Route = createFileRoute("/_auth/_register")({
 	component: RouteComponent,
@@ -55,25 +56,27 @@ function RouteComponent(): JSX.Element {
 	}
 
 	return (
-		<RegisterProvider>
-			<div className="h-full w-full">
-				<Button
-					variant="ghost"
-					size="icon"
-					className="size-15"
-					onClick={handleBack}
-				>
-					{isFirstStep() ? (
-						<IconX className="size-8" />
-					) : (
-						<IconArrowLeft className="size-8" />
-					)}
-				</Button>
+		<PaddingLayout>
+			<RegisterProvider>
+				<div className="h-full w-full">
+					<Button
+						variant="ghost"
+						size="icon"
+						className="size-15"
+						onClick={handleBack}
+					>
+						{isFirstStep() ? (
+							<IconX className="size-8" />
+						) : (
+							<IconArrowLeft className="size-8" />
+						)}
+					</Button>
 
-				<main className="mt-10 pb-10">
-					<Outlet />
-				</main>
-			</div>
-		</RegisterProvider>
+					<main className="mt-10 pb-10">
+						<Outlet />
+					</main>
+				</div>
+			</RegisterProvider>
+		</PaddingLayout>
 	);
 }

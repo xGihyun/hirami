@@ -1,19 +1,20 @@
-import { borrowHistoryQuery } from "@/lib/equipment/borrow";
+import { borrowHistoryQuery } from "@/lib/equipment/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, type JSX } from "react";
-import { H2, LabelMedium } from "@/components/typography";
+import { H1, H2, LabelMedium } from "@/components/typography";
 import { BACKEND_URL, Sort } from "@/lib/api";
 import { EventSource } from "eventsource";
 import z from "zod";
 import { Control } from "./-components/control";
 import { ManagerHistoryList } from "./-components/manager-history-list";
 import { ComponentLoading } from "@/components/loading";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
 
 const searchSchema = z.object({
 	category: z.string().optional(),
 	sort: z.enum(Sort).default(Sort.Asc),
-	sortBy: z.string().optional(),
+	sortBy: z.string().default("borrowedAt"),
 	search: z.string().optional(),
 });
 
@@ -39,19 +40,33 @@ function RouteComponent() {
 			queryClient.invalidateQueries({ queryKey: ["borrow-history"] });
 		}
 
-		eventSource.addEventListener("equipment:create", handleEvent);
-		eventSource.addEventListener("equipment:anomaly", handleEvent);
+		eventSource.addEventListener(
+			EquipmentServerEvent.EquipmentCreate,
+			handleEvent,
+		);
+		eventSource.addEventListener(
+			EquipmentServerEvent.EquipmentAnomaly,
+			handleEvent,
+		);
 
 		return () => {
-			eventSource.removeEventListener("equipment:create", handleEvent);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.EquipmentCreate,
+				handleEvent,
+			);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.EquipmentAnomaly,
+				handleEvent,
+			);
 			eventSource.close();
 		};
 	}, []);
 
 	return (
-		<div className="relative space-y-4">
-			<header className="flex flex-col w-full items-center justify-between gap-4">
-				<H2>History</H2>
+		<div className="relative space-y-4 min-w-0 ">
+			<header className="flex flex-col w-full justify-between gap-4">
+				<H2 className="text-center md:hidden block">History</H2>
+				<H1 className="text-start md:block hidden">History</H1>
 				<Control />
 			</header>
 
@@ -83,7 +98,7 @@ function History(): JSX.Element {
 		);
 	}
 
-	if (!history.data) {
+	if (history.data.length === 0) {
 		return (
 			<LabelMedium className="text-muted text-center mt-10">
 				No history found.

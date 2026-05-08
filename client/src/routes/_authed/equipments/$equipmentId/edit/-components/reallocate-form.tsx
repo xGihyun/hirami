@@ -3,8 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	EquipmentStatus,
-	type EquipmentType,
-} from "@/lib/equipment";
+	type EquipmentInventoryStatus,
+} from "@/lib/equipment/model";
 import {
 	Form,
 	FormControl,
@@ -16,16 +16,30 @@ import {
 import z from "zod";
 import { useParams } from "@tanstack/react-router";
 import { NumberInput } from "@/components/number-input";
-import {
-	NativeSelect,
-	NativeSelectOption,
-} from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL, type ApiResponse } from "@/lib/api";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Failed } from "@/components/failed";
 import { FullScreenLoading } from "@/components/loading";
 import { Success } from "@/components/success";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { useState } from "react";
 
 const reallocateEquipmentSchema = z
 	.object({
@@ -64,11 +78,14 @@ async function reallocateEquipment(
 }
 
 type Props = {
-	equipmentType: EquipmentType;
+	equipmentType: EquipmentInventoryStatus;
 };
 
 export function ReallocateForm(props: Props): JSX.Element {
 	const params = useParams({ from: "/_authed/equipments/$equipmentId/edit/" });
+	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+	const [pendingData, setPendingData] =
+		useState<ReallocateEquipmentSchema | null>(null);
 
 	const form = useForm<ReallocateEquipmentSchema>({
 		resolver: zodResolver(reallocateEquipmentSchema),
@@ -84,8 +101,18 @@ export function ReallocateForm(props: Props): JSX.Element {
 		mutationFn: reallocateEquipment,
 	});
 
+	const newStatus = form.watch("newStatus");
+
 	async function onSubmit(value: ReallocateEquipmentSchema): Promise<void> {
-		mutation.mutate(value);
+		setPendingData(value);
+		setIsConfirmOpen(true);
+	}
+
+	function handleConfirm() {
+		if (pendingData) {
+			mutation.mutate(pendingData);
+		}
+		setIsConfirmOpen(false);
 	}
 
 	function reset(): void {
@@ -101,9 +128,10 @@ export function ReallocateForm(props: Props): JSX.Element {
 			<Failed
 				fn={reset}
 				retry={form.handleSubmit(onSubmit)}
-				header="Reallocate equipment failed."
+				header="Edit equipment failed."
 				backLink="/equipments"
 				backMessage="or return to Catalog"
+				className="md:bg-white md:p-0 absolute inset-0"
 			/>
 		);
 	}
@@ -112,8 +140,9 @@ export function ReallocateForm(props: Props): JSX.Element {
 		return (
 			<Success
 				fn={reset}
-				header="Equipment reallocated successfully."
+				header="Equipment details updated successfully."
 				backLink="/equipments"
+				className="md:bg-white md:p-0 absolute inset-0"
 			/>
 		);
 	}
@@ -150,26 +179,30 @@ export function ReallocateForm(props: Props): JSX.Element {
 						<FormItem>
 							<FormLabel>From Status</FormLabel>
 							<FormControl>
-								<NativeSelect
+								<Select
 									{...field}
-									onChange={(e) =>
-										field.onChange(e.currentTarget.value as EquipmentStatus)
-									}
+									value={field.value}
+									onValueChange={field.onChange}
 								>
-									{props.equipmentType.statusQuantity.map((q) => (
-										<NativeSelectOption
-											value={q.status.code}
-											key={q.status.code}
-											disabled={
-												q.quantity === 0 ||
-												q.status.code === EquipmentStatus.Borrowed ||
-												q.status.code === EquipmentStatus.Reserved
-											}
-										>
-											{q.status.label} ({q.quantity} units)
-										</NativeSelectOption>
-									))}
-								</NativeSelect>
+									<SelectTrigger className="w-full">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{props.equipmentType.statusQuantity.map((q) => (
+											<SelectItem
+												value={q.status.code}
+												key={q.status.code}
+												disabled={
+													q.quantity === 0 ||
+													q.status.code === EquipmentStatus.Borrowed ||
+													q.status.code === EquipmentStatus.Reserved
+												}
+											>
+												{q.status.label} ({q.quantity} units)
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</FormControl>
 							<FormMessage />
 						</FormItem>
@@ -183,37 +216,65 @@ export function ReallocateForm(props: Props): JSX.Element {
 						<FormItem>
 							<FormLabel>To Status</FormLabel>
 							<FormControl>
-								<NativeSelect
+								<Select
 									{...field}
-									onChange={(e) =>
-										field.onChange(e.currentTarget.value as EquipmentStatus)
-									}
+									value={field.value}
+									onValueChange={field.onChange}
 								>
-									<NativeSelectOption disabled selected hidden>Select status</NativeSelectOption>
-
-									{props.equipmentType.statusQuantity.map((q) => (
-										<NativeSelectOption
-											value={q.status.code}
-											key={q.status.code}
-											disabled={
-												q.status.code === EquipmentStatus.Borrowed ||
-												q.status.code === EquipmentStatus.Reserved
-											}
-										>
-											{q.status.label} ({q.quantity} units)
-										</NativeSelectOption>
-									))}
-								</NativeSelect>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Select status" />
+									</SelectTrigger>
+									<SelectContent>
+										{props.equipmentType.statusQuantity.map((q) => (
+											<SelectItem
+												value={q.status.code}
+												key={q.status.code}
+												disabled={
+													q.status.code === EquipmentStatus.Borrowed ||
+													q.status.code === EquipmentStatus.Reserved
+												}
+											>
+												{q.status.label} ({q.quantity} units)
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</FormControl>
 							<FormMessage />
 						</FormItem>
 					)}
 				/>
 
-				<Button type="submit" className="w-full shadow-none">
+				<Button
+					type="submit"
+					className="w-full shadow-none"
+					disabled={!form.formState.isValid || mutation.isPending || !newStatus}
+				>
 					Reallocate
 				</Button>
 			</form>
+
+			<Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>
+							Are you sure you want to edit this equipment?
+						</DialogTitle>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="secondary"
+							className="w-25"
+							onClick={() => setIsConfirmOpen(false)}
+						>
+							No
+						</Button>
+						<Button onClick={handleConfirm} className="w-25">
+							Yes
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</Form>
 	);
 }

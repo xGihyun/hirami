@@ -4,24 +4,26 @@ import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { BACKEND_URL } from "@/lib/api";
 import {
 	BorrowRequestStatus,
-	type BorrowedEquipment,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
+	type BorrowRequestItem,
+	type BorrowRequest,
+} from "@/lib/equipment/model";
 import { UserRole } from "@/lib/user";
+import { getFullName } from "@/lib/user/helper";
 import { capitalizeWords, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { JSX } from "react";
 
 type Props = {
-	equipment: BorrowedEquipment;
-	transaction: BorrowTransaction;
+	item: BorrowRequestItem;
+	transaction: BorrowRequest;
 	className?: string;
 };
 
 export function HistoryItem(props: Props): JSX.Element {
-    const auth = useAuth()
-	const equipmentImage = props.equipment.imageUrl
-		? `${BACKEND_URL}${props.equipment.imageUrl}`
+	const auth = useAuth();
+	const equipment = props.item.equipment;
+	const equipmentImage = equipment.imageUrl
+		? `${BACKEND_URL}${equipment.imageUrl}`
 		: "https://arthurmillerfoundation.org/wp-content/uploads/2018/06/default-placeholder.png";
 
 	function getBadgeVariant(status: BorrowRequestStatus): BadgeVariant {
@@ -41,7 +43,6 @@ export function HistoryItem(props: Props): JSX.Element {
 
 	return (
 		<div
-			key={props.equipment.borrowRequestItemId}
 			className={cn(
 				"hover:bg-tertiary active:bg-tertiary transition flex items-center gap-2 justify-between bg-card rounded-2xl p-4 shadow-item",
 				props.className,
@@ -51,32 +52,31 @@ export function HistoryItem(props: Props): JSX.Element {
 				<div className="relative size-16 shrink-0">
 					<img
 						src={equipmentImage}
-						alt={`${props.equipment.name} ${props.equipment.brand}`}
+						alt={`${equipment.name} ${equipment.brand}`}
 						className="w-full h-full object-cover"
 					/>
-
 				</div>
 
 				<div className="flex flex-col w-full">
 					<LabelLarge>
-						{props.equipment.brand}
-						{props.equipment.model ? ` ${props.equipment.model}` : null}
+						{equipment.brand}
+						{equipment.model ? ` ${equipment.model}` : null}
 					</LabelLarge>
 
 					<LabelSmall>
 						<span className="font-montserrat-bold">Equipment name:</span>{" "}
-						{props.equipment.name}
+						{equipment.name}
 					</LabelSmall>
 
 					<LabelSmall>
 						<span className="font-montserrat-bold">Quantity:</span>{" "}
-						{props.equipment.quantity}
+						{equipment.quantity}
 					</LabelSmall>
 
 					<LabelSmall>
 						<span className="font-montserrat-bold">Borrow On:</span>{" "}
-						{format(props.transaction.borrowedAt, "h:mm a")} at{" "}
-						{format(props.transaction.borrowedAt, "MM/dd/yyyy")}
+						{format(props.transaction.requestedAt, "h:mm a")} at{" "}
+						{format(props.transaction.requestedAt, "MM/dd/yyyy")}
 					</LabelSmall>
 
 					<LabelSmall>
@@ -101,13 +101,20 @@ export function HistoryItem(props: Props): JSX.Element {
 						</LabelSmall>
 					) : null}
 
-					{props.transaction.borrowReviewedBy ? (
+					{props.transaction.review?.reviewedBy ? (
 						<LabelSmall>
 							<span className="font-montserrat-bold">Borrow confirmed by:</span>{" "}
-							{props.transaction.borrowReviewedBy.firstName}{" "}
-							{props.transaction.borrowReviewedBy.lastName}
+							{props.transaction.review.reviewedBy.firstName}{" "}
+							{props.transaction.review.reviewedBy.lastName}
 						</LabelSmall>
 					) : null}
+
+					{props?.transaction.returnConfirmations[0]?.confirmedBy && (
+						<LabelSmall>
+							<span className="font-montserrat-bold">Return confirmed by:</span>{" "}
+							{getFullName(props.transaction.returnConfirmations[0].confirmedBy)}
+						</LabelSmall>
+					)}
 
 					<Badge
 						className="mt-1"

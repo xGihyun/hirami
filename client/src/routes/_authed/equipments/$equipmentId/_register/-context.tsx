@@ -7,17 +7,11 @@ import {
 	type SetStateAction,
 	type Dispatch,
 } from "react";
-import type { RegisterEquipmentNameSchema } from "./register/name";
-import type { RegisterEquipmentQuantitySchema } from "./register/quantity";
-import type { RegisterEquipmentImageSchema } from "./register/image";
-
-export type RegisterEquipmentData = RegisterEquipmentNameSchema &
-	RegisterEquipmentQuantitySchema &
-	RegisterEquipmentImageSchema;
+import type { RegisterEquipmentSchema } from "./register/-schema";
 
 export type RegisterEquipmentContextValue = {
-	value: RegisterEquipmentData;
-	setValue: Dispatch<SetStateAction<RegisterEquipmentData>>;
+	value: RegisterEquipmentSchema;
+	setValue: Dispatch<SetStateAction<RegisterEquipmentSchema>>;
 };
 
 const RegisterEquipmentContext =
@@ -30,7 +24,7 @@ type RegisterEquipmentProviderProps = {
 export function RegisterEquipmentProvider(
 	props: RegisterEquipmentProviderProps,
 ): JSX.Element {
-	const [value, setValue] = useState<RegisterEquipmentData>({
+	const [value, setValue] = useState<RegisterEquipmentSchema>({
 		name: "",
 		brand: "",
 		model: "",

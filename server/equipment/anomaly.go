@@ -43,7 +43,7 @@ func (s *Server) detectAnomaly(ctx context.Context, arg createBorrowResponse) er
 	}
 	defer resp.Body.Close()
 
-	var anomalyRes []anomalyResult
+	var anomalyRes []anomaly
 	if err := json.NewDecoder(resp.Body).Decode(&anomalyRes); err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (s *Server) detectAnomaly(ctx context.Context, arg createBorrowResponse) er
 
 	// Send to SSE
 	eventRes := sse.EventResponse{
-		Event: "equipment:anomaly",
+		Event: eventEquipmentAnomaly,
 		Data:  anomalyRes[0],
 	}
 	jsonData, err = json.Marshal(eventRes)

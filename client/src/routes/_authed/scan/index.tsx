@@ -1,21 +1,18 @@
 import {
 	returnRequestByOtpQuery,
 	returnRequestsQuery,
-	type ReturnRequest,
-} from "@/lib/equipment/return";
+	borrowRequestByOtpQuery,
+} from "@/lib/equipment/api";
+import type { ReturnRequest, BorrowRequest } from "@/lib/equipment/model";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type JSX } from "react";
 import { Drawer } from "@/components/ui/drawer";
 import { BACKEND_URL } from "@/lib/api";
-import { Caption, H2, LabelLarge } from "@/components/typography";
+import { H2, TitleSmall } from "@/components/typography";
 import { EventSource } from "eventsource";
 import QrScanner from "qr-scanner";
 import { Failed } from "@/components/failed";
-import {
-	borrowRequestByOtpQuery,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
 import { Borrow } from "./-components/borrow";
 import { Return } from "./-components/return";
 import {
@@ -31,13 +28,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
 	Form,
 	FormControl,
-	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
 
 const formSchema = z.object({
 	otp: z.string().max(7),
@@ -52,13 +49,14 @@ export const Route = createFileRoute("/_authed/scan/")({
 function RouteComponent(): JSX.Element {
 	const videoRef = useRef<HTMLVideoElement | null>(null);
 	const queryClient = useQueryClient();
-	const [borrowRequest, setBorrowRequest] = useState<BorrowTransaction | null>(
+	const [borrowRequest, setBorrowRequest] = useState<BorrowRequest | null>(
 		null,
 	);
 	const [returnRequest, setReturnRequest] = useState<ReturnRequest | null>(
 		null,
 	);
 	const scannerRef = useRef<QrScanner | null>(null);
+	const [error, setError] = useState(false);
 
 	const form = useForm<FormSchema>({
 		resolver: zodResolver(formSchema),
@@ -68,37 +66,60 @@ function RouteComponent(): JSX.Element {
 	});
 
 	async function onSubmit(value: FormSchema): Promise<void> {
-		if (value.otp[0] === "B") {
-			const request = await queryClient.fetchQuery(
-				borrowRequestByOtpQuery(value.otp),
-			);
-			setBorrowRequest(request);
-		} else {
-			const request = await queryClient.fetchQuery(
-				returnRequestByOtpQuery(value.otp),
-			);
-			setReturnRequest(request);
+		setError(false);
+		try {
+			if (value.otp[0] === "B") {
+				const request = await queryClient.fetchQuery(
+					borrowRequestByOtpQuery(value.otp),
+				);
+				setBorrowRequest(request);
+			} else {
+				const request = await queryClient.fetchQuery(
+					returnRequestByOtpQuery(value.otp),
+				);
+				setReturnRequest(request);
+			}
+			form.reset();
+		} catch (e) {
+			console.error(e);
+			setError(true);
 		}
-
-		form.reset();
 	}
 
 	useEffect(() => {
 		const eventSource = new EventSource(`${BACKEND_URL}/events`);
 		const handleEvent = () =>
 			queryClient.invalidateQueries(returnRequestsQuery({}));
-		eventSource.addEventListener("equipment:create", handleEvent);
+		eventSource.addEventListener(
+			EquipmentServerEvent.EquipmentCreate,
+			handleEvent,
+		);
 		return () => {
-			eventSource.removeEventListener("equipment:create", handleEvent);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.EquipmentCreate,
+				handleEvent,
+			);
 			eventSource.close();
 		};
 	}, []);
+
+	if (error) {
+		return (
+			<Failed
+				header="Failed to retrieve request."
+				fn={() => setError(false)}
+				retry={form.handleSubmit(onSubmit)}
+				backLink="/scan"
+                backMessage="or return to scan"
+			/>
+		);
+	}
 
 	return (
 		<main className="relative space-y-4 flex w-full items-center justify-center flex-col">
 			<H2 className="text-center">Scan QR Code</H2>
 
-			<section className="relative w-full aspect-square">
+			<section className="relative w-full aspect-square max-w-lg md:mb-6">
 				<div className="relative w-full aspect-square bg-accent rounded-4xl overflow-clip">
 					<video
 						ref={videoRef}
@@ -124,16 +145,16 @@ function RouteComponent(): JSX.Element {
 				scannerRef={scannerRef}
 			/>
 
-			<section className="space-y-2 w-full">
+			<section className="space-y-2 w-full max-w-lg">
 				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 						<FormField
 							control={form.control}
 							name="otp"
 							render={({ field }) => (
 								<FormItem>
-									<FormLabel className="text-center mx-auto">
-										Or enter the code (e.g. B123456)
+									<FormLabel className="text-center mx-auto mb-6">
+										<TitleSmall>Or enter the code (e.g. B123456)</TitleSmall>
 									</FormLabel>
 
 									<FormControl>
@@ -178,10 +199,8 @@ function RouteComponent(): JSX.Element {
 
 type ScannerProps = {
 	videoRef: React.RefObject<HTMLVideoElement | null>;
-	borrowRequest: BorrowTransaction | null;
-	setBorrowRequest: React.Dispatch<
-		React.SetStateAction<BorrowTransaction | null>
-	>;
+	borrowRequest: BorrowRequest | null;
+	setBorrowRequest: React.Dispatch<React.SetStateAction<BorrowRequest | null>>;
 	returnRequest: ReturnRequest | null;
 	setReturnRequest: React.Dispatch<React.SetStateAction<ReturnRequest | null>>;
 	scannerRef: React.RefObject<QrScanner | null>;
@@ -258,6 +277,7 @@ function Scanner(props: ScannerProps) {
 				backLink="/scan"
 				fn={resetState}
 				header="Failed to scan QR code."
+				className="fixed md:absolute md:inset-0"
 			/>
 		);
 	}

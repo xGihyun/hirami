@@ -1,10 +1,10 @@
+import { borrowHistoryQuery } from "@/lib/equipment/api";
 import {
-	borrowHistoryQuery,
 	BorrowRequestStatus,
 	type UpdateBorrowResponse,
-} from "@/lib/equipment/borrow";
+} from "@/lib/equipment/model";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, redirect, useSearch } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState, type JSX } from "react";
 import { H2, LabelMedium } from "@/components/typography";
 import { BACKEND_URL, Sort } from "@/lib/api";
@@ -16,11 +16,12 @@ import { Control } from "./-components/control";
 import { HistoryList } from "./-components/history-list";
 import { ComponentLoading } from "@/components/loading";
 import { Success } from "@/components/success";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
 
 const searchSchema = z.object({
 	category: z.string().optional(),
-	sort: z.enum(Sort).optional(),
-	sortBy: z.string().optional(),
+	sort: z.enum(Sort).default(Sort.Asc),
+	sortBy: z.string().default("borrowedAt"),
 	search: z.string().optional(),
 });
 
@@ -54,15 +55,32 @@ function RouteComponent() {
 			queryClient.invalidateQueries(borrowHistoryQuery({}));
 		}
 
-		eventSource.addEventListener("borrow-request:review", handleEvent);
-		eventSource.addEventListener("equipment:anomaly", handleEvent);
 		eventSource.addEventListener(
-			"borrow-request:update",
+			EquipmentServerEvent.BorrowRequestReview,
+			handleEvent,
+		);
+		eventSource.addEventListener(
+			EquipmentServerEvent.EquipmentAnomaly,
+			handleEvent,
+		);
+		eventSource.addEventListener(
+			EquipmentServerEvent.BorrowRequestUpdate,
 			handleBorrowRequestEvent,
 		);
 
 		return () => {
-			eventSource.removeEventListener("borrow-request:review", handleEvent);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.BorrowRequestReview,
+				handleEvent,
+			);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.EquipmentAnomaly,
+				handleEvent,
+			);
+			eventSource.removeEventListener(
+				EquipmentServerEvent.BorrowRequestUpdate,
+				handleBorrowRequestEvent,
+			);
 			eventSource.close();
 		};
 	}, []);

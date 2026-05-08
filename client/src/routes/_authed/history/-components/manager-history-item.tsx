@@ -1,19 +1,17 @@
-import { useAuth } from "@/auth";
 import { LabelLarge, LabelSmall } from "@/components/typography";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { SHOW_ANOMALY, toImageUrl } from "@/lib/api";
-import type { AnomalyResult } from "@/lib/equipment/anomaly";
 import {
 	BorrowRequestStatus,
-	type BorrowTransaction,
-} from "@/lib/equipment/borrow";
+	type BorrowRequest,
+} from "@/lib/equipment/model";
 import { capitalizeWords, cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { JSX } from "react";
 
 type Props = {
-	transaction: BorrowTransaction;
+	transaction: BorrowRequest;
 	className?: string;
 };
 
@@ -35,16 +33,16 @@ export function ManagerHistoryItem(props: Props): JSX.Element {
 
 	const borrower = props.transaction.borrower;
 	const borrowerInitials = borrower.firstName[0] + borrower.lastName[0];
-	const totalQuantity = props.transaction.equipments.reduce(
-		(prev, acc) => prev + acc.quantity,
+	const totalQuantity = props.transaction.requestedItems.reduce(
+		(prev, acc) => prev + acc.equipment.quantity,
 		0,
 	);
-	const anomalyResult = props.transaction.anomalyResult;
+	const anomalyResult = props.transaction.anomaly;
 
 	return (
 		<div
 			className={cn(
-				"flex items-center gap-2 justify-between bg-card rounded-2xl p-4 shadow-item",
+				"flex items-center gap-2 justify-between bg-card rounded-2xl p-4 shadow-item hover:bg-tertiary transition-colors",
 				props.className,
 			)}
 		>
@@ -68,8 +66,8 @@ export function ManagerHistoryItem(props: Props): JSX.Element {
 
 					<LabelSmall>
 						<span className="font-montserrat-bold">Borrow On:</span>{" "}
-						{format(props.transaction.borrowedAt, "h:mm a")} at{" "}
-						{format(props.transaction.borrowedAt, "MM/dd/yyyy")}
+						{format(props.transaction.requestedAt, "h:mm a")} at{" "}
+						{format(props.transaction.requestedAt, "MM/dd/yyyy")}
 					</LabelSmall>
 
 					<LabelSmall>
@@ -86,11 +84,11 @@ export function ManagerHistoryItem(props: Props): JSX.Element {
 						</LabelSmall>
 					) : null}
 
-					{props.transaction.borrowReviewedBy ? (
+					{props.transaction.review?.reviewedBy ? (
 						<LabelSmall>
 							<span className="font-montserrat-bold">Equipment Manager:</span>{" "}
-							{props.transaction.borrowReviewedBy.firstName}{" "}
-							{props.transaction.borrowReviewedBy.lastName}
+							{props.transaction.review.reviewedBy.firstName}{" "}
+							{props.transaction.review.reviewedBy.lastName}
 						</LabelSmall>
 					) : null}
 

@@ -1,10 +1,5 @@
-import {
-	H1,
-	LabelLarge,
-	LabelMedium,
-	TitleSmall,
-} from "@/components/typography";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { H1, LabelMedium } from "@/components/typography";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type JSX } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
@@ -27,25 +22,21 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRegister, type RegisterData } from "../../-context";
 import { useMutation } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { IconUserPen } from "@/lib/icons";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { accessDeniedIllustration, doneIllustration } from "@/lib/assets";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
+import { FullScreenLoading } from "@/components/loading";
+import type { RegisterUser } from "@/lib/user/model";
 
 export const Route = createFileRoute("/_auth/_register/register/personal/")({
 	component: RouteComponent,
 });
 
 const formSchema = z.object({
-	firstName: z
-		.string()
-		.nonempty({ error: "This field must not be left blank." }),
+	firstName: z.string().nonempty(),
 	middleName: z.string().optional(),
-	lastName: z
-		.string()
-		.nonempty({ error: "This field must not be left blank." }),
+	lastName: z.string().nonempty(),
 	avatar: z
 		.instanceof(File)
 		.refine(
@@ -61,7 +52,7 @@ const formSchema = z.object({
 
 export type RegisterPersonalSchema = z.infer<typeof formSchema>;
 
-async function register(value: RegisterData): Promise<ApiResponse> {
+async function register(value: RegisterUser): Promise<ApiResponse> {
 	const formData = new FormData();
 	formData.append("email", value.email);
 	formData.append("password", value.password);
@@ -84,7 +75,6 @@ async function register(value: RegisterData): Promise<ApiResponse> {
 }
 
 function RouteComponent(): JSX.Element {
-	const navigate = Route.useNavigate();
 	const registerContext = useRegister();
 
 	const form = useForm<z.infer<typeof formSchema>>({
@@ -98,25 +88,8 @@ function RouteComponent(): JSX.Element {
 		mode: "all",
 	});
 
-	const [status, setStatus] = useState<"success" | "failed" | "pending" | null>(
-		null,
-	);
-
 	const mutation = useMutation({
 		mutationFn: register,
-		onMutate: () => {
-			setStatus("pending");
-			return toast.loading("Creating account");
-		},
-		onSuccess: (data, _variables, toastId) => {
-			setStatus("success");
-			toast.success(data.message, { id: toastId });
-			// navigate({ to: "/login" });
-		},
-		onError: (error, _variables, toastId) => {
-			setStatus("failed");
-			toast.error(error.message, { id: toastId });
-		},
 	});
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -162,22 +135,28 @@ function RouteComponent(): JSX.Element {
 		};
 	}, []);
 
-	if (status === "success") {
+	if (mutation.isPending) {
+		return <FullScreenLoading />;
+	}
+
+	if (mutation.isSuccess) {
 		return (
 			<Success
 				header="You have successfully created an account."
 				backLink="/login"
+                className="fixed inset-0"
 			/>
 		);
 	}
 
-	if (status === "failed") {
+	if (mutation.isError) {
 		return (
 			<Failed
 				header="Failed to create account."
 				backLink="/onboarding"
 				backMessage="or return to Welcome Page"
 				retry={form.handleSubmit(onSubmit)}
+                className="fixed inset-0"
 			/>
 		);
 	}

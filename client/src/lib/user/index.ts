@@ -28,14 +28,7 @@ export type User = {
 	lastName: string;
 	avatarUrl: string;
 	role: UserRoleDetail;
-};
-
-export type UserBasicInfo = {
-	id: string;
-	firstName: string;
-	middleName?: string;
-	lastName: string;
-	avatarUrl?: string;
+	isActive: boolean;
 };
 
 type GetUserParams = {
@@ -89,13 +82,9 @@ export const userByIdQuery = (id: string) =>
 export const editUserSchema = z.object({
 	userId: z.uuidv4(),
 	email: z.email().optional(),
-	firstName: z
-		.string()
-		.nonempty({ error: "This field must not be left blank." }),
+	firstName: z.string().nonempty(),
 	middleName: z.string().optional(),
-	lastName: z
-		.string()
-		.nonempty({ error: "This field must not be left blank." }),
+	lastName: z.string().nonempty(),
 	role: z.enum(UserRole),
 	avatar: z
 		.instanceof(File)
@@ -108,6 +97,7 @@ export const editUserSchema = z.object({
 			"Invalid file: Must be PNG or JPG, under 5MB.",
 		)
 		.optional(),
+	isActive: z.boolean(),
 });
 
 export type EditUserSchema = z.infer<typeof editUserSchema>;
@@ -123,6 +113,7 @@ export async function editUser(
 	if (value.lastName) formData.append("lastName", value.lastName);
 	if (value.avatar) formData.append("avatar", value.avatar);
 	if (value.role) formData.append("role", value.role);
+	formData.append("isActive", value.isActive.toString());
 
 	const response = await fetch(`${BACKEND_URL}/users/${value.userId}`, {
 		method: "PATCH",
@@ -135,4 +126,20 @@ export async function editUser(
 	}
 
 	return result;
+}
+
+export async function checkEmailExists(email: string): Promise<boolean> {
+	const url = new URL(`${BACKEND_URL}/users/exists`);
+	url.searchParams.append("email", email);
+
+	const response = await fetch(url.toString(), {
+		method: "GET",
+	});
+
+	const result: ApiResponse<boolean> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result.data;
 }
