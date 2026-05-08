@@ -9,4 +9,4 @@ COPY . .
 
 EXPOSE 3002
 
-CMD ["go", "run", "."]
+CMD go run ./cmd/seed/main.go && go run .
