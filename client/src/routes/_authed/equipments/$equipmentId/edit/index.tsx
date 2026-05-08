@@ -13,7 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getEquipmentInventoryStatusQuery } from "@/lib/equipment/api";
 import { FullScreenLoading } from "@/components/loading";
-import { H1, H2, LabelMedium, TitleSmall } from "@/components/typography";
+import { H1, H2, LabelLarge, LabelMedium, TitleSmall } from "@/components/typography";
 import {
 	Form,
 	FormControl,
@@ -38,6 +38,9 @@ import { Separator } from "@/components/ui/separator";
 import { Failed } from "@/components/failed";
 import { Success } from "@/components/success";
 import { ReallocateForm } from "./-components/reallocate-form";
+import { IncreaseQuantityForm } from "./-components/increase-quantity-form";
+
+import { CategorySelector } from "../../-components/category-selector";
 
 export const Route = createFileRoute("/_authed/equipments/$equipmentId/edit/")({
 	component: RouteComponent,
@@ -53,6 +56,7 @@ const editEquipmentSchema = z.object({
 	name: z.string().nonempty(),
 	brand: z.string().optional(),
 	model: z.string().optional(),
+	categoryIds: z.array(z.string()).nonempty({ message: "At least one category is required." }),
 	image: z
 		.instanceof(File)
 		.refine(
@@ -73,6 +77,9 @@ async function editEquipment(value: EditEquipmentSchema): Promise<ApiResponse> {
 	formData.append("name", value.name);
 	formData.append("brand", value.brand || "");
 	formData.append("model", value.model || "");
+	if (value.categoryIds) {
+		formData.append("categoryIds", value.categoryIds.join(","));
+	}
 	if (value.image) formData.append("image", value.image);
 
 	const response = await fetch(`${BACKEND_URL}/equipments/${value.id}`, {
@@ -110,6 +117,7 @@ function RouteComponent(): JSX.Element {
 			name: equipmentType.data?.name || "",
 			brand: equipmentType.data?.brand || "",
 			model: equipmentType.data?.model || "",
+			categoryIds: equipmentType.data?.categories?.map((c) => c.id) || [],
 		},
 		mode: "onTouched",
 	});
@@ -147,7 +155,14 @@ function RouteComponent(): JSX.Element {
 		const originalImageUrl = toImageUrl(currentEquipment?.imageUrl) || null;
 		const imageChanged = previewUrl !== originalImageUrl;
 
-		return textFieldsChanged || imageChanged;
+		const originalCategoryIds =
+			currentEquipment?.categories?.map((c) => c.id).sort() || [];
+		const currentCategoryIds = [...form.getValues().categoryIds].sort();
+		const categoriesChanged =
+			JSON.stringify(originalCategoryIds) !==
+			JSON.stringify(currentCategoryIds);
+
+		return textFieldsChanged || imageChanged || categoriesChanged;
 	}
 
 	if (mutation.isPending) {
@@ -318,6 +333,23 @@ function RouteComponent(): JSX.Element {
 									</FormItem>
 								)}
 							/>
+
+							<FormField
+								control={form.control}
+								name="categoryIds"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Categories</FormLabel>
+										<FormControl>
+											<CategorySelector
+												selectedCategoryIds={field.value}
+												onChange={field.onChange}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
 						</section>
 
 						<Button
@@ -459,10 +491,31 @@ function RouteComponent(): JSX.Element {
 										)}
 									/>
 
+									<FormField
+										control={form.control}
+										name="categoryIds"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Categories</FormLabel>
+												<FormControl>
+													<CategorySelector
+														selectedCategoryIds={field.value}
+														onChange={field.onChange}
+													/>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+
 									<Button
 										type="submit"
 										className="w-full shadow-none"
-										disabled={!form.formState.isValid || mutation.isPending}
+										disabled={
+											!form.formState.isValid ||
+											mutation.isPending ||
+											!hasChangedValue()
+										}
 									>
 										Confirm
 									</Button>
@@ -474,7 +527,15 @@ function RouteComponent(): JSX.Element {
 
 				<Separator />
 
-				<section>
+				<section className="space-y-4">
+					<LabelLarge>Increase Quantity</LabelLarge>
+					<IncreaseQuantityForm />
+				</section>
+
+				<Separator />
+
+				<section className="space-y-4">
+					<LabelLarge>Reallocate Items</LabelLarge>
 					<ReallocateForm equipmentType={equipmentType.data!} />
 				</section>
 			</div>

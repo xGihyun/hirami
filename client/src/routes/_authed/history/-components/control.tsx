@@ -10,6 +10,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { HistorySearch } from "./history-search";
+import { HistoryFilters } from "./history-filters";
 
 export function Control(): JSX.Element {
 	const navigate = useNavigate({ from: "/history" });
@@ -52,30 +53,34 @@ export function Control(): JSX.Element {
 	}
 
 	return (
-		<div className="flex w-full gap-5">
+		<div className="flex w-full gap-2 md:gap-5">
 			<HistorySearch />
 
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button className="size-12 bg-card text-card-foreground border border-accent shadow-none">
-						<IconArrowDownUp className="size-5" />
-					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end">
-					<DropdownMenuItem onClick={() => handleSortChange("borrowedAt")}>
-						{renderSortIcon("borrowedAt")}
-						Date and Time Borrowed
-					</DropdownMenuItem>
-					<DropdownMenuItem onClick={() => handleSortChange("returnedAt")}>
-						{renderSortIcon("returnedAt")}
-						Date and Time Returned
-					</DropdownMenuItem>
-					<DropdownMenuItem onClick={() => handleSortChange("status")}>
-						{renderSortIcon("status")}
-						Status
-					</DropdownMenuItem>
-				</DropdownMenuContent>
-			</DropdownMenu>
+			<div className="flex gap-2">
+				<HistoryFilters />
+
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button className="size-12 bg-card text-card-foreground border border-accent shadow-none">
+							<IconArrowDownUp className="size-5" />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end">
+						<DropdownMenuItem onClick={() => handleSortChange("borrowedAt")}>
+							{renderSortIcon("borrowedAt")}
+							Date and Time Borrowed
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={() => handleSortChange("returnedAt")}>
+							{renderSortIcon("returnedAt")}
+							Date and Time Returned
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={() => handleSortChange("status")}>
+							{renderSortIcon("status")}
+							Status
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</div>
 		</div>
 	);
 }

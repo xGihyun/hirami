@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jung-kurt/gofpdf/v2"
 	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/api"
 	"github.com/xGihyun/hirami/sse"
@@ -36,6 +37,8 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /equipment-names", api.Handler(s.getEquipmentNames))
 	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
 	mux.Handle("POST /equipments/{equipmentTypeId}/reallocate", api.Handler(s.reallocate))
+	mux.Handle("POST /equipments/{equipmentTypeId}/increase", api.Handler(s.increaseQuantity))
+	mux.Handle("DELETE /equipments/{equipmentTypeId}", api.Handler(s.deleteEquipment))
 
 	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
 	mux.Handle("PATCH /borrow-requests/{id}", api.Handler(s.updateBorrowRequest))
@@ -51,8 +54,13 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /return-requests/otp/{code}", api.Handler(s.getReturnRequestByOTP))
 
 	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
+	mux.Handle("GET /borrow-history/pdf", api.Handler(s.getBorrowHistoryPDF))
 
 	mux.Handle("GET /users/{userId}/borrowed-equipments", api.Handler(s.getBorrowedItems))
+
+	mux.Handle("POST /categories", api.Handler(s.createCategory))
+	mux.Handle("GET /categories", api.Handler(s.getCategories))
+	mux.Handle("DELETE /categories/{id}", api.Handler(s.deleteCategory))
 }
 
 const (
@@ -130,14 +138,18 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 	}
 
 	var (
-		brand *string
-		model *string
+		brand       *string
+		model       *string
+		categoryIDs []string
 	)
 	if brandValue := strings.TrimSpace(r.FormValue("brand")); brandValue != "" {
 		brand = &brandValue
 	}
 	if modelValue := strings.TrimSpace(r.FormValue("model")); modelValue != "" {
 		model = &modelValue
+	}
+	if cats := r.FormValue("categoryIds"); cats != "" {
+		categoryIDs = strings.Split(cats, ",")
 	}
 
 	data := createRequest{
@@ -147,10 +159,19 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 		ImageURL:        imageURL,
 		AcquisitionDate: acquisitionDate,
 		Quantity:        uint(quantity),
+		CategoryIDs:     categoryIDs,
 	}
 
 	equipment, err := s.repository.createEquipment(ctx, data)
 	if err != nil {
+		if errors.Is(err, ErrEquipmentAlreadyExists) {
+			return api.Response{
+				Error:   fmt.Errorf("create equipment: %w", err),
+				Code:    http.StatusConflict,
+				Message: "Equipment with the same details already exists.",
+			}
+		}
+
 		return api.Response{
 			Error:   fmt.Errorf("create equipment: %w", err),
 			Code:    http.StatusInternalServerError,
@@ -332,15 +353,14 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 	}
 
 	var (
-		brand string = r.FormValue("brand")
-		model string = r.FormValue("model")
+		brand       string   = r.FormValue("brand")
+		model       string   = r.FormValue("model")
+		categoryIDs []string
 	)
-	// if brandValue := strings.TrimSpace(r.FormValue("brand")); brandValue != "" {
-	// 	brand = &brandValue
-	// }
-	// if modelValue := strings.TrimSpace(r.FormValue("model")); modelValue != "" {
-	// 	model = &modelValue
-	// }
+
+	if cats := r.FormValue("categoryIds"); cats != "" {
+		categoryIDs = strings.Split(cats, ",")
+	}
 
 	data := updateRequest{
 		EquipmentTypeID: r.PathValue("equipmentTypeId"),
@@ -348,6 +368,7 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 		Brand:           &brand,
 		Model:           &model,
 		ImageURL:        imageURL,
+		CategoryIDs:     categoryIDs,
 	}
 
 	if err := s.repository.update(ctx, data); err != nil {
@@ -428,6 +449,14 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
+	if data.ExpectedReturnAt.Before(time.Now().Add(2 * time.Hour)) {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: expected return time must be at least 2 hours from now"),
+			Code:    http.StatusBadRequest,
+			Message: "Expected return time must be at least 2 hours from now to allow for preparation.",
+		}
+	}
+
 	res, err := s.repository.createBorrowRequest(ctx, data)
 	if err != nil {
 		if errors.Is(err, errInvalidBorrowQuantity) {
@@ -453,13 +482,14 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
-	if err := s.detectAnomaly(context.Background(), res); err != nil {
-		return api.Response{
-			Error:   fmt.Errorf("create borrow request: %w", err),
-			Code:    http.StatusInternalServerError,
-			Message: "Failed to create borrow request anomaly result.",
-		}
-	}
+	// NOTE: Ignore anomaly errors for now since it is not required
+	s.detectAnomaly(context.Background(), res)
+	// 	return api.Response{
+	// 		Error:   fmt.Errorf("create borrow request: %w", err),
+	// 		Code:    http.StatusInternalServerError,
+	// 		Message: "Failed to create borrow request anomaly result.",
+	// 	}
+	// }
 
 	eventRes := sse.EventResponse{
 		Event: eventBorrowRequestCreate,
@@ -900,13 +930,34 @@ func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Re
 	sortBy := r.URL.Query().Get("sortBy")
 	category := r.URL.Query().Get("category")
 	search := r.URL.Query().Get("search")
+
+	var startDate, endDate *time.Time
+	if s := r.URL.Query().Get("startDate"); s != "" {
+		if t, err := time.Parse(time.RFC3339, s); err == nil {
+			startDate = &t
+		}
+	}
+	if e := r.URL.Query().Get("endDate"); e != "" {
+		if t, err := time.Parse(time.RFC3339, e); err == nil {
+			endDate = &t
+		}
+	}
+
+	var equipmentIDs []string
+	if ids := r.URL.Query().Get("equipmentIds"); ids != "" {
+		equipmentIDs = strings.Split(ids, ",")
+	}
+
 	params := borrowHistoryParams{
-		userID:   &userID,
-		status:   &status,
-		sort:     &sort,
-		sortBy:   &sortBy,
-		category: &category,
-		search:   &search,
+		userID:       &userID,
+		status:       &status,
+		sort:         &sort,
+		sortBy:       &sortBy,
+		category:     &category,
+		search:       &search,
+		startDate:    startDate,
+		endDate:      endDate,
+		equipmentIDs: equipmentIDs,
 	}
 	history, err := s.repository.getBorrowHistory(ctx, params)
 	if err != nil {
@@ -950,5 +1001,231 @@ func (s *Server) getBorrowedItems(w http.ResponseWriter, r *http.Request) api.Re
 		Code:    http.StatusOK,
 		Message: "Successfully fetched borrowed items.",
 		Data:    history,
+	}
+}
+
+func (s *Server) deleteEquipment(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+	id := r.PathValue("equipmentTypeId")
+
+	var quantityPtr *uint
+	if q := r.URL.Query().Get("quantity"); q != "" {
+		quantity, err := strconv.ParseUint(q, 10, 64)
+		if err != nil {
+			return api.Response{
+				Error:   fmt.Errorf("delete equipment: invalid quantity: %w", err),
+				Code:    http.StatusBadRequest,
+				Message: "Invalid quantity provided.",
+			}
+		}
+		uQuantity := uint(quantity)
+		quantityPtr = &uQuantity
+	}
+
+	if err := s.repository.deleteEquipment(ctx, id, quantityPtr); err != nil {
+		if errors.Is(err, ErrEquipmentHasHistory) {
+			return api.Response{
+				Error:   err,
+				Code:    http.StatusBadRequest,
+				Message: "Cannot delete equipment that has borrow history.",
+			}
+		}
+		return api.Response{
+			Error:   fmt.Errorf("delete equipment: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to delete equipment.",
+		}
+	}
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully deleted equipment.",
+	}
+}
+
+func (s *Server) createCategory(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+	var body struct {
+		Name  string  `json:"name"`
+		Color *string `json:"color"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create category: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body.",
+		}
+	}
+	res, err := s.repository.createCategory(ctx, body.Name, body.Color)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("create category: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create category.",
+		}
+	}
+	return api.Response{
+		Code:    http.StatusCreated,
+		Message: "Successfully created category.",
+		Data:    res,
+	}
+}
+
+func (s *Server) getCategories(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+	res, err := s.repository.getCategories(ctx)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get categories: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get categories.",
+		}
+	}
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully fetched categories.",
+		Data:    res,
+	}
+}
+
+func (s *Server) deleteCategory(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+	id := r.PathValue("id")
+	if err := s.repository.deleteCategory(ctx, id); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("delete category: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to delete category.",
+		}
+	}
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully deleted category.",
+	}
+}
+
+func (s *Server) getBorrowHistoryPDF(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+	userID := r.URL.Query().Get("userId")
+	status := r.URL.Query().Get("status")
+	sort := api.Sort(r.URL.Query().Get("sort"))
+	sortBy := r.URL.Query().Get("sortBy")
+	category := r.URL.Query().Get("category")
+	search := r.URL.Query().Get("search")
+
+	var startDate, endDate *time.Time
+	if s := r.URL.Query().Get("startDate"); s != "" {
+		if t, err := time.Parse(time.RFC3339, s); err == nil {
+			startDate = &t
+		}
+	}
+	if e := r.URL.Query().Get("endDate"); e != "" {
+		if t, err := time.Parse(time.RFC3339, e); err == nil {
+			endDate = &t
+		}
+	}
+
+	var equipmentIDs []string
+	if ids := r.URL.Query().Get("equipmentIds"); ids != "" {
+		equipmentIDs = strings.Split(ids, ",")
+	}
+
+	params := borrowHistoryParams{
+		userID:       &userID,
+		status:       &status,
+		sort:         &sort,
+		sortBy:       &sortBy,
+		category:     &category,
+		search:       &search,
+		startDate:    startDate,
+		endDate:      endDate,
+		equipmentIDs: equipmentIDs,
+	}
+	history, err := s.repository.getBorrowHistory(ctx, params)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("get borrow history: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to get borrow history for PDF.",
+		}
+	}
+
+	pdf := gofpdf.New("L", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 16)
+	pdf.Cell(40, 10, "Borrow History Report")
+	pdf.Ln(12)
+
+	pdf.SetFont("Arial", "B", 12)
+	pdf.CellFormat(30, 10, "Date", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(40, 10, "Borrower", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(80, 10, "Equipments", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(40, 10, "Purpose", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(30, 10, "Status", "1", 0, "C", false, 0, "")
+	pdf.CellFormat(40, 10, "Return Date", "1", 0, "C", false, 0, "")
+	pdf.Ln(-1)
+
+	pdf.SetFont("Arial", "", 10)
+	for _, req := range history {
+		dateStr := req.RequestedAt.Format("2006-01-02")
+		borrowerName := fmt.Sprintf("%s %s", req.Borrower.FirstName, req.Borrower.LastName)
+		
+		var equipmentNames []string
+		for _, item := range req.RequestedItems {
+			equipmentNames = append(equipmentNames, fmt.Sprintf("%s (x%d)", item.Equipment.Name, item.Equipment.Quantity))
+		}
+		equipStr := strings.Join(equipmentNames, ", ")
+		
+		returnDate := "N/A"
+		if req.ActualReturnAt != nil {
+			returnDate = req.ActualReturnAt.Format("2006-01-02")
+		}
+
+		pdf.CellFormat(30, 10, dateStr, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(40, 10, borrowerName, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(80, 10, equipStr, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(40, 10, req.Purpose, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(30, 10, req.Status.Label, "1", 0, "L", false, 0, "")
+		pdf.CellFormat(40, 10, returnDate, "1", 0, "L", false, 0, "")
+		pdf.Ln(-1)
+	}
+
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", "attachment; filename=borrow_history.pdf")
+	err = pdf.Output(w)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("pdf output: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to generate PDF.",
+		}
+	}
+
+	return api.Response{Raw: true}
+}
+
+func (s *Server) increaseQuantity(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+	id := r.PathValue("equipmentTypeId")
+	var body struct {
+		Quantity        uint      `json:"quantity"`
+		AcquisitionDate time.Time `json:"acquisitionDate"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("increase quantity: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body.",
+		}
+	}
+	if err := s.repository.increaseQuantity(ctx, id, body.Quantity, body.AcquisitionDate); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("increase quantity: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to increase quantity.",
+		}
+	}
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully increased quantity.",
 	}
 }

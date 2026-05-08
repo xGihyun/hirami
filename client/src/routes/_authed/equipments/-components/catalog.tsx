@@ -5,8 +5,9 @@ import {
 	type Equipment,
 	type EquipmentWithBorrower,
 } from "@/lib/equipment/model";
-import type { Dispatch, JSX, SetStateAction } from "react";
+import { type Dispatch, type JSX, type SetStateAction, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toImageUrl } from "@/lib/api";
 import { StatusBadge } from "./status-badge";
@@ -25,6 +26,12 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { NumberInput } from "@/components/number-input";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { toast } from "sonner";
+
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteEquipment, equipmentsQuery } from "@/lib/equipment/api";
 
 type Props = {
 	equipments: EquipmentWithBorrower[];
@@ -34,6 +41,41 @@ type Props = {
 
 export function Catalog(props: Props): JSX.Element {
 	const auth = useAuth();
+	const queryClient = useQueryClient();
+
+	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+	const [deleteParams, setDeleteParams] = useState<{ id: string; quantity?: number } | null>(null);
+	const [deleteType, setDeleteType] = useState<"partial" | "all">("all");
+
+	const deleteMutation = useMutation({
+		mutationFn: ({ id, quantity }: { id: string; quantity?: number }) =>
+			deleteEquipment(id, quantity),
+		onSuccess: (res) => {
+			if (res.code === 200) {
+				queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
+				toast.success(res.message);
+			} else {
+				toast.error(res.message);
+			}
+			setIsConfirmOpen(false);
+		},
+		onError: (err: any) => {
+			toast.error(err.message || "Failed to delete equipment.");
+			setIsConfirmOpen(false);
+		},
+	});
+
+	function handleDelete(id: string, quantity?: number) {
+		setDeleteParams({ id, quantity });
+		setDeleteType(quantity ? "partial" : "all");
+		setIsConfirmOpen(true);
+	}
+
+	function confirmDelete() {
+		if (deleteParams) {
+			deleteMutation.mutate(deleteParams);
+		}
+	}
 
 	function handleSelect(
 		equipment: Equipment,
@@ -120,67 +162,39 @@ export function Catalog(props: Props): JSX.Element {
 									<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground line-clamp-1">
 										{equipment.name}
 									</LabelSmall>
+
+									<div className="flex flex-wrap gap-1 mt-1">
+										{equipment.categories.map((cat) => (
+											<Badge
+												key={cat.id}
+												variant="secondary"
+												className="text-[0.65rem] px-1 py-0 h-4"
+												style={{ backgroundColor: cat.color || undefined }}
+											>
+												{cat.name}
+											</Badge>
+										))}
+									</div>
 								</div>
 							</div>
 						</Card>
 					);
 
-					if (
-						isEquipmentManager &&
-						(equipment.status?.code === EquipmentStatus.Borrowed ||
-							equipment.status?.code === EquipmentStatus.Reserved)
-					) {
+					if (isEquipmentManager) {
 						return (
-							<Dialog>
-								<DialogTrigger>
+							<Dialog key={key}>
+								<DialogTrigger className="w-full h-full text-start">
 									{cardContent(
-										"text-start hover:bg-tertiary transition active:bg-tertiary",
+										"hover:bg-tertiary transition active:bg-tertiary",
 									)}
 								</DialogTrigger>
 
-								<DialogContent>
-									<DialogHeader>
-										<DialogTitle>
-											{equipment.brand} {equipment.model}
-										</DialogTitle>
-										<DialogDescription>{equipment.name}</DialogDescription>
-									</DialogHeader>
-
-									<div className="flex gap-2">
-										<Button asChild>
-											<Link
-												key={key}
-												to="/equipments/$equipmentId/edit"
-												params={{ equipmentId: equipment.id }}
-											>
-												Edit Equipment
-											</Link>
-										</Button>
-
-										<Button variant="secondary" asChild>
-											<Link
-												key={key}
-												to="/equipments/$equipmentId"
-												params={{ equipmentId: equipment.id }}
-											>
-												View Borrowers
-											</Link>
-										</Button>
-									</div>
-								</DialogContent>
+								<EquipmentManagerDialogContent 
+									equipment={equipment} 
+									onDelete={handleDelete}
+									isDeleting={deleteMutation.isPending}
+								/>
 							</Dialog>
-						);
-					}
-
-					if (isEquipmentManager) {
-						return (
-							<Link
-								key={key}
-								to="/equipments/$equipmentId/edit"
-								params={{ equipmentId: equipment.id }}
-							>
-								{cardContent("hover:bg-tertiary transition active:bg-tertiary")}
-							</Link>
 						);
 					}
 
@@ -210,6 +224,100 @@ export function Catalog(props: Props): JSX.Element {
 					);
 				})}
 			</div>
+
+			<ConfirmDialog
+				open={isConfirmOpen}
+				onOpenChange={setIsConfirmOpen}
+				onConfirm={confirmDelete}
+				title={deleteType === "partial" ? "Delete Equipment" : "Delete All Records"}
+				description={
+					deleteType === "partial"
+						? `Are you sure you want to permanently delete ${deleteParams?.quantity} of this equipment? This only deletes items that have no borrow history.`
+						: "Are you sure you want to permanently delete all records for this equipment type? This action will fail if there is any borrow history associated with it."
+				}
+				variant="destructive"
+				isLoading={deleteMutation.isPending}
+			/>
 		</section>
+	);
+}
+
+type EquipmentManagerDialogContentProps = {
+	equipment: Equipment;
+	onDelete: (id: string, quantity?: number) => void;
+	isDeleting: boolean;
+};
+
+function EquipmentManagerDialogContent({
+	equipment,
+	onDelete,
+	isDeleting,
+}: EquipmentManagerDialogContentProps) {
+	const [deleteQuantity, setDeleteQuantity] = useState<number>(1);
+
+	return (
+		<DialogContent>
+			<DialogHeader>
+				<DialogTitle>
+					{equipment.brand} {equipment.model}
+				</DialogTitle>
+				<DialogDescription>{equipment.name}</DialogDescription>
+			</DialogHeader>
+
+			<div className="space-y-4">
+				<div className="flex flex-wrap gap-2">
+					<Button asChild>
+						<Link
+							to="/equipments/$equipmentId/edit"
+							params={{ equipmentId: equipment.id }}
+						>
+							Edit Equipment
+						</Link>
+					</Button>
+
+					<Button variant="secondary" asChild>
+						<Link
+							to="/equipments/$equipmentId"
+							params={{ equipmentId: equipment.id }}
+						>
+							View Borrowers
+						</Link>
+					</Button>
+				</div>
+
+				<div className="border-t pt-4 space-y-2">
+					<LabelSmall className="text-muted-foreground">
+						Permanent Deletion
+					</LabelSmall>
+					<div className="flex items-end gap-2">
+						<div className="flex-1 space-y-1">
+							<LabelSmall htmlFor="delete-quantity">Quantity to delete</LabelSmall>
+							<NumberInput
+								id="delete-quantity"
+								value={deleteQuantity}
+								onChange={(val) => setDeleteQuantity(val || 1)}
+								min={1}
+								maxValue={equipment.quantity}
+							/>
+						</div>
+						<Button
+							variant="destructive"
+							onClick={() => onDelete(equipment.id, deleteQuantity)}
+							disabled={isDeleting || equipment.quantity === 0}
+						>
+							Delete {deleteQuantity}
+						</Button>
+					</div>
+					<Button
+						variant="ghost"
+						className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+						onClick={() => onDelete(equipment.id)}
+						disabled={isDeleting}
+					>
+						Delete All Records
+					</Button>
+				</div>
+			</div>
+		</DialogContent>
 	);
 }

@@ -30,6 +30,7 @@ export function RegisterEquipmentProvider(
 		model: "",
 		quantity: 1,
 		acquisitionDate: new Date(),
+		categoryIds: [],
 	});
 
 	return (

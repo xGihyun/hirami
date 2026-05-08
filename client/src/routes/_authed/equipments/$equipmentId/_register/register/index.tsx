@@ -33,6 +33,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { FullScreenLoading } from "@/components/loading";
 import { Failed } from "@/components/failed";
 import { Success } from "@/components/success";
+import { CategorySelector } from "../../../-components/category-selector";
 
 export const Route = createFileRoute(
 	"/_authed/equipments/$equipmentId/_register/register/",
@@ -242,6 +243,23 @@ function RouteComponent(): JSX.Element {
 											<FormLabel>Equipment Name</FormLabel>
 											<FormControl>
 												<Input placeholder="Volleyball" {...field} />
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<FormField
+									control={form.control}
+									name="categoryIds"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Categories</FormLabel>
+											<FormControl>
+												<CategorySelector
+													selectedCategoryIds={field.value}
+													onChange={field.onChange}
+												/>
 											</FormControl>
 											<FormMessage />
 										</FormItem>
