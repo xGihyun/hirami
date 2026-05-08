@@ -8,6 +8,8 @@ import { IconTrash, IconPlus } from "@/lib/icons";
 import { Card } from "@/components/ui/card";
 import { ComponentLoading } from "@/components/loading";
 import { createFileRoute } from "@tanstack/react-router";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authed/categories/")({
 	component: RouteComponent,
@@ -19,18 +21,39 @@ function RouteComponent(): JSX.Element {
 	const [newName, setNewName] = useState("");
 	const [newColor, setNewColor] = useState("#888888");
 
+	const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+	const [deleteId, setDeleteId] = useState<string | null>(null);
+
 	const createMutation = useMutation({
 		mutationFn: createCategory,
-		onSuccess: () => {
-			queryClient.invalidateQueries(categoriesQuery);
-			setNewName("");
+		onSuccess: (res) => {
+			if (res.code === 201) {
+				queryClient.invalidateQueries(categoriesQuery);
+				setNewName("");
+				toast.success("Category created successfully.");
+			} else {
+				toast.error(res.message);
+			}
+		},
+		onError: (err: any) => {
+			toast.error(err.message || "Failed to create category.");
 		},
 	});
 
 	const deleteMutation = useMutation({
 		mutationFn: deleteCategory,
-		onSuccess: () => {
-			queryClient.invalidateQueries(categoriesQuery);
+		onSuccess: (res) => {
+			if (res.code === 200) {
+				queryClient.invalidateQueries(categoriesQuery);
+				toast.success("Category deleted successfully.");
+			} else {
+				toast.error(res.message);
+			}
+			setIsConfirmOpen(false);
+		},
+		onError: (err: any) => {
+			toast.error(err.message || "Failed to delete category.");
+			setIsConfirmOpen(false);
 		},
 	});
 
@@ -41,8 +64,13 @@ function RouteComponent(): JSX.Element {
 	}
 
 	function handleDelete(id: string) {
-		if (confirm("Are you sure you want to delete this category?")) {
-			deleteMutation.mutate(id);
+		setDeleteId(id);
+		setIsConfirmOpen(true);
+	}
+
+	function confirmDelete() {
+		if (deleteId) {
+			deleteMutation.mutate(deleteId);
 		}
 	}
 
@@ -52,6 +80,16 @@ function RouteComponent(): JSX.Element {
 				<H1>Manage Categories</H1>
 				<TitleSmall>Add or remove equipment categories.</TitleSmall>
 			</header>
+
+			<ConfirmDialog
+				open={isConfirmOpen}
+				onOpenChange={setIsConfirmOpen}
+				onConfirm={confirmDelete}
+				title="Delete Category"
+				description="Are you sure you want to delete this category? This will remove it from all equipment."
+				variant="destructive"
+				isLoading={deleteMutation.isPending}
+			/>
 
 			<Card className="p-6">
 				<form onSubmit={handleCreate} className="flex gap-4 items-end">

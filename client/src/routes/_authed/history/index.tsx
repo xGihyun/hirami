@@ -18,6 +18,9 @@ const searchSchema = z.object({
 	sort: z.enum(Sort).default(Sort.Asc),
 	sortBy: z.string().default("borrowedAt"),
 	search: z.string().optional(),
+	startDate: z.string().optional(),
+	endDate: z.string().optional(),
+	equipmentIds: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_authed/history/")({
@@ -82,6 +85,9 @@ function RouteComponent() {
 							if (search.sort) url.searchParams.append("sort", search.sort);
 							if (search.sortBy) url.searchParams.append("sortBy", search.sortBy);
 							if (search.search) url.searchParams.append("search", search.search);
+							if (search.startDate) url.searchParams.append("startDate", search.startDate);
+							if (search.endDate) url.searchParams.append("endDate", search.endDate);
+							if (search.equipmentIds) url.searchParams.append("equipmentIds", search.equipmentIds);
 							window.open(url.toString(), "_blank");
 						}}
 					>
@@ -105,6 +111,9 @@ function History(): JSX.Element {
 			sortBy: search.sortBy,
 			category: search.category,
 			search: search.search,
+			startDate: search.startDate,
+			endDate: search.endDate,
+			equipmentIds: search.equipmentIds,
 		}),
 	);
 

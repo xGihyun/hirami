@@ -26,6 +26,7 @@ import IconTags from "~icons/lucide/tags";
 import IconUser from "~icons/lucide/user";
 import IconEllipsis from "~icons/lucide/ellipsis";
 import IconLogOut from "~icons/lucide/log-out";
+import IconFilter from "~icons/lucide/filter";
 
 export {
 	IconRoundArrowDown,
@@ -56,4 +57,5 @@ export {
 	IconUser,
 	IconEllipsis,
 	IconLogOut,
+	IconFilter,
 };

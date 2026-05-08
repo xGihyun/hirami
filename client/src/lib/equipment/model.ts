@@ -49,6 +49,7 @@ export const equipmentInventoryStatusSchema = z.object({
 	brand: z.string().nullable(),
 	model: z.string().nullable(),
 	imageUrl: z.string().nullable(),
+	categories: categorySchema.array().nullable().default([]),
 	statusQuantity: equipmentStatusQuantitySchema.array(),
 });
 export type EquipmentInventoryStatus = z.infer<

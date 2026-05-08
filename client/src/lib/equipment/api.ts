@@ -178,17 +178,16 @@ export async function deleteCategory(id: string): Promise<ApiResponse> {
 	return result;
 }
 
-export async function deleteEquipment(id: string): Promise<ApiResponse> {
-	const response = await fetch(`${BACKEND_URL}/equipments/${id}`, {
+export async function deleteEquipment(id: string, quantity?: number): Promise<ApiResponse> {
+	const url = new URL(`${BACKEND_URL}/equipments/${id}`);
+	if (quantity !== undefined) {
+		url.searchParams.append("quantity", quantity.toString());
+	}
+	const response = await fetch(url, {
 		method: "DELETE",
 	});
 
-	const result: ApiResponse = await response.json();
-	if (!response.ok) {
-		throw new Error(result.message);
-	}
-
-	return result;
+	return response.json();
 }
 
 //
@@ -258,6 +257,9 @@ type GetBorrowHistoryParams = {
 	sortBy?: string;
 	category?: string;
 	search?: string;
+	startDate?: string;
+	endDate?: string;
+	equipmentIds?: string;
 };
 
 async function getBorrowHistory(
@@ -282,6 +284,15 @@ async function getBorrowHistory(
 	}
 	if (params.search) {
 		url.searchParams.append("search", params.search);
+	}
+	if (params.startDate) {
+		url.searchParams.append("startDate", params.startDate);
+	}
+	if (params.endDate) {
+		url.searchParams.append("endDate", params.endDate);
+	}
+	if (params.equipmentIds) {
+		url.searchParams.append("equipmentIds", params.equipmentIds);
 	}
 
 	const response = await fetch(url.toString(), {

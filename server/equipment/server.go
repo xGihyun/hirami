@@ -353,15 +353,14 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 	}
 
 	var (
-		brand string = r.FormValue("brand")
-		model string = r.FormValue("model")
+		brand       string   = r.FormValue("brand")
+		model       string   = r.FormValue("model")
+		categoryIDs []string
 	)
-	// if brandValue := strings.TrimSpace(r.FormValue("brand")); brandValue != "" {
-	// 	brand = &brandValue
-	// }
-	// if modelValue := strings.TrimSpace(r.FormValue("model")); modelValue != "" {
-	// 	model = &modelValue
-	// }
+
+	if cats := r.FormValue("categoryIds"); cats != "" {
+		categoryIDs = strings.Split(cats, ",")
+	}
 
 	data := updateRequest{
 		EquipmentTypeID: r.PathValue("equipmentTypeId"),
@@ -369,6 +368,7 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 		Brand:           &brand,
 		Model:           &model,
 		ImageURL:        imageURL,
+		CategoryIDs:     categoryIDs,
 	}
 
 	if err := s.repository.update(ctx, data); err != nil {
@@ -929,13 +929,34 @@ func (s *Server) getBorrowHistory(w http.ResponseWriter, r *http.Request) api.Re
 	sortBy := r.URL.Query().Get("sortBy")
 	category := r.URL.Query().Get("category")
 	search := r.URL.Query().Get("search")
+
+	var startDate, endDate *time.Time
+	if s := r.URL.Query().Get("startDate"); s != "" {
+		if t, err := time.Parse(time.RFC3339, s); err == nil {
+			startDate = &t
+		}
+	}
+	if e := r.URL.Query().Get("endDate"); e != "" {
+		if t, err := time.Parse(time.RFC3339, e); err == nil {
+			endDate = &t
+		}
+	}
+
+	var equipmentIDs []string
+	if ids := r.URL.Query().Get("equipmentIds"); ids != "" {
+		equipmentIDs = strings.Split(ids, ",")
+	}
+
 	params := borrowHistoryParams{
-		userID:   &userID,
-		status:   &status,
-		sort:     &sort,
-		sortBy:   &sortBy,
-		category: &category,
-		search:   &search,
+		userID:       &userID,
+		status:       &status,
+		sort:         &sort,
+		sortBy:       &sortBy,
+		category:     &category,
+		search:       &search,
+		startDate:    startDate,
+		endDate:      endDate,
+		equipmentIDs: equipmentIDs,
 	}
 	history, err := s.repository.getBorrowHistory(ctx, params)
 	if err != nil {
@@ -985,7 +1006,29 @@ func (s *Server) getBorrowedItems(w http.ResponseWriter, r *http.Request) api.Re
 func (s *Server) deleteEquipment(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 	id := r.PathValue("equipmentTypeId")
-	if err := s.repository.deleteEquipment(ctx, id); err != nil {
+
+	var quantityPtr *uint
+	if q := r.URL.Query().Get("quantity"); q != "" {
+		quantity, err := strconv.ParseUint(q, 10, 64)
+		if err != nil {
+			return api.Response{
+				Error:   fmt.Errorf("delete equipment: invalid quantity: %w", err),
+				Code:    http.StatusBadRequest,
+				Message: "Invalid quantity provided.",
+			}
+		}
+		uQuantity := uint(quantity)
+		quantityPtr = &uQuantity
+	}
+
+	if err := s.repository.deleteEquipment(ctx, id, quantityPtr); err != nil {
+		if errors.Is(err, ErrEquipmentHasHistory) {
+			return api.Response{
+				Error:   err,
+				Code:    http.StatusBadRequest,
+				Message: "Cannot delete equipment that has borrow history.",
+			}
+		}
 		return api.Response{
 			Error:   fmt.Errorf("delete equipment: %w", err),
 			Code:    http.StatusInternalServerError,
@@ -1067,13 +1110,34 @@ func (s *Server) getBorrowHistoryPDF(w http.ResponseWriter, r *http.Request) api
 	sortBy := r.URL.Query().Get("sortBy")
 	category := r.URL.Query().Get("category")
 	search := r.URL.Query().Get("search")
+
+	var startDate, endDate *time.Time
+	if s := r.URL.Query().Get("startDate"); s != "" {
+		if t, err := time.Parse(time.RFC3339, s); err == nil {
+			startDate = &t
+		}
+	}
+	if e := r.URL.Query().Get("endDate"); e != "" {
+		if t, err := time.Parse(time.RFC3339, e); err == nil {
+			endDate = &t
+		}
+	}
+
+	var equipmentIDs []string
+	if ids := r.URL.Query().Get("equipmentIds"); ids != "" {
+		equipmentIDs = strings.Split(ids, ",")
+	}
+
 	params := borrowHistoryParams{
-		userID:   &userID,
-		status:   &status,
-		sort:     &sort,
-		sortBy:   &sortBy,
-		category: &category,
-		search:   &search,
+		userID:       &userID,
+		status:       &status,
+		sort:         &sort,
+		sortBy:       &sortBy,
+		category:     &category,
+		search:       &search,
+		startDate:    startDate,
+		endDate:      endDate,
+		equipmentIDs: equipmentIDs,
 	}
 	history, err := s.repository.getBorrowHistory(ctx, params)
 	if err != nil {
