@@ -73,14 +73,10 @@ function ManageCategoriesPage(): JSX.Element {
 		onSuccess: (res) => {
 			if (res.code === 200) {
 				queryClient.invalidateQueries(categoriesQuery);
-				toast.success("Category deleted successfully.");
-			} else {
-				toast.error(res.message);
 			}
 			setIsConfirmOpen(false);
 		},
-		onError: (err: any) => {
-			toast.error(err.message || "Failed to delete category.");
+		onError: () => {
 			setIsConfirmOpen(false);
 		},
 	});
@@ -124,36 +120,36 @@ function ManageCategoriesPage(): JSX.Element {
 		}
 	}
 
-	if (createMutation.isError || updateMutation.isError) {
-		const mutation = createMutation.isError ? createMutation : updateMutation;
+	if (createMutation.isError || updateMutation.isError || deleteMutation.isError) {
+		const mutation = createMutation.isError ? createMutation : (updateMutation.isError ? updateMutation : deleteMutation);
 		return (
 			<Failed
 				header={
 					createMutation.isError
 						? "Category creation failed."
-						: "Category update failed."
+						: (updateMutation.isError ? "Category update failed." : "Category deletion failed.")
 				}
 				fn={mutation.reset}
 				retry={() => mutation.mutate(mutation.variables as any)}
 				backLink="/equipments/categories"
 				backMessage="or return to Categories"
-				className="absolute inset-0 z-50 bg-background"
+				className="absolute inset-0 z-50 bg-background md:px-10 md:pt-[calc(1.25rem+env(safe-area-inset-top))]"
 			/>
 		);
 	}
 
-	if (createMutation.isSuccess || updateMutation.isSuccess) {
-		const mutation = createMutation.isSuccess ? createMutation : updateMutation;
+	if (createMutation.isSuccess || updateMutation.isSuccess || deleteMutation.isSuccess) {
+		const mutation = createMutation.isSuccess ? createMutation : (updateMutation.isSuccess ? updateMutation : deleteMutation);
 		return (
 			<Success
 				header={
 					createMutation.isSuccess
 						? "Category created successfully."
-						: "Category updated successfully."
+						: (updateMutation.isSuccess ? "Category updated successfully." : "Category deleted successfully.")
 				}
 				fn={mutation.reset}
 				backLink="/equipments/categories"
-				className="absolute inset-0 z-50 bg-background"
+				className="absolute inset-0 z-50 bg-background md:px-10 md:pt-[calc(1.25rem+env(safe-area-inset-top))]"
 			/>
 		);
 	}
