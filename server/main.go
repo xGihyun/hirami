@@ -60,7 +60,11 @@ func main() {
 
 	valkeyURL, ok := os.LookupEnv("VALKEY_URL")
 	if !ok {
-		panic("VALKEY_URL not found.")
+		valkeyAddr, ok := os.LookupEnv("VALKEY_ADDRESS")
+		if !ok {
+			panic("VALKEY_URL or VALKEY_ADDRESS not found.")
+		}
+		valkeyURL = "valkey://" + valkeyAddr
 	}
 
 	opt, err := valkey.ParseURL(valkeyURL)

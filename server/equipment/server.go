@@ -705,7 +705,7 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
-	if len(data.Equipments) == 0 {
+	if len(data.Items) == 0 {
 		return api.Response{
 			Error:   fmt.Errorf("create return request: at least one equipment is required"),
 			Code:    http.StatusBadRequest,

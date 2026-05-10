@@ -1,0 +1,76 @@
+name: hirami-test
+
+networks:
+  net:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:18.1
+    environment:
+      POSTGRES_USER: hirami
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: hirami_test
+    ports:
+      - "5433:5432"
+    # No volumes for isolated tests
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hirami -d hirami_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+    networks:
+      - net
+
+  valkey:
+    image: valkey/valkey-bundle:9.0
+    ports:
+      - "6380:6379"
+    # No volumes for isolated tests
+    networks:
+      - net
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: hirami-server-test
+    ports:
+      - 3003:3003
+    command: go run .
+    env_file:
+      - ./server/.env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3003
+      - DATABASE_URL=postgresql://hirami:password@postgres:5432/hirami_test?sslmode=disable
+      - VALKEY_URL=valkey://valkey:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3003/ || wget --spider -q http://localhost:3003/ || exit 1"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+      start_period: 10s
+    networks:
+      - net
+
+  seed:
+    build: ./server
+    depends_on:
+      server:
+        condition: service_healthy
+    command: go run ./cmd/seed/main.go
+    environment:
+      - DATABASE_URL=postgresql://hirami:password@postgres:5432/hirami_test?sslmode=disable
+    networks:
+      - net
