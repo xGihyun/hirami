@@ -39,7 +39,8 @@ type Repository interface {
 	getBorrowHistory(ctx context.Context, params borrowHistoryParams) ([]borrowRequest, error)
 	getBorrowedItems(ctx context.Context, params borrowedItemParams) ([]borrowRequestItem, error)
 
-	createCategory(ctx context.Context, name string, color *string) (categoryDetail, error)
+	createCategory(ctx context.Context, name string, backgroundColor, foregroundColor *string) (categoryDetail, error)
+	updateCategory(ctx context.Context, id string, name string, backgroundColor, foregroundColor *string) (categoryDetail, error)
 	getCategories(ctx context.Context) ([]categoryDetail, error)
 	deleteCategory(ctx context.Context, id string) error
 
@@ -50,9 +51,10 @@ type Repository interface {
 }
 
 type categoryDetail struct {
-	CategoryID string  `json:"id"`
-	Name       string  `json:"name"`
-	Color      *string `json:"color"`
+	CategoryID      string  `json:"id"`
+	Name            string  `json:"name"`
+	BackgroundColor *string `json:"backgroundColor"`
+	ForegroundColor *string `json:"foregroundColor"`
 }
 
 type repository struct {
@@ -144,7 +146,7 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) (cr
 
 		// Fetch linked categories for response
 		fetchCategoriesQuery := `
-		SELECT category_id, name, color
+		SELECT category_id, name, background_color, foreground_color
 		FROM category
 		JOIN equipment_type_category USING (category_id)
 		WHERE equipment_type_id = $1
@@ -156,7 +158,7 @@ func (r *repository) createEquipment(ctx context.Context, arg createRequest) (cr
 		defer rows.Close()
 		for rows.Next() {
 			var cat categoryDetail
-			if err := rows.Scan(&cat.CategoryID, &cat.Name, &cat.Color); err != nil {
+			if err := rows.Scan(&cat.CategoryID, &cat.Name, &cat.BackgroundColor, &cat.ForegroundColor); err != nil {
 				return createResponse{}, err
 			}
 			equipment.Categories = append(equipment.Categories, cat)
@@ -249,7 +251,8 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 		SELECT jsonb_agg(jsonb_build_object(
 			'id', category.category_id,
 			'name', category.name,
-			'color', category.color
+			'backgroundColor', category.background_color,
+			'foregroundColor', category.foreground_color
 		)) AS categories
 		FROM category
 		JOIN equipment_type_category USING (category_id)
@@ -390,7 +393,8 @@ func (r *repository) getByID(ctx context.Context, id string) (equipmentWithBorro
 		SELECT jsonb_agg(jsonb_build_object(
 			'id', category.category_id,
 			'name', category.name,
-			'color', category.color
+			'backgroundColor', category.background_color,
+			'foregroundColor', category.foreground_color
 		)) AS categories
 		FROM category
 		JOIN equipment_type_category USING (category_id)
@@ -517,7 +521,8 @@ func (r *repository) getEquipmentTypeByID(ctx context.Context, id string) (equip
 				jsonb_build_object(
 					'id', c.category_id,
 					'name', c.name,
-					'color', c.color
+					'backgroundColor', c.background_color,
+					'foregroundColor', c.foreground_color
 				)
 			) AS categories
 		FROM equipment_type_category etc
@@ -2907,15 +2912,22 @@ func (r *repository) deleteEquipment(ctx context.Context, id string, quantity *u
 	return err
 }
 
-func (r *repository) createCategory(ctx context.Context, name string, color *string) (categoryDetail, error) {
-	query := "INSERT INTO category (name, color) VALUES ($1, $2) RETURNING category_id, name, color"
+func (r *repository) createCategory(ctx context.Context, name string, backgroundColor, foregroundColor *string) (categoryDetail, error) {
+	query := "INSERT INTO category (name, background_color, foreground_color) VALUES ($1, $2, $3) RETURNING category_id, name, background_color, foreground_color"
 	var res categoryDetail
-	err := r.querier.QueryRow(ctx, query, name, color).Scan(&res.CategoryID, &res.Name, &res.Color)
+	err := r.querier.QueryRow(ctx, query, name, backgroundColor, foregroundColor).Scan(&res.CategoryID, &res.Name, &res.BackgroundColor, &res.ForegroundColor)
+	return res, err
+}
+
+func (r *repository) updateCategory(ctx context.Context, id string, name string, backgroundColor, foregroundColor *string) (categoryDetail, error) {
+	query := "UPDATE category SET name = $1, background_color = $2, foreground_color = $3 WHERE category_id = $4 RETURNING category_id, name, background_color, foreground_color"
+	var res categoryDetail
+	err := r.querier.QueryRow(ctx, query, name, backgroundColor, foregroundColor, id).Scan(&res.CategoryID, &res.Name, &res.BackgroundColor, &res.ForegroundColor)
 	return res, err
 }
 
 func (r *repository) getCategories(ctx context.Context) ([]categoryDetail, error) {
-	query := "SELECT category_id, name, color FROM category ORDER BY name"
+	query := "SELECT category_id, name, background_color, foreground_color FROM category ORDER BY name"
 	rows, err := r.querier.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -2925,7 +2937,7 @@ func (r *repository) getCategories(ctx context.Context) ([]categoryDetail, error
 	var categories []categoryDetail
 	for rows.Next() {
 		var cat categoryDetail
-		if err := rows.Scan(&cat.CategoryID, &cat.Name, &cat.Color); err != nil {
+		if err := rows.Scan(&cat.CategoryID, &cat.Name, &cat.BackgroundColor, &cat.ForegroundColor); err != nil {
 			return nil, err
 		}
 		categories = append(categories, cat)

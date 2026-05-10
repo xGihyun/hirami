@@ -144,17 +144,28 @@ function RouteComponent(): JSX.Element {
 			)}
 
 			{auth.user?.role.code === UserRole.EquipmentManager ? (
-				<Button
-					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow md:w-92 md:left-auto md:right-8 md:bottom-10"
-					asChild
-				>
-					<Link
-						to="/equipments/$equipmentId/register"
-						params={{ equipmentId: uuidv4() }}
+				<>
+					<Button
+						variant="secondary"
+						className="fixed bottom-[calc(8.5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow md:w-92 md:left-auto md:right-8 md:bottom-24"
+						asChild
 					>
-						Register New Equipment
-					</Link>
-				</Button>
+						<Link to="/equipments/categories">
+							Manage Categories
+						</Link>
+					</Button>
+					<Button
+						className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow md:w-92 md:left-auto md:right-8 md:bottom-10"
+						asChild
+					>
+						<Link
+							to="/equipments/$equipmentId/register"
+							params={{ equipmentId: uuidv4() }}
+						>
+							Register New Equipment
+						</Link>
+					</Button>
+				</>
 			) : selectedEquipments.length > 0 ? (
 				<Button
 					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 !shadow-item"

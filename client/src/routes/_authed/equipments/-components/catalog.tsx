@@ -169,7 +169,10 @@ export function Catalog(props: Props): JSX.Element {
 												key={cat.id}
 												variant="secondary"
 												className="text-[0.65rem] px-1 py-0 h-4"
-												style={{ backgroundColor: cat.color || undefined }}
+												style={{
+													backgroundColor: cat.backgroundColor || undefined,
+													color: cat.foregroundColor || undefined,
+												}}
 											>
 												{cat.name}
 											</Badge>

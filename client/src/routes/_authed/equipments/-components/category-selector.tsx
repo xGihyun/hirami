@@ -80,6 +80,12 @@ export function CategorySelector({
 													: "opacity-0",
 											)}
 										/>
+										<div
+											className="size-3 rounded-full mr-2 shrink-0"
+											style={{
+												backgroundColor: category.backgroundColor || "#888888",
+											}}
+										/>
 										{category.name}
 									</CommandItem>
 								))}
@@ -94,7 +100,10 @@ export function CategorySelector({
 						key={category.id}
 						variant="secondary"
 						className="flex items-center gap-1"
-						style={{ backgroundColor: category.color || undefined }}
+						style={{
+							backgroundColor: category.backgroundColor || undefined,
+							color: category.foregroundColor || undefined,
+						}}
 					>
 						{category.name}
 						<button

@@ -19,7 +19,8 @@ export enum EquipmentStatus {
 export const categorySchema = z.object({
 	id: z.uuidv4(),
 	name: z.string(),
-	color: z.string().nullable(),
+	backgroundColor: z.string().nullable(),
+	foregroundColor: z.string().nullable(),
 });
 export type Category = z.infer<typeof categorySchema>;
 

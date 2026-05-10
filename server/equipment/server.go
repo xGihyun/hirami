@@ -59,6 +59,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /users/{userId}/borrowed-equipments", api.Handler(s.getBorrowedItems))
 
 	mux.Handle("POST /categories", api.Handler(s.createCategory))
+	mux.Handle("PATCH /categories/{id}", api.Handler(s.updateCategory))
 	mux.Handle("GET /categories", api.Handler(s.getCategories))
 	mux.Handle("DELETE /categories/{id}", api.Handler(s.deleteCategory))
 }
@@ -1045,8 +1046,9 @@ func (s *Server) deleteEquipment(w http.ResponseWriter, r *http.Request) api.Res
 func (s *Server) createCategory(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 	var body struct {
-		Name  string  `json:"name"`
-		Color *string `json:"color"`
+		Name            string  `json:"name"`
+		BackgroundColor *string `json:"backgroundColor"`
+		ForegroundColor *string `json:"foregroundColor"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		return api.Response{
@@ -1055,7 +1057,7 @@ func (s *Server) createCategory(w http.ResponseWriter, r *http.Request) api.Resp
 			Message: "Invalid request body.",
 		}
 	}
-	res, err := s.repository.createCategory(ctx, body.Name, body.Color)
+	res, err := s.repository.createCategory(ctx, body.Name, body.BackgroundColor, body.ForegroundColor)
 	if err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("create category: %w", err),
@@ -1066,6 +1068,36 @@ func (s *Server) createCategory(w http.ResponseWriter, r *http.Request) api.Resp
 	return api.Response{
 		Code:    http.StatusCreated,
 		Message: "Successfully created category.",
+		Data:    res,
+	}
+}
+
+func (s *Server) updateCategory(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+	id := r.PathValue("id")
+	var body struct {
+		Name            string  `json:"name"`
+		BackgroundColor *string `json:"backgroundColor"`
+		ForegroundColor *string `json:"foregroundColor"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update category: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body.",
+		}
+	}
+	res, err := s.repository.updateCategory(ctx, id, body.Name, body.BackgroundColor, body.ForegroundColor)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update category: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update category.",
+		}
+	}
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully updated category.",
 		Data:    res,
 	}
 }

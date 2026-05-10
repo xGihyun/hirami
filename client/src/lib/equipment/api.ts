@@ -147,10 +147,33 @@ export const categoriesQuery = queryOptions({
 
 export async function createCategory(value: {
 	name: string;
-	color?: string;
+	backgroundColor?: string;
+	foregroundColor?: string;
 }): Promise<ApiResponse<Category>> {
 	const response = await fetch(`${BACKEND_URL}/categories`, {
 		method: "POST",
+		body: JSON.stringify(value),
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
+	const result: ApiResponse<Category> = await response.json();
+	if (!response.ok) {
+		throw new Error(result.message);
+	}
+
+	return result;
+}
+
+export async function updateCategory(value: {
+	id: string;
+	name: string;
+	backgroundColor?: string;
+	foregroundColor?: string;
+}): Promise<ApiResponse<Category>> {
+	const response = await fetch(`${BACKEND_URL}/categories/${value.id}`, {
+		method: "PATCH",
 		body: JSON.stringify(value),
 		headers: {
 			"Content-Type": "application/json",
