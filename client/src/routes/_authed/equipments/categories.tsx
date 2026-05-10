@@ -9,6 +9,8 @@ import { ComponentLoading } from "@/components/loading";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "sonner";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Success } from "@/components/success";
+import { Failed } from "@/components/failed";
 import {
 	Table,
 	TableBody,
@@ -52,13 +54,7 @@ function ManageCategoriesPage(): JSX.Element {
 				setNewName("");
 				setNewBgColor("#888888");
 				setNewFgColor("#FFFFFF");
-				toast.success("Category created successfully.");
-			} else {
-				toast.error(res.message);
 			}
-		},
-		onError: (err: any) => {
-			toast.error(err.message || "Failed to create category.");
 		},
 	});
 
@@ -68,13 +64,7 @@ function ManageCategoriesPage(): JSX.Element {
 			if (res.code === 200) {
 				queryClient.invalidateQueries(categoriesQuery);
 				setEditingId(null);
-				toast.success("Category updated successfully.");
-			} else {
-				toast.error(res.message);
 			}
-		},
-		onError: (err: any) => {
-			toast.error(err.message || "Failed to update category.");
 		},
 	});
 
@@ -134,8 +124,42 @@ function ManageCategoriesPage(): JSX.Element {
 		}
 	}
 
+	if (createMutation.isError || updateMutation.isError) {
+		const mutation = createMutation.isError ? createMutation : updateMutation;
+		return (
+			<Failed
+				header={
+					createMutation.isError
+						? "Category creation failed."
+						: "Category update failed."
+				}
+				fn={mutation.reset}
+				retry={() => mutation.mutate(mutation.variables as any)}
+				backLink="/equipments/categories"
+				backMessage="or return to Categories"
+				className="absolute inset-0 z-50 bg-background"
+			/>
+		);
+	}
+
+	if (createMutation.isSuccess || updateMutation.isSuccess) {
+		const mutation = createMutation.isSuccess ? createMutation : updateMutation;
+		return (
+			<Success
+				header={
+					createMutation.isSuccess
+						? "Category created successfully."
+						: "Category updated successfully."
+				}
+				fn={mutation.reset}
+				backLink="/equipments/categories"
+				className="absolute inset-0 z-50 bg-background"
+			/>
+		);
+	}
+
 	return (
-		<div className="space-y-6">
+		<div className="relative space-y-6">
 			<Button
 				variant="ghost"
 				size="icon"

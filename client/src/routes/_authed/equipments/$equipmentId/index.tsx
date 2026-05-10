@@ -68,8 +68,11 @@ function RouteComponent(): JSX.Element {
 					</Avatar>
 
 					<H2 className="text-center">
-						{equipment.name} {equipment.brand} {equipment.model}
+						{equipment.brand || "No Brand"} {equipment.model}
 					</H2>
+					<LabelMedium className="text-muted group-has-data-[state=checked]:text-primary-foreground line-clamp-1">
+						{equipment.name}
+					</LabelMedium>
 				</div>
 
 				{/* <div className="text-center text-muted"> */}

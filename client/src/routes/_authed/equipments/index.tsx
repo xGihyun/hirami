@@ -21,6 +21,8 @@ import { v4 as uuidv4 } from "uuid";
 import { ComponentLoading } from "@/components/loading";
 import { EquipmentServerEvent } from "@/lib/equipment/sse";
 import type { Equipment } from "@/lib/equipment/model";
+import { Success } from "@/components/success";
+import { Failed } from "@/components/failed";
 
 const searchSchema = z.object({
 	categories: z.array(z.string()).optional().default([]),
@@ -53,6 +55,7 @@ function RouteComponent(): JSX.Element {
 	const categories = useQuery(categoriesQuery);
 	const auth = useAuth();
 	const [isBorrowing, setIsBorrowing] = useState(false);
+	const [deletionStatus, setDeletionStatus] = useState<"idle" | "success" | "error">("idle");
 
 	const [selectedEquipments, setSelectedEquipments] = useState<
 		SelectedEquipment[]
@@ -123,6 +126,29 @@ function RouteComponent(): JSX.Element {
 		);
 	}
 
+	if (deletionStatus === "error") {
+		return (
+			<Failed
+				header="Equipment deletion failed."
+				fn={() => setDeletionStatus("idle")}
+				backLink="/equipments"
+				backMessage="or return to Catalog"
+				className="bg-white fixed md:absolute"
+			/>
+		);
+	}
+
+	if (deletionStatus === "success") {
+		return (
+			<Success
+				header="Equipment has been successfully deleted."
+				fn={() => setDeletionStatus("idle")}
+				backLink="/equipments"
+				className="bg-white fixed md:absolute"
+			/>
+		);
+	}
+
 	return (
 		<div className="relative space-y-4 min-w-0 overflow-x-hidden">
 			<CatalogHeader user={auth.user!} />
@@ -140,14 +166,15 @@ function RouteComponent(): JSX.Element {
 					equipments={equipments.data}
 					selectedEquipments={selectedEquipments}
 					setSelectedEquipments={setSelectedEquipments}
+					onDeletionStatusChange={setDeletionStatus}
 				/>
 			)}
 
 			{auth.user?.role.code === UserRole.EquipmentManager ? (
-				<>
+				<div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 flex flex-row flex-wrap md:flex-col gap-2 md:gap-4 md:w-92 md:left-auto md:right-8 md:bottom-10">
 					<Button
 						variant="secondary"
-						className="fixed bottom-[calc(8.5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow md:w-92 md:left-auto md:right-8 md:bottom-24"
+						className="flex-1 min-w-[150px] md:flex-none shadow h-auto py-3 whitespace-normal text-center"
 						asChild
 					>
 						<Link to="/equipments/categories">
@@ -155,17 +182,17 @@ function RouteComponent(): JSX.Element {
 						</Link>
 					</Button>
 					<Button
-						className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 shadow md:w-92 md:left-auto md:right-8 md:bottom-10"
+						className="flex-1 min-w-[150px] md:flex-none shadow h-auto py-3 whitespace-normal text-center"
 						asChild
 					>
 						<Link
 							to="/equipments/$equipmentId/register"
 							params={{ equipmentId: uuidv4() }}
 						>
-							Register New Equipment
+							Register Equipment
 						</Link>
 					</Button>
-				</>
+				</div>
 			) : selectedEquipments.length > 0 ? (
 				<Button
 					className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 left-4 z-50 !shadow-item"
