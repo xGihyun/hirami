@@ -44,32 +44,24 @@ func (s *Server) EventsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	subCmd := s.valkeyClient.B().Subscribe().Channel("equipment").Build()
-	msgChan := make(chan valkey.PubSubMessage)
-
-	go func() {
-		s.valkeyClient.Receive(ctx, subCmd, func(msg valkey.PubSubMessage) {
-			msgChan <- msg
-		})
-	}()
-
-	for {
-		select {
-		case <-ctx.Done():
-			slog.Info("client disconnected")
+	err = s.valkeyClient.Receive(ctx, subCmd, func(msg valkey.PubSubMessage) {
+		var eventRes EventResponse
+		if err := json.Unmarshal([]byte(msg.Message), &eventRes); err != nil {
+			slog.Error("unmarshal", "err", err)
 			return
-		case msg := <-msgChan:
-			var eventRes EventResponse
-			if err := json.Unmarshal([]byte(msg.Message), &eventRes); err != nil {
-				slog.Error("unmarshal", "err", err)
-				continue
-			}
-
-			dataJSON, _ := json.Marshal(eventRes.Data)
-			fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventRes.Event, dataJSON)
-			if err := rc.Flush(); err != nil {
-				slog.Error("flush", "err", err)
-				return
-			}
 		}
+
+		dataJSON, _ := json.Marshal(eventRes.Data)
+		fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventRes.Event, dataJSON)
+		if err := rc.Flush(); err != nil {
+			slog.Error("flush", "err", err)
+			return
+		}
+	})
+
+	if err != nil && err != context.Canceled {
+		slog.Error("valkey receive", "err", err)
 	}
+
+	slog.Info("client disconnected")
 }
