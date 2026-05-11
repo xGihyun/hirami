@@ -1,0 +1,106 @@
+2026-05-10 15:29:30,268 INFO o.a.j.u.JMeterUtils: Setting Locale to en_EN
+2026-05-10 15:29:30,287 INFO o.a.j.JMeter: Loading user properties from: /opt/jmeter/bin/user.properties
+2026-05-10 15:29:30,288 INFO o.a.j.JMeter: Loading system properties from: /opt/jmeter/bin/system.properties
+2026-05-10 15:29:30,294 INFO o.a.j.JMeter: Copyright (c) 1998-2024 The Apache Software Foundation
+2026-05-10 15:29:30,294 INFO o.a.j.JMeter: Version 5.6.3
+2026-05-10 15:29:30,294 INFO o.a.j.JMeter: java.version=21.0.10
+2026-05-10 15:29:30,294 INFO o.a.j.JMeter: java.vm.name=OpenJDK 64-Bit Server VM
+2026-05-10 15:29:30,294 INFO o.a.j.JMeter: os.name=Linux
+2026-05-10 15:29:30,294 INFO o.a.j.JMeter: os.arch=amd64
+2026-05-10 15:29:30,294 INFO o.a.j.JMeter: os.version=6.19.11-zen1-1-zen
+2026-05-10 15:29:30,294 INFO o.a.j.JMeter: file.encoding=UTF-8
+2026-05-10 15:29:30,294 INFO o.a.j.JMeter: java.awt.headless=true
+2026-05-10 15:29:30,294 INFO o.a.j.JMeter: Max memory     =1073741824
+2026-05-10 15:29:30,294 INFO o.a.j.JMeter: Available Processors =16
+2026-05-10 15:29:30,303 INFO o.a.j.JMeter: Default Locale=English (EN)
+2026-05-10 15:29:30,303 INFO o.a.j.JMeter: JMeter  Locale=English (EN)
+2026-05-10 15:29:30,303 INFO o.a.j.JMeter: JMeterHome=/opt/jmeter
+2026-05-10 15:29:30,303 INFO o.a.j.JMeter: user.dir  =/home/gihyun/development/hirami
+2026-05-10 15:29:30,303 INFO o.a.j.JMeter: PWD       =/home/gihyun/development/hirami
+2026-05-10 15:29:30,304 INFO o.a.j.JMeter: IP: 192.168.254.107 Name: gmn-matebook FullName: gmn-matebook
+2026-05-10 15:29:30,323 INFO o.a.j.s.FileServer: Default base='/home/gihyun/development/hirami'
+2026-05-10 15:29:30,325 INFO o.a.j.s.FileServer: Set new base='/home/gihyun/development/hirami'
+2026-05-10 15:29:30,500 INFO o.a.j.s.SaveService: Testplan (JMX) version: 2.2. Testlog (JTL) version: 2.2
+2026-05-10 15:29:30,527 INFO o.a.j.s.SaveService: Using SaveService properties version 5.0
+2026-05-10 15:29:30,531 INFO o.a.j.s.SaveService: Using SaveService properties file encoding UTF-8
+2026-05-10 15:29:30,536 INFO o.a.j.s.SaveService: Loading file: hirami-test-plan.jmx
+2026-05-10 15:29:30,564 INFO o.a.j.p.h.c.CookieManager: Settings: Delete null: true Check: true Allow variable: true Save: false Prefix: COOKIE_
+2026-05-10 15:29:30,592 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/html is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-05-10 15:29:30,592 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for application/xhtml+xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-05-10 15:29:30,592 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for application/xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-05-10 15:29:30,592 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/xml is org.apache.jmeter.protocol.http.parser.LagartoBasedHtmlParser
+2026-05-10 15:29:30,592 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/vnd.wap.wml is org.apache.jmeter.protocol.http.parser.RegexpHTMLParser
+2026-05-10 15:29:30,592 INFO o.a.j.p.h.s.HTTPSamplerBase: Parser for text/css is org.apache.jmeter.protocol.http.parser.CssParser
+2026-05-10 15:29:30,631 INFO o.a.j.JMeter: Creating summariser <summary>
+2026-05-10 15:29:30,643 INFO o.a.j.e.StandardJMeterEngine: Running the test!
+2026-05-10 15:29:30,643 INFO o.a.j.s.SampleEvent: List of sample_variables: []
+2026-05-10 15:29:30,643 INFO o.a.j.s.SampleEvent: List of sample_variables: []
+2026-05-10 15:29:30,647 INFO o.a.j.e.u.CompoundVariable: Note: Function class names must contain the string: '.functions.'
+2026-05-10 15:29:30,647 INFO o.a.j.e.u.CompoundVariable: Note: Function class names must not contain the string: '.gui.'
+2026-05-10 15:29:30,777 INFO o.a.j.JMeter: Running test (1778398170776)
+2026-05-10 15:29:30,801 INFO o.a.j.e.StandardJMeterEngine: Starting ThreadGroup: 1 : Borrowing Flow
+2026-05-10 15:29:30,801 INFO o.a.j.e.StandardJMeterEngine: Starting 10 threads for group Borrowing Flow.
+2026-05-10 15:29:30,801 INFO o.a.j.e.StandardJMeterEngine: Thread will continue on error
+2026-05-10 15:29:30,801 INFO o.a.j.t.ThreadGroup: Starting thread group... number=1 threads=10 ramp-up=2 delayedStart=false
+2026-05-10 15:29:30,812 INFO o.a.j.t.JMeterThread: Thread started: Borrowing Flow 1-1
+2026-05-10 15:29:30,820 INFO o.a.j.t.ThreadGroup: Started thread group number 1
+2026-05-10 15:29:30,821 INFO o.a.j.e.StandardJMeterEngine: All thread groups have been started
+2026-05-10 15:29:30,842 INFO o.a.j.p.h.s.HTTPHCAbstractImpl: Local host = gmn-matebook
+2026-05-10 15:29:30,849 INFO o.a.j.p.h.s.HTTPHC4Impl: HTTP request retry count = 0
+2026-05-10 15:29:30,851 INFO o.a.j.s.SampleResult: Note: Sample TimeStamps are START times
+2026-05-10 15:29:30,851 INFO o.a.j.s.SampleResult: sampleresult.default.encoding is set to UTF-8
+2026-05-10 15:29:30,851 INFO o.a.j.s.SampleResult: sampleresult.useNanoTime=true
+2026-05-10 15:29:30,852 INFO o.a.j.s.SampleResult: sampleresult.nanoThreadSleep=5000
+2026-05-10 15:29:30,993 INFO o.a.j.r.Summariser: summary +      1 in 00:00:00 =    4.6/s Avg:    69 Min:    69 Max:    69 Err:     0 (0.00%) Active: 1 Started: 1 Finished: 0
+2026-05-10 15:29:30,994 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,007 INFO o.a.j.t.JMeterThread: Thread started: Borrowing Flow 1-2
+2026-05-10 15:29:31,013 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,027 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,038 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,179 INFO o.a.j.t.JMeterThread: Thread is done: Borrowing Flow 1-2
+2026-05-10 15:29:31,179 INFO o.a.j.t.JMeterThread: Thread finished: Borrowing Flow 1-2
+2026-05-10 15:29:31,180 INFO o.a.j.t.JMeterThread: Thread is done: Borrowing Flow 1-1
+2026-05-10 15:29:31,181 INFO o.a.j.t.JMeterThread: Thread finished: Borrowing Flow 1-1
+2026-05-10 15:29:31,205 INFO o.a.j.t.JMeterThread: Thread started: Borrowing Flow 1-3
+2026-05-10 15:29:31,224 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,228 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,361 INFO o.a.j.t.JMeterThread: Thread is done: Borrowing Flow 1-3
+2026-05-10 15:29:31,361 INFO o.a.j.t.JMeterThread: Thread finished: Borrowing Flow 1-3
+2026-05-10 15:29:31,404 INFO o.a.j.t.JMeterThread: Thread started: Borrowing Flow 1-4
+2026-05-10 15:29:31,428 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,433 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,568 INFO o.a.j.t.JMeterThread: Thread is done: Borrowing Flow 1-4
+2026-05-10 15:29:31,568 INFO o.a.j.t.JMeterThread: Thread finished: Borrowing Flow 1-4
+2026-05-10 15:29:31,604 INFO o.a.j.t.JMeterThread: Thread started: Borrowing Flow 1-5
+2026-05-10 15:29:31,627 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,632 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,770 INFO o.a.j.t.JMeterThread: Thread is done: Borrowing Flow 1-5
+2026-05-10 15:29:31,770 INFO o.a.j.t.JMeterThread: Thread finished: Borrowing Flow 1-5
+2026-05-10 15:29:31,803 INFO o.a.j.t.JMeterThread: Thread started: Borrowing Flow 1-6
+2026-05-10 15:29:31,826 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,833 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:31,960 INFO o.a.j.t.JMeterThread: Thread is done: Borrowing Flow 1-6
+2026-05-10 15:29:31,960 INFO o.a.j.t.JMeterThread: Thread finished: Borrowing Flow 1-6
+2026-05-10 15:29:32,004 INFO o.a.j.t.JMeterThread: Thread started: Borrowing Flow 1-7
+2026-05-10 15:29:32,027 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:32,031 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:32,161 INFO o.a.j.t.JMeterThread: Thread is done: Borrowing Flow 1-7
+2026-05-10 15:29:32,162 INFO o.a.j.t.JMeterThread: Thread finished: Borrowing Flow 1-7
+2026-05-10 15:29:32,205 INFO o.a.j.t.JMeterThread: Thread started: Borrowing Flow 1-8
+2026-05-10 15:29:32,228 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:32,232 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:32,358 INFO o.a.j.t.JMeterThread: Thread is done: Borrowing Flow 1-8
+2026-05-10 15:29:32,358 INFO o.a.j.t.JMeterThread: Thread finished: Borrowing Flow 1-8
+2026-05-10 15:29:32,403 INFO o.a.j.t.JMeterThread: Thread started: Borrowing Flow 1-9
+2026-05-10 15:29:32,425 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:32,429 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:32,556 INFO o.a.j.t.JMeterThread: Thread is done: Borrowing Flow 1-9
+2026-05-10 15:29:32,556 INFO o.a.j.t.JMeterThread: Thread finished: Borrowing Flow 1-9
+2026-05-10 15:29:32,604 INFO o.a.j.t.JMeterThread: Thread started: Borrowing Flow 1-10
+2026-05-10 15:29:32,625 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:32,629 INFO o.a.j.p.h.s.HTTPHC4Impl: Content-Header is set already on the request! Will be replaced by a Multipart-Header. Old headers: [Content-Type: application/json]
+2026-05-10 15:29:32,757 INFO o.a.j.t.JMeterThread: Thread is done: Borrowing Flow 1-10
+2026-05-10 15:29:32,757 INFO o.a.j.t.JMeterThread: Thread finished: Borrowing Flow 1-10
+2026-05-10 15:29:32,758 INFO o.a.j.e.StandardJMeterEngine: Notifying test listeners of end of test
+2026-05-10 15:29:32,758 INFO o.a.j.r.Summariser: summary +    129 in 00:00:02 =   73.0/s Avg:    11 Min:     1 Max:    35 Err:     0 (0.00%) Active: 0 Started: 10 Finished: 10
+2026-05-10 15:29:32,758 INFO o.a.j.r.Summariser: summary =    130 in 00:00:02 =   65.6/s Avg:    12 Min:     1 Max:    69 Err:     0 (0.00%)

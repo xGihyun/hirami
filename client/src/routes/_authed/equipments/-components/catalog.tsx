@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toImageUrl } from "@/lib/api";
 import { StatusBadge } from "./status-badge";
+import { CategoryBadges } from "./category-badges";
 import type { CheckedState } from "@radix-ui/react-checkbox";
 import type { SelectedEquipment } from "..";
 import { useAuth } from "@/auth";
@@ -29,6 +30,8 @@ import { Button } from "@/components/ui/button";
 import { NumberInput } from "@/components/number-input";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toast } from "sonner";
+import { Success } from "@/components/success";
+import { Failed } from "@/components/failed";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteEquipment, equipmentsQuery } from "@/lib/equipment/api";
@@ -37,6 +40,7 @@ type Props = {
 	equipments: EquipmentWithBorrower[];
 	selectedEquipments: SelectedEquipment[];
 	setSelectedEquipments: Dispatch<SetStateAction<SelectedEquipment[]>>;
+	onDeletionStatusChange: (status: "idle" | "success" | "error") => void;
 };
 
 export function Catalog(props: Props): JSX.Element {
@@ -53,14 +57,14 @@ export function Catalog(props: Props): JSX.Element {
 		onSuccess: (res) => {
 			if (res.code === 200) {
 				queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
-				toast.success(res.message);
+				props.onDeletionStatusChange("success");
 			} else {
-				toast.error(res.message);
+				props.onDeletionStatusChange("error");
 			}
 			setIsConfirmOpen(false);
 		},
-		onError: (err: any) => {
-			toast.error(err.message || "Failed to delete equipment.");
+		onError: () => {
+			props.onDeletionStatusChange("error");
 			setIsConfirmOpen(false);
 		},
 	});
@@ -163,24 +167,19 @@ export function Catalog(props: Props): JSX.Element {
 										{equipment.name}
 									</LabelSmall>
 
-									<div className="flex flex-wrap gap-1 mt-1">
-										{equipment.categories?.map((cat) => (
-											<Badge
-												key={cat.id}
-												variant="secondary"
-												className="text-[0.65rem] px-1 py-0 h-4"
-												style={{ backgroundColor: cat.color || undefined }}
-											>
-												{cat.name}
-											</Badge>
-										))}
-									</div>
+									<CategoryBadges categories={equipment.categories || []} />
 								</div>
 							</div>
 						</Card>
 					);
 
 					if (isEquipmentManager) {
+						const availableQuantity = props.equipments.find(
+							(e) =>
+								e.equipment.id === equipment.id &&
+								e.equipment.status?.code === EquipmentStatus.Available,
+						)?.equipment.quantity ?? 0;
+
 						return (
 							<Dialog key={key}>
 								<DialogTrigger className="w-full h-full text-start">
@@ -191,6 +190,7 @@ export function Catalog(props: Props): JSX.Element {
 
 								<EquipmentManagerDialogContent 
 									equipment={equipment} 
+									availableQuantity={availableQuantity}
 									onDelete={handleDelete}
 									isDeleting={deleteMutation.isPending}
 								/>
@@ -244,29 +244,31 @@ export function Catalog(props: Props): JSX.Element {
 
 type EquipmentManagerDialogContentProps = {
 	equipment: Equipment;
+	availableQuantity: number;
 	onDelete: (id: string, quantity?: number) => void;
 	isDeleting: boolean;
 };
 
 function EquipmentManagerDialogContent({
 	equipment,
+	availableQuantity,
 	onDelete,
 	isDeleting,
 }: EquipmentManagerDialogContentProps) {
 	const [deleteQuantity, setDeleteQuantity] = useState<number>(1);
 
 	return (
-		<DialogContent>
+		<DialogContent className="sm:max-w-[425px]">
 			<DialogHeader>
 				<DialogTitle>
-					{equipment.brand} {equipment.model}
+					{equipment.brand || "No Brand"} {equipment.model}
 				</DialogTitle>
 				<DialogDescription>{equipment.name}</DialogDescription>
 			</DialogHeader>
 
-			<div className="space-y-4">
+			<div className="space-y-6">
 				<div className="flex flex-wrap gap-2">
-					<Button asChild>
+					<Button asChild className="flex-1">
 						<Link
 							to="/equipments/$equipmentId/edit"
 							params={{ equipmentId: equipment.id }}
@@ -275,7 +277,7 @@ function EquipmentManagerDialogContent({
 						</Link>
 					</Button>
 
-					<Button variant="secondary" asChild>
+					<Button variant="secondary" asChild className="flex-1">
 						<Link
 							to="/equipments/$equipmentId"
 							params={{ equipmentId: equipment.id }}
@@ -285,36 +287,55 @@ function EquipmentManagerDialogContent({
 					</Button>
 				</div>
 
-				<div className="border-t pt-4 space-y-2">
-					<LabelSmall className="text-muted-foreground">
-						Permanent Deletion
-					</LabelSmall>
-					<div className="flex items-end gap-2">
-						<div className="flex-1 space-y-1">
-							<LabelSmall>Quantity to delete</LabelSmall>
-							<NumberInput
-								id="delete-quantity"
-								value={deleteQuantity}
-								onChange={(val) => setDeleteQuantity(val || 1)}
-								maxValue={equipment.quantity}
-							/>
-						</div>
-						<Button
-							variant="destructive"
-							onClick={() => onDelete(equipment.id, deleteQuantity)}
-							disabled={isDeleting || equipment.quantity === 0}
-						>
-							Delete {deleteQuantity}
-						</Button>
+				<div className="rounded-lg border border-destructive/20 bg-destructive/5 overflow-hidden">
+					<div className="bg-destructive/10 px-4 py-2 border-b border-destructive/20">
+						<LabelSmall className="text-destructive font-bold uppercase tracking-wider">Danger Zone</LabelSmall>
 					</div>
-					<Button
-						variant="ghost"
-						className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
-						onClick={() => onDelete(equipment.id)}
-						disabled={isDeleting}
-					>
-						Delete All Records
-					</Button>
+					
+					<div className="p-4 space-y-6">
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<LabelMedium className="font-bold">Partial Deletion</LabelMedium>
+								<LabelSmall className="text-muted-foreground">{availableQuantity} available</LabelSmall>
+							</div>
+							<div className="flex gap-2">
+								<NumberInput
+									id="delete-quantity"
+									value={deleteQuantity}
+									onChange={(val) => setDeleteQuantity(val || 1)}
+									maxValue={availableQuantity}
+									className="flex-1"
+								/>
+								<Button
+									variant="destructive"
+									size="sm"
+									className="h-9"
+									onClick={() => onDelete(equipment.id, deleteQuantity)}
+									disabled={isDeleting || availableQuantity === 0}
+								>
+									Delete
+								</Button>
+							</div>
+						</div>
+
+						<div className="pt-4 border-t border-destructive/10 flex items-center justify-between gap-4">
+							<div className="flex flex-col gap-0.5">
+								<LabelMedium className="font-bold text-destructive">Delete All Records</LabelMedium>
+								<LabelSmall className="text-muted-foreground leading-tight">
+									Permanently remove this equipment type.
+								</LabelSmall>
+							</div>
+							<Button
+								variant="outline"
+								size="sm"
+								className="border-destructive text-destructive hover:bg-destructive hover:text-white h-9"
+								onClick={() => onDelete(equipment.id)}
+								disabled={isDeleting}
+							>
+								Delete All
+							</Button>
+						</div>
+					</div>
 				</div>
 			</div>
 		</DialogContent>
