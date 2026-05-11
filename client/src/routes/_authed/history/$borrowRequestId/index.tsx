@@ -145,7 +145,7 @@ function EquipmentItem(props: EquipmentProps): JSX.Element {
 				/>
 
 				<div className="flex flex-col w-full">
-					<LabelLarge>{props.equipment.brand}</LabelLarge>
+					<LabelLarge>{props.equipment.brand || "No Brand"}</LabelLarge>
 
 					<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground">
 						{props.equipment.name}

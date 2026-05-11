@@ -171,7 +171,7 @@ export function ManagerHistoryList(props: Props): JSX.Element {
 
 										<div className="flex flex-col">
 											<LabelLarge>
-												{equipment.brand}
+												{equipment.brand || "No Brand"}
 												{equipment.model ? " " : null}
 												{equipment.model}
 											</LabelLarge>

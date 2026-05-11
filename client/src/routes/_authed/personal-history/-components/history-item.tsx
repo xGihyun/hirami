@@ -59,7 +59,7 @@ export function HistoryItem(props: Props): JSX.Element {
 
 				<div className="flex flex-col w-full">
 					<LabelLarge>
-						{equipment.brand}
+						{equipment.brand || "No Brand"}
 						{equipment.model ? ` ${equipment.model}` : null}
 					</LabelLarge>
 
