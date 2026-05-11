@@ -61,6 +61,7 @@ function RouteComponent(): JSX.Element {
 		resolver: zodResolver(registerEquipmentSchema),
 		defaultValues: registerEquipmentContext.value,
 		mode: "onTouched",
+		reValidateMode: "onChange",
 	});
 
 	const mutation = useMutation({
@@ -262,7 +263,10 @@ function RouteComponent(): JSX.Element {
 											<FormControl>
 												<CategorySelector
 													selectedCategoryIds={field.value}
-													onChange={field.onChange}
+													onChange={(value) => {
+														field.onChange(value);
+														form.trigger('categoryIds');
+													}}
 												/>
 											</FormControl>
 											<FormMessage />
