@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"log/slog"
 	"os"
 
@@ -12,9 +11,7 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Failed to load .env")
-	}
+	_ = godotenv.Load()
 
 	dbURL, ok := os.LookupEnv("DATABASE_URL")
 	if !ok {

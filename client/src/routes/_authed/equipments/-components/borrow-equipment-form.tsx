@@ -24,7 +24,7 @@ import { BACKEND_URL } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 import type { SelectedEquipment } from "..";
 import { useAuth } from "@/auth";
-import { H1, LabelLarge, LabelSmall, P } from "@/components/typography";
+import { H1, LabelLarge, LabelSmall } from "@/components/typography";
 import { Separator } from "@/components/ui/separator";
 import type { Equipment } from "@/lib/equipment/model";
 import { Calendar } from "@/components/ui/calendar";
@@ -43,7 +43,6 @@ import {
 	createBorrowRequestSchema,
 	type CreateBorrowRequest,
 } from "../-function";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { DialogClose } from "@radix-ui/react-dialog";
 import { Success } from "@/components/success";
 import { FullScreenLoading } from "@/components/loading";
@@ -61,7 +60,6 @@ export function BorrowEquipmentForm(
 ): JSX.Element {
 	const auth = useAuth();
 	const [openCalendar, setOpenCalendar] = useState(false);
-	const now = new Date();
 
 	const form = useForm<CreateBorrowRequest>({
 		resolver: zodResolver(

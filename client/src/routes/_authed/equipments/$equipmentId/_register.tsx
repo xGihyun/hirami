@@ -1,6 +1,5 @@
 import {
 	createFileRoute,
-	Link,
 	linkOptions,
 	Outlet,
 	useRouterState,

@@ -59,6 +59,7 @@ func (s *Server) SetupRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /users/{userId}/borrowed-equipments", api.Handler(s.getBorrowedItems))
 
 	mux.Handle("POST /categories", api.Handler(s.createCategory))
+	mux.Handle("PATCH /categories/{id}", api.Handler(s.updateCategory))
 	mux.Handle("GET /categories", api.Handler(s.getCategories))
 	mux.Handle("DELETE /categories/{id}", api.Handler(s.deleteCategory))
 }
@@ -160,6 +161,14 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 		AcquisitionDate: acquisitionDate,
 		Quantity:        uint(quantity),
 		CategoryIDs:     categoryIDs,
+	}
+
+	if data.Name == "" {
+		return api.Response{
+			Error:   fmt.Errorf("create equipment: name is required"),
+			Code:    http.StatusBadRequest,
+			Message: "Equipment name is required.",
+		}
 	}
 
 	equipment, err := s.repository.createEquipment(ctx, data)
@@ -371,6 +380,14 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 		CategoryIDs:     categoryIDs,
 	}
 
+	if data.Name == "" {
+		return api.Response{
+			Error:   fmt.Errorf("update equipment: name is required"),
+			Code:    http.StatusBadRequest,
+			Message: "Equipment name is required.",
+		}
+	}
+
 	if err := s.repository.update(ctx, data); err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("update equipments: %w", err),
@@ -446,6 +463,30 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 			Error:   fmt.Errorf("create borrow request: %w", err),
 			Code:    http.StatusBadRequest,
 			Message: "Invalid create borrow request.",
+		}
+	}
+
+	if len(data.Equipments) == 0 {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: at least one equipment is required"),
+			Code:    http.StatusBadRequest,
+			Message: "At least one equipment is required to create a borrow request.",
+		}
+	}
+
+	if strings.TrimSpace(data.Location) == "" {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: location is required"),
+			Code:    http.StatusBadRequest,
+			Message: "Location is required.",
+		}
+	}
+
+	if strings.TrimSpace(data.Purpose) == "" {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: purpose is required"),
+			Code:    http.StatusBadRequest,
+			Message: "Purpose is required.",
 		}
 	}
 
@@ -661,6 +702,14 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 			Error:   fmt.Errorf("create return request: %w", err),
 			Code:    http.StatusBadRequest,
 			Message: "Invalid create return request.",
+		}
+	}
+
+	if len(data.Items) == 0 {
+		return api.Response{
+			Error:   fmt.Errorf("create return request: at least one equipment is required"),
+			Code:    http.StatusBadRequest,
+			Message: "At least one equipment is required to create a return request.",
 		}
 	}
 
@@ -1045,8 +1094,9 @@ func (s *Server) deleteEquipment(w http.ResponseWriter, r *http.Request) api.Res
 func (s *Server) createCategory(w http.ResponseWriter, r *http.Request) api.Response {
 	ctx := r.Context()
 	var body struct {
-		Name  string  `json:"name"`
-		Color *string `json:"color"`
+		Name            string  `json:"name"`
+		BackgroundColor *string `json:"backgroundColor"`
+		ForegroundColor *string `json:"foregroundColor"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		return api.Response{
@@ -1055,7 +1105,14 @@ func (s *Server) createCategory(w http.ResponseWriter, r *http.Request) api.Resp
 			Message: "Invalid request body.",
 		}
 	}
-	res, err := s.repository.createCategory(ctx, body.Name, body.Color)
+	if strings.TrimSpace(body.Name) == "" {
+		return api.Response{
+			Error:   fmt.Errorf("create category: name is required"),
+			Code:    http.StatusBadRequest,
+			Message: "Category name is required.",
+		}
+	}
+	res, err := s.repository.createCategory(ctx, body.Name, body.BackgroundColor, body.ForegroundColor)
 	if err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("create category: %w", err),
@@ -1066,6 +1123,43 @@ func (s *Server) createCategory(w http.ResponseWriter, r *http.Request) api.Resp
 	return api.Response{
 		Code:    http.StatusCreated,
 		Message: "Successfully created category.",
+		Data:    res,
+	}
+}
+
+func (s *Server) updateCategory(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+	id := r.PathValue("id")
+	var body struct {
+		Name            string  `json:"name"`
+		BackgroundColor *string `json:"backgroundColor"`
+		ForegroundColor *string `json:"foregroundColor"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update category: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body.",
+		}
+	}
+	if strings.TrimSpace(body.Name) == "" {
+		return api.Response{
+			Error:   fmt.Errorf("update category: name is required"),
+			Code:    http.StatusBadRequest,
+			Message: "Category name is required.",
+		}
+	}
+	res, err := s.repository.updateCategory(ctx, id, body.Name, body.BackgroundColor, body.ForegroundColor)
+	if err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("update category: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to update category.",
+		}
+	}
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Successfully updated category.",
 		Data:    res,
 	}
 }
@@ -1215,6 +1309,13 @@ func (s *Server) increaseQuantity(w http.ResponseWriter, r *http.Request) api.Re
 			Error:   fmt.Errorf("increase quantity: %w", err),
 			Code:    http.StatusBadRequest,
 			Message: "Invalid request body.",
+		}
+	}
+	if body.Quantity == 0 {
+		return api.Response{
+			Error:   fmt.Errorf("increase quantity: quantity must be greater than zero"),
+			Code:    http.StatusBadRequest,
+			Message: "Quantity must be greater than zero.",
 		}
 	}
 	if err := s.repository.increaseQuantity(ctx, id, body.Quantity, body.AcquisitionDate); err != nil {

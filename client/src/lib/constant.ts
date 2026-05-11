@@ -53,11 +53,6 @@ export function getNavOptions(role?: UserRole, isMobile: boolean = false) {
 			icon: IconBox,
 		},
 		{
-			to: "/categories",
-			label: "Categories",
-			icon: IconTags,
-		},
-		{
 			to: "/borrow-requests",
 			label: "Requests",
 			icon: isMobile ? IconRoundArrowUp : IconGitPullRequestArrow,

@@ -11,8 +11,8 @@ import {
 import { useRegisterEquipment } from "../-context";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { equipmentsQuery, registerEquipment } from "@/lib/equipment/api";
+import { useMutation } from "@tanstack/react-query";
+import { registerEquipment } from "@/lib/equipment/api";
 import {
 	Form,
 	FormControl,
@@ -52,8 +52,6 @@ export const Route = createFileRoute(
 });
 
 function RouteComponent(): JSX.Element {
-	const navigate = Route.useNavigate();
-	const queryClient = useQueryClient();
 	const registerEquipmentContext = useRegisterEquipment();
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -72,12 +70,12 @@ function RouteComponent(): JSX.Element {
 		mutation.mutate(value);
 	}
 
-	async function onSuccess(): Promise<void> {
-		queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
-		await navigate({ to: "/equipments" });
-		mutation.reset();
-	}
-
+	// async function onSuccess(): Promise<void> {
+	// 	queryClient.invalidateQueries(equipmentsQuery({ names: [] }));
+	// 	await navigate({ to: "/equipments" });
+	// 	mutation.reset();
+	// }
+	//
 	useEffect(() => {
 		const imageFile = registerEquipmentContext.value.image;
 		if (imageFile) {

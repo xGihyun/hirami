@@ -27,7 +27,6 @@ import { IconArrowLeft, IconEdit, IconPen, IconUserPen } from "@/lib/icons";
 import {
 	Dialog,
 	DialogContent,
-	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,

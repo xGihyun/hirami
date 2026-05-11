@@ -157,13 +157,37 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 	}
 
 	data := RegisterRequest{
-		Email:      r.FormValue("email"),
+		Email:      strings.TrimSpace(r.FormValue("email")),
 		Password:   r.FormValue("password"),
-		FirstName:  r.FormValue("firstName"),
+		FirstName:  strings.TrimSpace(r.FormValue("firstName")),
 		MiddleName: middleName,
-		LastName:   r.FormValue("lastName"),
+		LastName:   strings.TrimSpace(r.FormValue("lastName")),
 		AvatarURL:  avatarURL,
 		Role:       role,
+	}
+
+	if data.Email == "" || data.Password == "" || data.FirstName == "" || data.LastName == "" || data.Role == nil {
+		return api.Response{
+			Error:   fmt.Errorf("sign up: missing mandatory fields"),
+			Code:    http.StatusBadRequest,
+			Message: "All fields except middle name and avatar are mandatory.",
+		}
+	}
+
+	if !strings.Contains(data.Email, "@") {
+		return api.Response{
+			Error:   fmt.Errorf("sign up: invalid email format"),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid email format.",
+		}
+	}
+
+	if len(data.Password) < 8 {
+		return api.Response{
+			Error:   fmt.Errorf("sign up: password too short"),
+			Code:    http.StatusBadRequest,
+			Message: "Password must be at least 8 characters long.",
+		}
 	}
 
 	userID, err := s.repository.Register(ctx, data)
@@ -201,6 +225,14 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) api.Response {
 			Error:   fmt.Errorf("sign in: %w", err),
 			Code:    http.StatusBadRequest,
 			Message: "Invalid sign in request.",
+		}
+	}
+
+	if strings.TrimSpace(data.Email) == "" || data.Password == "" {
+		return api.Response{
+			Error:   fmt.Errorf("sign in: email and password are required"),
+			Code:    http.StatusBadRequest,
+			Message: "Email and password are required.",
 		}
 	}
 

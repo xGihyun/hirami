@@ -23,7 +23,6 @@ import {
 	BACKEND_URL,
 	SHOW_ANOMALY,
 	toImageUrl,
-	type ApiResponse,
 } from "@/lib/api";
 import {
 	Caption,
@@ -42,7 +41,7 @@ import type { User } from "@/lib/user";
 import { EventSource } from "eventsource";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { QRCodeSVG } from "qrcode.react";
+// import { QRCodeSVG } from "qrcode.react";
 import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
 import { EquipmentServerEvent } from "@/lib/equipment/sse";
@@ -68,7 +67,7 @@ function RouteComponent(): JSX.Element {
 	const [remarks, setRemarks] = useState<string>("");
 	const [reviewedBorrowRequest, setReviewedBorrowRequest] =
 		useState<ReviewBorrowResponse | null>(null);
-	const [isReceived, setIsReceived] = useState(false);
+	const [_, setIsReceived] = useState(false);
 
 	const mutation = useMutation({
 		mutationFn: reviewBorrowRequest,
@@ -274,29 +273,29 @@ function RouteComponent(): JSX.Element {
 	);
 }
 
-type ConfirmationQrProps = {
-	borrowRequestId: string;
-};
-
-function ConfirmationQr(props: ConfirmationQrProps): JSX.Element {
-	return (
-		<div className="text-center space-y-4 p-4 h-full flex flex-col justify-center items-center">
-			<DrawerTitle className="items-center flex flex-col">
-				Confirmation QR Code
-			</DrawerTitle>
-			<LabelSmall className="max-w-xs mx-auto">
-				Please have the borrower scan this to complete the equipment borrowing
-				process.
-			</LabelSmall>
-
-			<QRCodeSVG
-				value={props.borrowRequestId}
-				className="size-64"
-				bgColor="transparent"
-			/>
-		</div>
-	);
-}
+// type ConfirmationQrProps = {
+// 	borrowRequestId: string;
+// };
+//
+// function ConfirmationQr(props: ConfirmationQrProps): JSX.Element {
+// 	return (
+// 		<div className="text-center space-y-4 p-4 h-full flex flex-col justify-center items-center">
+// 			<DrawerTitle className="items-center flex flex-col">
+// 				Confirmation QR Code
+// 			</DrawerTitle>
+// 			<LabelSmall className="max-w-xs mx-auto">
+// 				Please have the borrower scan this to complete the equipment borrowing
+// 				process.
+// 			</LabelSmall>
+//
+// 			<QRCodeSVG
+// 				value={props.borrowRequestId}
+// 				className="size-64"
+// 				bgColor="transparent"
+// 			/>
+// 		</div>
+// 	);
+// }
 
 type BorrowRequestReviewContentProps = {
 	selectedRequest: BorrowRequest;
