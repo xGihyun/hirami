@@ -147,7 +147,7 @@ function EquipmentList({
 								/>
 								<div className="flex flex-col">
 									<LabelLarge>
-										{equipment.brand} {equipment.model}
+										{equipment.brand || "No Brand"} {equipment.model}
 									</LabelLarge>
 									<LabelSmall className="text-muted">
 										{equipment.name}

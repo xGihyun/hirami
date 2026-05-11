@@ -67,7 +67,7 @@ export function HistoryList(props: Props): JSX.Element {
 
 					<TitleSmall className="text-center">
 						{selectedItem.item.equipment.name}{" "}
-						{selectedItem.item.equipment.brand}{" "}
+						{selectedItem.item.equipment.brand || "No Brand"}{" "}
 						{selectedItem.item.equipment.model
 							? ` ${selectedItem.item.equipment.model}`
 							: null}

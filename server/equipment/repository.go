@@ -205,6 +205,7 @@ type activeBorrowRequest struct {
 	Borrower         user.BasicInfo            `json:"borrower"`
 	Location         string                    `json:"location"`
 	Purpose          string                    `json:"purpose"`
+	ExpectedClaimAt  time.Time                 `json:"expectedClaimAt"`
 	ExpectedReturnAt time.Time                 `json:"expectedReturnAt"`
 	Status           borrowRequestStatusDetail `json:"status"`
 	Review           borrowReview              `json:"review"`
@@ -273,6 +274,7 @@ func (r *repository) getAll(ctx context.Context, params getEquipmentParams) ([]e
 					),
 					'location', br.location,
 					'purpose', br.purpose,
+					'expectedClaimAt', br.expected_claim_at,
 					'expectedReturnAt', br.expected_return_at,
 					'status', jsonb_build_object(
 						'id', brs.borrow_request_status_id,
@@ -415,6 +417,7 @@ func (r *repository) getByID(ctx context.Context, id string) (equipmentWithBorro
 					),
 					'location', br.location,
 					'purpose', br.purpose,
+					'expectedClaimAt', br.expected_claim_at,
 					'expectedReturnAt', br.expected_return_at,
 					'status', jsonb_build_object(
 						'id', brs.borrow_request_status_id,
@@ -738,6 +741,7 @@ type createBorrowRequest struct {
 	Equipments       []borrowEquipmentItem `json:"equipments"`
 	Location         string                `json:"location"`
 	Purpose          string                `json:"purpose"`
+	ExpectedClaimAt  time.Time             `json:"expectedClaimAt"`
 	ExpectedReturnAt time.Time             `json:"expectedReturnAt"`
 	RequestedBy      string                `json:"requestedBy"`
 }
@@ -754,6 +758,7 @@ type createBorrowResponse struct {
 	Equipments       []equipment    `json:"equipments"`
 	Location         string         `json:"location"`
 	Purpose          string         `json:"purpose"`
+	ExpectedClaimAt  time.Time      `json:"expectedClaimAt"`
 	ExpectedReturnAt time.Time      `json:"expectedReturnAt"`
 }
 
@@ -798,17 +803,17 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 	// Insert multiple borrow requests (one per equipment type)
 	query := `
 	WITH inserted_request AS (
-		INSERT INTO borrow_request (location, purpose, expected_return_at, requested_by)
-		VALUES ($1, $2, $3, $4)
-		RETURNING borrow_request_id, location, purpose, expected_return_at, requested_by, created_at
+		INSERT INTO borrow_request (location, purpose, expected_claim_at, expected_return_at, requested_by)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING borrow_request_id, location, purpose, expected_claim_at, expected_return_at, requested_by, created_at
 	),
 	inserted_items AS (
 		INSERT INTO borrow_request_item 
 			(borrow_request_id, equipment_type_id, quantity)
 		SELECT 
 			inserted_request.borrow_request_id,
-			unnest($5::uuid[]),
-			unnest($6::smallint[])
+			unnest($6::uuid[]),
+			unnest($7::smallint[])
 		FROM inserted_request
 		RETURNING borrow_request_item_id, borrow_request_id, equipment_type_id, quantity
 	)
@@ -833,6 +838,7 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		inserted_request.borrow_request_id,
 		inserted_request.location,
 		inserted_request.purpose,
+		inserted_request.expected_claim_at,
 		inserted_request.expected_return_at,
 		inserted_request.created_at
 	FROM inserted_request
@@ -848,6 +854,7 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		person.avatar_url,
 		inserted_request.location,
 		inserted_request.purpose,
+		inserted_request.expected_claim_at,
 		inserted_request.expected_return_at,
 		inserted_request.created_at
 	`
@@ -864,6 +871,7 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		query,
 		arg.Location,
 		arg.Purpose,
+		arg.ExpectedClaimAt,
 		arg.ExpectedReturnAt,
 		arg.RequestedBy,
 		equipmentTypeIDs,
@@ -876,6 +884,7 @@ func (r *repository) createBorrowRequest(ctx context.Context, arg createBorrowRe
 		&res.BorrowRequestID,
 		&res.Location,
 		&res.Purpose,
+		&res.ExpectedClaimAt,
 		&res.ExpectedReturnAt,
 		&res.CreatedAt,
 	); err != nil {
@@ -1527,6 +1536,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 		borrow_request.created_at AS requested_at,
 		borrow_request.location,
 		borrow_request.purpose,
+		borrow_request.expected_claim_at,
 		borrow_request.expected_return_at,
 		latest_return_data.created_at AS actual_return_at,
 		jsonb_build_object(
@@ -1717,6 +1727,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 		borrow_request.created_at AS requested_at,
 		borrow_request.location,
 		borrow_request.purpose,
+		borrow_request.expected_claim_at,
 		borrow_request.expected_return_at,
 		latest_return_data.created_at AS actual_return_at,
 		jsonb_build_object(
@@ -1906,6 +1917,7 @@ func (r *repository) getBorrowRequestByOTP(ctx context.Context, otp string) (bor
 		borrow_request.created_at AS requested_at,
 		borrow_request.location,
 		borrow_request.purpose,
+		borrow_request.expected_claim_at,
 		borrow_request.expected_return_at,
 		latest_return_data.created_at AS actual_return_at,
 		jsonb_build_object(
@@ -2444,6 +2456,7 @@ type borrowRequest struct {
 	Status          borrowRequestStatusDetail `json:"status"`
 	Review          *borrowReview             `json:"review"`
 
+	ExpectedClaimAt     time.Time            `json:"expectedClaimAt"`
 	ExpectedReturnAt    time.Time            `json:"expectedReturnAt"`
 	ActualReturnAt      *time.Time           `json:"actualReturnAt"`
 	ReturnConfirmations []returnConfirmation `json:"returnConfirmations"`
@@ -2549,6 +2562,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		borrow_request.created_at AS requested_at,
 		borrow_request.location,
 		borrow_request.purpose,
+		borrow_request.expected_claim_at,
 		borrow_request.expected_return_at,
 		latest_return_data.created_at AS actual_return_at,
 		jsonb_build_object(

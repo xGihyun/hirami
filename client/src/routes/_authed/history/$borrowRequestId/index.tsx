@@ -1,19 +1,19 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { borrowRequestByIdQuery } from "@/lib/equipment/api";
-import { type BorrowRequestItem } from "@/lib/equipment/model";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { SHOW_ANOMALY, toImageUrl } from "@/lib/api";
-import { capitalizeWords, cn, getBorrowRequestBadgeVariant } from "@/lib/utils";
-import { H2, LabelLarge, LabelSmall } from "@/components/typography";
-import { Badge } from "@/components/ui/badge";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { format } from "date-fns";
 import type { JSX } from "react";
+import { H2, LabelLarge, LabelSmall } from "@/components/typography";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { IconArrowLeft } from "@/lib/icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
+import { SHOW_ANOMALY, toImageUrl } from "@/lib/api";
+import { borrowRequestByIdQuery } from "@/lib/equipment/api";
+import type { BorrowRequestItem } from "@/lib/equipment/model";
+import { IconArrowLeft } from "@/lib/icons";
+import { capitalizeWords, cn, getBorrowRequestBadgeVariant } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authed/history/$borrowRequestId/")({
 	component: RouteComponent,
@@ -79,6 +79,11 @@ function RouteComponent(): JSX.Element {
 					</LabelSmall>
 
 					<LabelSmall>
+						Expected Claim On {format(transaction.expectedClaimAt, "h:mm a")} at{" "}
+						{format(transaction.expectedClaimAt, "MM/dd/yyyy")}
+					</LabelSmall>
+
+					<LabelSmall>
 						Will Return On {format(transaction.expectedReturnAt, "h:mm a")} at{" "}
 						{format(transaction.expectedReturnAt, "MM/dd/yyyy")}
 					</LabelSmall>
@@ -140,7 +145,7 @@ function EquipmentItem(props: EquipmentProps): JSX.Element {
 				/>
 
 				<div className="flex flex-col w-full">
-					<LabelLarge>{props.equipment.brand}</LabelLarge>
+					<LabelLarge>{props.equipment.brand || "No Brand"}</LabelLarge>
 
 					<LabelSmall className="text-muted group-has-data-[state=checked]:text-primary-foreground">
 						{props.equipment.name}

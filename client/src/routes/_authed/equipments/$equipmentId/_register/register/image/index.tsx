@@ -129,7 +129,11 @@ function RouteComponent(): JSX.Element {
 
 	if (mutation.isError) {
 		return (
-			<Failed reset={onSuccess} retry={() => onSubmit(mutation.variables)} />
+			<Failed
+				description={mutation.error?.message}
+				reset={onSuccess}
+				retry={() => onSubmit(mutation.variables)}
+			/>
 		);
 	}
 

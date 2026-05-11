@@ -177,7 +177,7 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 			return api.Response{
 				Error:   fmt.Errorf("create equipment: %w", err),
 				Code:    http.StatusConflict,
-				Message: "Equipment with the same details already exists.",
+				Message: "This equipment already exists in the catalog",
 			}
 		}
 
@@ -487,6 +487,22 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 			Error:   fmt.Errorf("create borrow request: purpose is required"),
 			Code:    http.StatusBadRequest,
 			Message: "Purpose is required.",
+		}
+	}
+
+	if data.ExpectedClaimAt.Before(time.Now().Add(1 * time.Hour)) {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: expected claim time must be at least 1 hour from now"),
+			Code:    http.StatusBadRequest,
+			Message: "Expected claim time must be at least 1 hour from now to allow for preparation.",
+		}
+	}
+
+	if data.ExpectedReturnAt.Before(data.ExpectedClaimAt.Add(1 * time.Hour)) {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: expected return time must be at least 1 hour after claim time"),
+			Code:    http.StatusBadRequest,
+			Message: "Expected return time must be at least 1 hour after claim time.",
 		}
 	}
 

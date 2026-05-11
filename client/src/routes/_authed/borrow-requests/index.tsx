@@ -1,29 +1,13 @@
-import {
-	BorrowRequestStatus,
-	type BorrowRequest,
-	type ReviewBorrowRequest,
-	type ReviewBorrowResponse,
-	type UpdateBorrowResponse,
-} from "@/lib/equipment/model";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type JSX } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
-import {
-	Drawer,
-	DrawerClose,
-	DrawerContent,
-	DrawerFooter,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from "@/components/ui/drawer";
-import {
-	BACKEND_URL,
-	SHOW_ANOMALY,
-	toImageUrl,
-} from "@/lib/api";
+import { EventSource } from "eventsource";
+import { type JSX, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { useAuth } from "@/auth";
+import { Failed } from "@/components/failed";
+// import { QRCodeSVG } from "qrcode.react";
+import { Success } from "@/components/success";
 import {
 	Caption,
 	H1,
@@ -33,22 +17,34 @@ import {
 	LabelSmall,
 	TitleSmall,
 } from "@/components/typography";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { useAuth } from "@/auth";
-import type { User } from "@/lib/user";
-import { EventSource } from "eventsource";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Drawer,
+	DrawerClose,
+	DrawerContent,
+	DrawerFooter,
+	DrawerHeader,
+	DrawerTitle,
+	DrawerTrigger,
+} from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-// import { QRCodeSVG } from "qrcode.react";
-import { Success } from "@/components/success";
-import { Failed } from "@/components/failed";
-import { EquipmentServerEvent } from "@/lib/equipment/sse";
+import { BACKEND_URL, SHOW_ANOMALY, toImageUrl } from "@/lib/api";
 import {
 	getBorrowRequestsQuery,
 	reviewBorrowRequest,
 } from "@/lib/equipment/api";
+import {
+	type BorrowRequest,
+	BorrowRequestStatus,
+	type ReviewBorrowRequest,
+	type ReviewBorrowResponse,
+	type UpdateBorrowResponse,
+} from "@/lib/equipment/model";
+import { EquipmentServerEvent } from "@/lib/equipment/sse";
+import type { User } from "@/lib/user";
 
 export const Route = createFileRoute("/_authed/borrow-requests/")({
 	component: RouteComponent,
@@ -341,6 +337,11 @@ function BorrowRequestReviewContent(
 						</Caption>
 
 						<Caption className="text-muted">
+							Will claim on{" "}
+							{format(request.expectedClaimAt, "MMMM d, yyyy - hh:mm a")}
+						</Caption>
+
+						<Caption className="text-muted">
 							Will return on{" "}
 							{format(request.expectedReturnAt, "MMMM d, yyyy - hh:mm a")}
 						</Caption>
@@ -374,7 +375,7 @@ function BorrowRequestReviewContent(
 
 								<div className="flex flex-col">
 									<LabelLarge>
-										{equipment.brand}
+										{equipment.brand || "No Brand"}
 										{equipment.model ? " " : null}
 										{equipment.model}
 									</LabelLarge>

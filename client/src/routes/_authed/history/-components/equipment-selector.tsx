@@ -31,6 +31,11 @@ export function EquipmentSelector({
 	const [open, setOpen] = useState(false);
 	const { data: equipments } = useQuery(equipmentsQuery({ names: [] }));
 
+	// De-duplicate equipments by equipment ID
+	const uniqueEquipments = Array.from(
+		new Map(equipments?.map((e) => [e.equipment.id, e]) || []).values(),
+	);
+
 	const toggleEquipment = (id: string) => {
 		const newIds = selectedEquipmentIds.includes(id)
 			? selectedEquipmentIds.filter((itemId) => itemId !== id)
@@ -38,9 +43,9 @@ export function EquipmentSelector({
 		onChange(newIds);
 	};
 
-	const selectedEquipments = equipments?.filter((e) =>
-		selectedEquipmentIds.includes(e.equipment.id),
-	).map(e => e.equipment);
+	const selectedEquipments = uniqueEquipments
+		.filter((e) => selectedEquipmentIds.includes(e.equipment.id))
+		.map((e) => e.equipment);
 
 	return (
 		<div className="flex flex-col gap-2">
@@ -64,10 +69,10 @@ export function EquipmentSelector({
 						<CommandList>
 							<CommandEmpty>No equipment found.</CommandEmpty>
 							<CommandGroup>
-								{equipments?.map(({ equipment }) => (
+								{uniqueEquipments.map(({ equipment }) => (
 									<CommandItem
 										key={equipment.id}
-										value={`${equipment.brand} ${equipment.model} ${equipment.name}`}
+										value={`${equipment.brand || "No Brand"} ${equipment.model} ${equipment.name}`}
 										onSelect={() => {
 											toggleEquipment(equipment.id);
 										}}
@@ -81,8 +86,12 @@ export function EquipmentSelector({
 											)}
 										/>
 										<div className="flex flex-col">
-											<span>{equipment.brand} {equipment.model}</span>
-											<span className="text-xs text-muted-foreground">{equipment.name}</span>
+											<span>
+												{equipment.brand || "No Brand"} {equipment.model}
+											</span>
+											<span className="text-xs text-muted-foreground">
+												{equipment.name}
+											</span>
 										</div>
 									</CommandItem>
 								))}
@@ -92,13 +101,13 @@ export function EquipmentSelector({
 				</PopoverContent>
 			</Popover>
 			<div className="flex flex-wrap gap-1">
-				{selectedEquipments?.map((equipment) => (
+				{selectedEquipments.map((equipment) => (
 					<Badge
 						key={equipment.id}
 						variant="secondary"
 						className="flex items-center gap-1"
 					>
-						{equipment.brand} {equipment.model}
+						{equipment.brand || "No Brand"} {equipment.model}
 						<button
 							type="button"
 							className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
