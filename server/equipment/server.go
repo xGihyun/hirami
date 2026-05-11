@@ -540,7 +540,13 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	// NOTE: Ignore anomaly errors for now since it is not required
-	s.detectAnomaly(context.Background(), res)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := s.detectAnomaly(ctx, res); err != nil {
+			slog.Error("Failed to detect anomaly", "error", err)
+		}
+	}()
 	// 	return api.Response{
 	// 		Error:   fmt.Errorf("create borrow request: %w", err),
 	// 		Code:    http.StatusInternalServerError,
