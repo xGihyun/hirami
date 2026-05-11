@@ -1,11 +1,9 @@
 package equipment
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -541,13 +539,14 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 	}
 
 	// NOTE: Ignore anomaly errors for now since it is not required
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		if err := s.detectAnomaly(ctx, res); err != nil {
-			slog.Error("Failed to detect anomaly", "error", err)
-		}
-	}()
+	// go func() {
+	// 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// 	defer cancel()
+	// 	if err := s.detectAnomaly(ctx, res); err != nil {
+	// 		slog.Error("Failed to detect anomaly", "error", err)
+	// 	}
+	// }()
+
 	// 	return api.Response{
 	// 		Error:   fmt.Errorf("create borrow request: %w", err),
 	// 		Code:    http.StatusInternalServerError,
@@ -736,6 +735,16 @@ func (s *Server) createReturnRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
+	for _, item := range data.Items {
+		if strings.TrimSpace(item.BorrowRequestItemID) == "" {
+			return api.Response{
+				Error:   fmt.Errorf("create return request: borrow request item ID is required"),
+				Code:    http.StatusBadRequest,
+				Message: "Borrow request item ID is required for all items.",
+			}
+		}
+	}
+
 	res, err := s.repository.createReturnRequest(ctx, data)
 	if err != nil {
 		if errors.Is(err, errInvalidReturnQuantity) {
@@ -872,6 +881,14 @@ func (s *Server) confirmReturnRequest(w http.ResponseWriter, r *http.Request) ap
 	}
 
 	returnRequestID := r.PathValue("id")
+	if strings.TrimSpace(returnRequestID) == "" {
+		return api.Response{
+			Error:   fmt.Errorf("confirm return request: missing return request ID"),
+			Code:    http.StatusBadRequest,
+			Message: "Return request ID is required.",
+		}
+	}
+
 	if data.ReturnRequestID != returnRequestID {
 		return api.Response{
 			Error:   fmt.Errorf("return request ID mismatch: path=%s, body=%s", returnRequestID, data.ReturnRequestID),

@@ -1474,13 +1474,16 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 			return_request.borrow_request_id,
 			return_request.return_request_id,
 			return_request.created_at,
-			jsonb_build_object(
-				'id', person.person_id,
-				'firstName', person.first_name,
-				'middleName', person.middle_name,
-				'lastName', person.last_name,
-				'avatarUrl', person.avatar_url
-			) AS confirmed_by,
+			CASE WHEN person.person_id IS NULL THEN NULL
+			ELSE
+				jsonb_build_object(
+					'id', person.person_id,
+					'firstName', person.first_name,
+					'middleName', person.middle_name,
+					'lastName', person.last_name,
+					'avatarUrl', person.avatar_url
+				)
+			END AS confirmed_by,
 			jsonb_agg(
 				jsonb_build_object(
 					'id', equipment_type.equipment_type_id,
@@ -1653,13 +1656,16 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 			return_request.borrow_request_id,
 			return_request.return_request_id,
 			return_request.created_at,
-			jsonb_build_object(
-				'id', person.person_id,
-				'firstName', person.first_name,
-				'middleName', person.middle_name,
-				'lastName', person.last_name,
-				'avatarUrl', person.avatar_url
-			) AS confirmed_by,
+			CASE WHEN person.person_id IS NULL THEN NULL
+			ELSE
+				jsonb_build_object(
+					'id', person.person_id,
+					'firstName', person.first_name,
+					'middleName', person.middle_name,
+					'lastName', person.last_name,
+					'avatarUrl', person.avatar_url
+				)
+			END AS confirmed_by,
 			jsonb_agg(
 				jsonb_build_object(
 					'id', equipment_type.equipment_type_id,
@@ -1811,6 +1817,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 		&req.RequestedAt,
 		&req.Location,
 		&req.Purpose,
+		&req.ExpectedClaimAt,
 		&req.ExpectedReturnAt,
 		&req.ActualReturnAt,
 		&req.Status,
@@ -1843,13 +1850,16 @@ func (r *repository) getBorrowRequestByOTP(ctx context.Context, otp string) (bor
 			return_request.borrow_request_id,
 			return_request.return_request_id,
 			return_request.created_at,
-			jsonb_build_object(
-				'id', person.person_id,
-				'firstName', person.first_name,
-				'middleName', person.middle_name,
-				'lastName', person.last_name,
-				'avatarUrl', person.avatar_url
-			) AS confirmed_by,
+			CASE WHEN person.person_id IS NULL THEN NULL
+			ELSE
+				jsonb_build_object(
+					'id', person.person_id,
+					'firstName', person.first_name,
+					'middleName', person.middle_name,
+					'lastName', person.last_name,
+					'avatarUrl', person.avatar_url
+				)
+			END AS confirmed_by,
 			jsonb_agg(
 				jsonb_build_object(
 					'id', equipment_type.equipment_type_id,
@@ -2001,6 +2011,7 @@ func (r *repository) getBorrowRequestByOTP(ctx context.Context, otp string) (bor
 		&req.RequestedAt,
 		&req.Location,
 		&req.Purpose,
+		&req.ExpectedClaimAt,
 		&req.ExpectedReturnAt,
 		&req.ActualReturnAt,
 		&req.Status,
