@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"embed"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -13,10 +11,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
-	"github.com/pressly/goose/v3"
 	"github.com/rs/cors"
 	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/equipment"
+	"github.com/xGihyun/hirami/migrations"
 	"github.com/xGihyun/hirami/sse"
 	"github.com/xGihyun/hirami/user"
 	"golang.org/x/oauth2"
@@ -29,30 +27,6 @@ type app struct {
 	user      user.Server
 	equipment equipment.Server
 	sse       sse.Server
-}
-
-//go:embed migrations/*.sql
-var embedMigrations embed.FS
-
-func migrate(dbURL string) {
-	db, err := sql.Open("pgx", dbURL)
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
-	goose.SetBaseFS(embedMigrations)
-
-	if err := goose.SetDialect("postgres"); err != nil {
-		panic(err)
-	}
-
-	// Run migrations from the embedded FS
-	if err := goose.Up(db, "migrations"); err != nil {
-		panic(err)
-	}
-
-	slog.Info("Database migrations applied successfully.")
 }
 
 func main() {
@@ -83,7 +57,10 @@ func main() {
 		panic("DATABASE_URL not found.")
 	}
 
-	migrate(dbURL)
+	if err := migrations.Migrate(dbURL); err != nil {
+		panic(err)
+	}
+	slog.Info("Database migrations applied successfully.")
 
 	// Initiate GMail client
 	googleClientId, ok := os.LookupEnv("GOOGLE_CLIENT_ID")

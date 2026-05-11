@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/xGihyun/hirami/migrations"
 	"github.com/xGihyun/hirami/user"
 )
 
@@ -17,6 +18,13 @@ func main() {
 	if !ok {
 		panic("DATABASE_URL not found.")
 	}
+
+	// Ensure migrations have run before seeding
+	if err := migrations.Migrate(dbURL); err != nil {
+		slog.Error("Failed to run migrations before seeding", "error", err)
+		panic(err)
+	}
+	slog.Info("Migrations applied successfully before seeding.")
 
 	ctx := context.Background()
 
@@ -36,12 +44,17 @@ func main() {
 	}
 	userID, err := repo.Register(ctx, registerReq)
 	if err != nil {
-		userRes, _ := repo.GetByEmail(ctx, registerReq.Email)
+		slog.Warn("Register failed, trying to find existing user", "error", err)
+		userRes, err := repo.GetByEmail(ctx, registerReq.Email)
+		if err != nil {
+			slog.Error("Failed to find existing user by email", "error", err)
+			return
+		}
 		userID = userRes.UserID
 	}
 
 	if userID == "" {
-		slog.Error("Equipment Manager ID not found.")
+		slog.Error("Equipment Manager ID not found after registration and lookup.")
 		return
 	}
 
@@ -52,9 +65,9 @@ func main() {
 	}
 
 	if _, err := repo.Update(ctx, updateReq); err != nil {
-		slog.Error("Failed to update Equipment Manager role.")
+		slog.Error("Failed to update Equipment Manager role.", "error", err)
 		return
 	}
 
-	slog.Debug("Successfully setup equipment manager.")
+	slog.Info("Successfully setup equipment manager.")
 }
