@@ -1,6 +1,7 @@
 package sse
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
