@@ -177,7 +177,7 @@ func (s *Server) createEquipment(w http.ResponseWriter, r *http.Request) api.Res
 			return api.Response{
 				Error:   fmt.Errorf("create equipment: %w", err),
 				Code:    http.StatusConflict,
-				Message: "Equipment with the same details already exists.",
+				Message: "This equipment already exists in the catalog",
 			}
 		}
 

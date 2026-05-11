@@ -7,9 +7,14 @@ import type { JSX } from "react";
 type Props = {
 	reset: () => void;
 	retry: () => Promise<void>;
+	description?: string;
 };
 
 export function Failed(props: Props): JSX.Element {
+	const description =
+		props.description ||
+		"A temporary issue occured. Please check your network and Try Again in a moment.";
+
 	return (
 		<div className="px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] h-svh inset-0 fixed bg-background w-full z-50">
 			<Button
@@ -33,10 +38,7 @@ export function Failed(props: Props): JSX.Element {
 						<div className="space-y-1.5">
 							<H1 className="text-center">Equipment registration failed.</H1>
 
-							<TitleSmall className="text-center">
-								A temporary issue occured. Please check your network and Try
-								Again in a moment.
-							</TitleSmall>
+							<TitleSmall className="text-center">{description}</TitleSmall>
 						</div>
 					</section>
 

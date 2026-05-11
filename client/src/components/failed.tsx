@@ -16,6 +16,7 @@ type Props = {
 	fn?: () => void;
 	retry?: () => void;
 	header: string;
+	description?: string;
 	backLink: string;
 	backMessage?: string;
 	illustration?: string;
@@ -24,6 +25,7 @@ type Props = {
 
 export function Failed(props: Props): JSX.Element {
 	const description =
+		props.description ||
 		"A temporary issue occured. Please check your network and Try Again in a moment.";
 
 	return (

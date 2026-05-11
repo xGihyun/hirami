@@ -34,6 +34,7 @@ import { FullScreenLoading } from "@/components/loading";
 import { Failed } from "@/components/failed";
 import { Success } from "@/components/success";
 import { CategorySelector } from "../../../-components/category-selector";
+import { ErrExistingEquipment } from "@/lib/equipment/error";
 
 export const Route = createFileRoute(
 	"/_authed/equipments/$equipmentId/_register/register/",
@@ -110,6 +111,11 @@ function RouteComponent(): JSX.Element {
 		return (
 			<Failed
 				header="Equipment registration failed."
+				description={
+					mutation.error instanceof ErrExistingEquipment
+						? mutation.error?.message
+						: undefined
+				}
 				fn={mutation.reset}
 				retry={form.handleSubmit(onSubmit)}
 				backLink="/equipments"

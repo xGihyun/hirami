@@ -22,6 +22,7 @@ import {
 } from "./model";
 import z from "zod";
 import type { RegisterEquipmentSchema } from "@/routes/_authed/equipments/$equipmentId/_register/register/-schema";
+import { ErrExistingEquipment } from "./error";
 
 //
 // Equipment
@@ -201,7 +202,10 @@ export async function deleteCategory(id: string): Promise<ApiResponse> {
 	return result;
 }
 
-export async function deleteEquipment(id: string, quantity?: number): Promise<ApiResponse> {
+export async function deleteEquipment(
+	id: string,
+	quantity?: number,
+): Promise<ApiResponse> {
 	const url = new URL(`${BACKEND_URL}/equipments/${id}`);
 	if (quantity !== undefined) {
 		url.searchParams.append("quantity", quantity.toString());
@@ -543,6 +547,10 @@ export async function registerEquipment(
 
 	const result: ApiResponse = await response.json();
 	if (!response.ok) {
+		if (response.status === 409) {
+			throw new ErrExistingEquipment(result.message);
+		}
+
 		throw new Error(result.message);
 	}
 
