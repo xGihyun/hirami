@@ -6,7 +6,6 @@ import {
 	IconProfile,
 	IconQrCode,
 	IconRoundArrowUp,
-	IconTags,
 	IconUser,
 	IconUserRoundCog,
 } from "@/lib/icons";

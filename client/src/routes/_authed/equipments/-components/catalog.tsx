@@ -7,7 +7,6 @@ import {
 } from "@/lib/equipment/model";
 import { type Dispatch, type JSX, type SetStateAction, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toImageUrl } from "@/lib/api";
 import { StatusBadge } from "./status-badge";
@@ -29,9 +28,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { NumberInput } from "@/components/number-input";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { toast } from "sonner";
-import { Success } from "@/components/success";
-import { Failed } from "@/components/failed";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteEquipment, equipmentsQuery } from "@/lib/equipment/api";
