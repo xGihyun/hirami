@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -362,8 +363,8 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) api.Response {
 	}
 
 	var (
-		brand       string   = r.FormValue("brand")
-		model       string   = r.FormValue("model")
+		brand       string = r.FormValue("brand")
+		model       string = r.FormValue("model")
 		categoryIDs []string
 	)
 
@@ -1284,13 +1285,13 @@ func (s *Server) getBorrowHistoryPDF(w http.ResponseWriter, r *http.Request) api
 	for _, req := range history {
 		dateStr := req.RequestedAt.Format("2006-01-02")
 		borrowerName := fmt.Sprintf("%s %s", req.Borrower.FirstName, req.Borrower.LastName)
-		
+
 		var equipmentNames []string
 		for _, item := range req.RequestedItems {
 			equipmentNames = append(equipmentNames, fmt.Sprintf("%s (x%d)", item.Equipment.Name, item.Equipment.Quantity))
 		}
 		equipStr := strings.Join(equipmentNames, ", ")
-		
+
 		returnDate := "N/A"
 		if req.ActualReturnAt != nil {
 			returnDate = req.ActualReturnAt.Format("2006-01-02")
