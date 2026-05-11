@@ -1,15 +1,19 @@
-import type { Dispatch, JSX, SetStateAction } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { DialogClose } from "@radix-ui/react-dialog";
+import { useMutation } from "@tanstack/react-query";
+import { ChevronDownIcon } from "lucide-react";
+import type { Dispatch, JSX, SetStateAction } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useAuth } from "@/auth";
+import { Failed } from "@/components/failed";
+import { FullScreenLoading } from "@/components/loading";
+import { NumberInput } from "@/components/number-input";
+import { Success } from "@/components/success";
+import { H1, LabelLarge, LabelSmall } from "@/components/typography";
 import { Button } from "@/components/ui/button";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
+import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Dialog,
 	DialogContent,
@@ -19,34 +23,30 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { BACKEND_URL } from "@/lib/api";
-import { useMutation } from "@tanstack/react-query";
-import type { SelectedEquipment } from "..";
-import { useAuth } from "@/auth";
-import { H1, LabelLarge, LabelSmall } from "@/components/typography";
-import { Separator } from "@/components/ui/separator";
-import type { Equipment } from "@/lib/equipment/model";
-import { Calendar } from "@/components/ui/calendar";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { ChevronDownIcon } from "lucide-react";
-import { useState } from "react";
+import { Separator } from "@/components/ui/separator";
+import { BACKEND_URL } from "@/lib/api";
+import type { Equipment } from "@/lib/equipment/model";
 import { IconArrowLeft } from "@/lib/icons";
-import { NumberInput } from "@/components/number-input";
-import { Checkbox } from "@/components/ui/checkbox";
+import type { SelectedEquipment } from "..";
 import {
+	type CreateBorrowRequest,
 	createBorrowRequest,
 	createBorrowRequestSchema,
-	type CreateBorrowRequest,
 } from "../-function";
-import { DialogClose } from "@radix-ui/react-dialog";
-import { Success } from "@/components/success";
-import { FullScreenLoading } from "@/components/loading";
-import { Failed } from "@/components/failed";
 
 type BorrowEquipmentFormProps = {
 	selectedEquipments: SelectedEquipment[];
@@ -59,23 +59,40 @@ export function BorrowEquipmentForm(
 	props: BorrowEquipmentFormProps,
 ): JSX.Element {
 	const auth = useAuth();
-	const [openCalendar, setOpenCalendar] = useState(false);
+	const [openReturnCalendar, setOpenReturnCalendar] = useState(false);
+	const [openClaimCalendar, setOpenClaimCalendar] = useState(false);
 
 	const form = useForm<CreateBorrowRequest>({
 		resolver: zodResolver(
-			createBorrowRequestSchema.refine(
-				(data) => {
-					const minTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
-					return data.expectedReturnAt >= minTime;
-				},
-				{
-					message: "Expected return time must be at least 2 hours from now.",
+			createBorrowRequestSchema
+				.refine(
+					(data) => {
+						const minTime = new Date(Date.now() + 1 * 60 * 60 * 1000);
+						return data.expectedClaimAt >= minTime;
+					},
+					{
+						message: "Expected claim time must be at least 1 hour from now.",
+						path: ["expectedClaimAt"],
+					},
+				)
+				.refine(
+					(data) => {
+						const minTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
+						return data.expectedReturnAt >= minTime;
+					},
+					{
+						message: "Expected return time must be at least 2 hours from now.",
+						path: ["expectedReturnAt"],
+					},
+				)
+				.refine((data) => data.expectedReturnAt > data.expectedClaimAt, {
+					message: "Expected return time must be after claim time.",
 					path: ["expectedReturnAt"],
-				},
-			),
+				}),
 		),
 		defaultValues: {
 			equipments: [],
+			expectedClaimAt: new Date(Date.now() + 1 * 60 * 60 * 1000 + 60000), // Default to 1h 1m from now
 			expectedReturnAt: new Date(Date.now() + 2 * 60 * 60 * 1000 + 60000), // Default to 2h 1m from now
 			location: "",
 			purpose: "",
@@ -83,6 +100,7 @@ export function BorrowEquipmentForm(
 			agreedToPolicy: false,
 		},
 		mode: "onTouched",
+		reValidateMode: "onChange",
 	});
 
 	const mutation = useMutation({
@@ -109,6 +127,39 @@ export function BorrowEquipmentForm(
 		mutation.reset();
 		props.reset();
 	}
+
+	const isToday = (date: Date) => {
+		const today = new Date();
+		return (
+			date.getDate() === today.getDate() &&
+			date.getMonth() === today.getMonth() &&
+			date.getFullYear() === today.getFullYear()
+		);
+	};
+
+	const getMinClaimTime = (date: Date) => {
+		if (isToday(date)) {
+			const minTime = new Date(Date.now() + 1 * 60 * 60 * 1000);
+			return minTime.toLocaleTimeString("en-GB", {
+				hour: "2-digit",
+				minute: "2-digit",
+				hour12: false,
+			});
+		}
+		return undefined;
+	};
+
+	const getMinReturnTime = (date: Date) => {
+		if (isToday(date)) {
+			const minTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
+			return minTime.toLocaleTimeString("en-GB", {
+				hour: "2-digit",
+				minute: "2-digit",
+				hour12: false,
+			});
+		}
+		return undefined;
+	};
 
 	if (mutation.isPending) {
 		return <FullScreenLoading />;
@@ -231,14 +282,14 @@ export function BorrowEquipmentForm(
 
 							<FormField
 								control={form.control}
-								name="expectedReturnAt"
+								name="expectedClaimAt"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Date and Time to Return</FormLabel>
+										<FormLabel>Date and Time to Claim</FormLabel>
 										<div className="flex gap-2">
 											<Popover
-												open={openCalendar}
-												onOpenChange={setOpenCalendar}
+												open={openClaimCalendar}
+												onOpenChange={setOpenClaimCalendar}
 											>
 												<PopoverTrigger asChild>
 													<Button
@@ -268,7 +319,7 @@ export function BorrowEquipmentForm(
 																	current.getMinutes(),
 																);
 																field.onChange(date);
-																setOpenCalendar(false);
+																setOpenClaimCalendar(false);
 															}
 														}}
 														disabled={(date) =>
@@ -286,6 +337,82 @@ export function BorrowEquipmentForm(
 													minute: "2-digit",
 													hour12: false,
 												})}
+												min={getMinClaimTime(field.value)}
+												onChange={(e) => {
+													const [hours, minutes] = e.target.value.split(":");
+													const newDate = new Date(field.value);
+													newDate.setHours(
+														parseInt(hours, 10),
+														parseInt(minutes, 10),
+													);
+													field.onChange(newDate);
+												}}
+												className="flex-1"
+											/>
+										</div>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="expectedReturnAt"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>Date and Time to Return</FormLabel>
+										<div className="flex gap-2">
+											<Popover
+												open={openReturnCalendar}
+												onOpenChange={setOpenReturnCalendar}
+											>
+												<PopoverTrigger asChild>
+													<Button
+														type="button"
+														variant="outline"
+														className="flex-1 justify-between bg-card font-open-sans text-base text-foreground border-accent"
+													>
+														{field.value
+															? field.value.toLocaleDateString()
+															: "Select date"}
+														<ChevronDownIcon className="h-4 w-4" />
+													</Button>
+												</PopoverTrigger>
+												<PopoverContent
+													className="w-auto overflow-hidden p-0"
+													align="start"
+												>
+													<Calendar
+														mode="single"
+														selected={field.value}
+														captionLayout="dropdown"
+														onSelect={(date) => {
+															if (date) {
+																const current = field.value;
+																date.setHours(
+																	current.getHours(),
+																	current.getMinutes(),
+																);
+																field.onChange(date);
+																setOpenReturnCalendar(false);
+															}
+														}}
+														disabled={(date) =>
+															date < new Date(new Date().setHours(0, 0, 0, 0))
+														}
+													/>
+												</PopoverContent>
+											</Popover>
+
+											<Input
+												type="time"
+												step="60"
+												value={field.value.toLocaleTimeString("en-GB", {
+													hour: "2-digit",
+													minute: "2-digit",
+													hour12: false,
+												})}
+												min={getMinReturnTime(field.value)}
 												onChange={(e) => {
 													const [hours, minutes] = e.target.value.split(":");
 													const newDate = new Date(field.value);
@@ -338,35 +465,43 @@ export function BorrowEquipmentForm(
 									<Button
 										type="button"
 										className="w-full shadow-md"
-										disabled={!form.formState.isValid}
+										onClick={async () => {
+											const result = await form.trigger();
+											if (!result) {
+												const firstError = Object.keys(form.formState.errors)[0];
+												form.setFocus(firstError as any);
+											}
+										}}
 									>
 										Borrow Equipments
 									</Button>
 								</DialogTrigger>
 
-								<DialogContent>
-									<DialogHeader>
-										<DialogTitle className="text-start">
-											Confirm Equipment Borrow
-										</DialogTitle>
-										<DialogDescription className="text-start">
-											You are about to borrow {totalQuantity} items. Do you wish
-											to proceed?
-										</DialogDescription>
-									</DialogHeader>
+								{form.formState.isValid && (
+									<DialogContent>
+										<DialogHeader>
+											<DialogTitle className="text-start">
+												Confirm Equipment Borrow
+											</DialogTitle>
+											<DialogDescription className="text-start">
+												You are about to borrow {totalQuantity} items. Do you wish
+												to proceed?
+											</DialogDescription>
+										</DialogHeader>
 
-									<DialogFooter>
-										<DialogClose asChild>
-											<Button type="button" variant="secondary">
-												Cancel
+										<DialogFooter>
+											<DialogClose asChild>
+												<Button type="button" variant="secondary">
+													Cancel
+												</Button>
+											</DialogClose>
+
+											<Button type="submit" form="borrow-request-form">
+												Confirm
 											</Button>
-										</DialogClose>
-
-										<Button type="submit" form="borrow-request-form">
-											Confirm
-										</Button>
-									</DialogFooter>
-								</DialogContent>
+										</DialogFooter>
+									</DialogContent>
+								)}
 							</Dialog>
 
 							<Button

@@ -490,6 +490,22 @@ func (s *Server) createBorrowRequest(w http.ResponseWriter, r *http.Request) api
 		}
 	}
 
+	if data.ExpectedClaimAt.Before(time.Now().Add(1 * time.Hour)) {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: expected claim time must be at least 1 hour from now"),
+			Code:    http.StatusBadRequest,
+			Message: "Expected claim time must be at least 1 hour from now to allow for preparation.",
+		}
+	}
+
+	if data.ExpectedReturnAt.Before(data.ExpectedClaimAt.Add(1 * time.Hour)) {
+		return api.Response{
+			Error:   fmt.Errorf("create borrow request: expected return time must be at least 1 hour after claim time"),
+			Code:    http.StatusBadRequest,
+			Message: "Expected return time must be at least 1 hour after claim time.",
+		}
+	}
+
 	if data.ExpectedReturnAt.Before(time.Now().Add(2 * time.Hour)) {
 		return api.Response{
 			Error:   fmt.Errorf("create borrow request: expected return time must be at least 2 hours from now"),
