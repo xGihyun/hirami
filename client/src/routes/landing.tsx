@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, type JSX } from "react";
 import { Button } from "@/components/ui/button";
-import { DisplayLarge, P, TitleMedium } from "@/components/typography";
+import { DisplayLarge, P, TitleMedium, TitleSmall } from "@/components/typography";
 import { HiramiLogoDark } from "@/lib/assets/logo-dark";
+import hiramiMobile from "@/lib/assets/hirami-mobile.png";
 import { useIsMobile } from "@/hooks/use-mobile";
 import IconAndroid from "~icons/material-symbols/android";
 import IconGlobe from "~icons/material-symbols/globe";
@@ -35,10 +36,12 @@ function LandingPage(): JSX.Element {
 							<TitleMedium className="font-montserrat-bold">Hirami</TitleMedium>
 						</div>
 						<DisplayLarge className="text-primary text-5xl lg:text-7xl">
-							Master Your Equipment Anywhere, Anytime.
+							Gear Out, Gear Back - Hassle Free.
 						</DisplayLarge>
 						<P className="text-muted-foreground text-lg max-w-xl">
-							Download the official Hirami Equipment Management System mobile app.
+							Download the official Hirami Equipment Management System mobile
+							app. Access your daily logs, make requests, and track your
+							progress right from your Android device.
 						</P>
 					</div>
 
@@ -78,18 +81,19 @@ function LandingPage(): JSX.Element {
 					<div className="relative w-[300px] h-[600px] bg-foreground rounded-[3rem] p-3 shadow-2xl border-4 border-muted">
 						<div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-foreground rounded-b-2xl z-20" />
 						<div className="w-full h-full bg-background rounded-[2.25rem] overflow-hidden relative group">
-							<div className="absolute inset-0 bg-primary flex flex-col items-center justify-center p-8 text-primary-foreground text-center">
-								<HiramiLogoDark className="size-32 mb-6 text-primary-foreground" />
-								<DisplayLarge className="text-4xl text-primary-foreground">
-									HIRAMI
-								</DisplayLarge>
+							<div className="absolute inset-0 bg-gradient-to-b from-secondary to-primary flex flex-col items-center justify-center p-8 text-foreground text-center">
+								<HiramiLogoDark className="size-32 mb-2.5" />
+								<DisplayLarge className="text-4xl">Hirami</DisplayLarge>
+								<TitleSmall className="text-[0.65rem]">Equipment Management System</TitleSmall>
 							</div>
 
 							{/* Mock UI overlay */}
-							<div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-4/5 bg-card rounded-2xl p-6 shadow-xl space-y-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-								<div className="h-2 w-1/2 bg-muted rounded" />
-								<div className="h-8 w-full bg-primary/20 rounded-md" />
-								<div className="h-8 w-full bg-primary/20 rounded-md" />
+							<div className="absolute inset-0 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 overflow-hidden">
+								<img
+									src={hiramiMobile}
+									alt="Hirami Mobile App"
+									className="w-full h-full object-cover"
+								/>
 							</div>
 						</div>
 					</div>
