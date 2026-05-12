@@ -11,6 +11,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LandingRouteImport } from './routes/landing'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
@@ -48,6 +49,11 @@ const AuthedEquipmentsEquipmentIdRouteImport = createFileRoute(
   '/_authed/equipments/$equipmentId',
 )()
 
+const LandingRoute = LandingRouteImport.update({
+  id: '/landing',
+  path: '/landing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
@@ -230,6 +236,7 @@ const AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/landing': typeof LandingRoute
   '/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/equipments/categories': typeof AuthedEquipmentsCategoriesRoute
   '/login': typeof AuthLoginIndexRoute
@@ -261,6 +268,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/landing': typeof LandingRoute
   '/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/equipments/categories': typeof AuthedEquipmentsCategoriesRoute
   '/login': typeof AuthLoginIndexRoute
@@ -294,6 +302,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteWithChildren
   '/_authed': typeof AuthedRouteWithChildren
+  '/landing': typeof LandingRoute
   '/_auth/_register': typeof AuthRegisterRouteWithChildren
   '/_auth/password-reset/$token': typeof AuthPasswordResetTokenRoute
   '/_authed/equipments/categories': typeof AuthedEquipmentsCategoriesRoute
@@ -329,6 +338,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/landing'
     | '/password-reset/$token'
     | '/equipments/categories'
     | '/login'
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/landing'
     | '/password-reset/$token'
     | '/equipments/categories'
     | '/login'
@@ -392,6 +403,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_auth'
     | '/_authed'
+    | '/landing'
     | '/_auth/_register'
     | '/_auth/password-reset/$token'
     | '/_authed/equipments/categories'
@@ -428,10 +440,18 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
   AuthedRoute: typeof AuthedRouteWithChildren
+  LandingRoute: typeof LandingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/landing': {
+      id: '/landing'
+      path: '/landing'
+      fullPath: '/landing'
+      preLoaderRoute: typeof LandingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed': {
       id: '/_authed'
       path: ''
@@ -793,6 +813,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
   AuthedRoute: AuthedRouteWithChildren,
+  LandingRoute: LandingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
