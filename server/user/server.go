@@ -21,12 +21,14 @@ import (
 type Server struct {
 	repository   Repository
 	gmailService *gmail.Service
+	testMode     bool
 }
 
-func NewServer(repo Repository, svc *gmail.Service) *Server {
+func NewServer(repo Repository, svc *gmail.Service, testMode bool) *Server {
 	return &Server{
 		repository:   repo,
 		gmailService: svc,
+		testMode:     testMode,
 	}
 }
 
@@ -237,6 +239,18 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 			Error:   fmt.Errorf("sign up: %w", err),
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to sign up.",
+		}
+	}
+
+	// Test mode: skip email verification, activate user immediately
+	if s.testMode {
+		if err := s.repository.activateUser(ctx, userID); err != nil {
+			slog.Warn("test mode: failed to activate user", "err", err)
+		}
+		return api.Response{
+			Code:    http.StatusCreated,
+			Message: "Successfully signed up.",
+			Data:    userID,
 		}
 	}
 

@@ -23,6 +23,7 @@ type Repository interface {
 
 	createEmailVerificationToken(ctx context.Context, userID, tokenHash string, expiresAt time.Time) error
 	verifyEmail(ctx context.Context, tokenHash string) error
+	activateUser(ctx context.Context, userID string) error
 
 	GetByEmail(ctx context.Context, email string) (user, error)
 	invalidateSession(ctx context.Context, token string) error
@@ -445,6 +446,11 @@ func (r *repository) createEmailVerificationToken(ctx context.Context, userID, t
 	}
 
 	return nil
+}
+
+func (r *repository) activateUser(ctx context.Context, userID string) error {
+	_, err := r.querier.Exec(ctx, "UPDATE person SET is_active = TRUE WHERE person_id = $1", userID)
+	return err
 }
 
 func (r *repository) verifyEmail(ctx context.Context, tokenHash string) error {

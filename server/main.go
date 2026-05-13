@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -116,8 +117,17 @@ func main() {
 
 	router.HandleFunc("GET /", health)
 
+	testMode := os.Getenv("APP_ENV") == "test"
+
+	rateLimitFn := mw.RateLimit
+	if testMode {
+		rateLimitFn = func(limit int, window time.Duration) func(http.Handler) http.Handler {
+			return func(next http.Handler) http.Handler { return next }
+		}
+	}
+
 	app := app{
-		user:      *user.NewServer(userRepo, gmailService),
+		user:      *user.NewServer(userRepo, gmailService, testMode),
 		equipment: *equipment.NewServer(equipment.NewRepository(pool), valkeyClient),
 		sse:       *sse.NewServer(valkeyClient),
 		mw:        mw,
@@ -127,7 +137,7 @@ func main() {
 	router.Handle("GET /uploads/", http.StripPrefix("/uploads", fs))
 
 	router.HandleFunc("GET /events", app.sse.EventsHandler)
-	app.user.SetupRoutes(router, app.mw.AuthMiddleware, app.mw.RateLimit)
+	app.user.SetupRoutes(router, app.mw.AuthMiddleware, rateLimitFn)
 	app.equipment.SetupRoutes(router, app.mw.AuthMiddleware, app.mw.RequireRole)
 
 	app.equipment.StartExpirationWorker(ctx)
