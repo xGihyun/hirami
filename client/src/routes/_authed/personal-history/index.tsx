@@ -23,6 +23,7 @@ const searchSchema = z.object({
 	sort: z.enum(Sort).default(Sort.Asc),
 	sortBy: z.string().default("borrowedAt"),
 	search: z.string().optional(),
+	requestId: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_authed/personal-history/")({
@@ -145,5 +146,5 @@ function History(): JSX.Element {
 		);
 	}
 
-	return <HistoryList history={history.data} />;
+	return <HistoryList history={history.data} initialRequestId={search.requestId} />;
 }

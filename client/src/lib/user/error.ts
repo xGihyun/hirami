@@ -11,3 +11,10 @@ export class ErrExistingAccount extends Error {
 		this.name = "ExistingAccount";
 	}
 }
+
+export class ErrAccountNotVerified extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "AccountNotVerified";
+	}
+}

@@ -1,5 +1,5 @@
 import { H1, LabelMedium } from "@/components/typography";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type JSX } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
@@ -18,13 +18,13 @@ import {
 	IMAGE_FORMATS,
 	IMAGE_SIZE_LIMIT,
 	type ApiResponse,
+	protectedFetch,
 } from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRegister, type RegisterData } from "../../-context";
 import { useMutation } from "@tanstack/react-query";
 import { IconUserPen } from "@/lib/icons";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Success } from "@/components/success";
 import { Failed } from "@/components/failed";
 import { FullScreenLoading } from "@/components/loading";
 import type { RegisterUser } from "@/lib/user/model";
@@ -61,7 +61,7 @@ async function register(value: RegisterUser): Promise<ApiResponse> {
 	formData.append("lastName", value.lastName);
 	if (value.avatar) formData.append("avatar", value.avatar);
 
-	const response = await fetch(`${BACKEND_URL}/register`, {
+	const response = await protectedFetch(`${BACKEND_URL}/register`, {
 		method: "POST",
 		body: formData,
 	});
@@ -76,6 +76,7 @@ async function register(value: RegisterUser): Promise<ApiResponse> {
 
 function RouteComponent(): JSX.Element {
 	const registerContext = useRegister();
+	const navigate = useNavigate();
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -90,6 +91,12 @@ function RouteComponent(): JSX.Element {
 
 	const mutation = useMutation({
 		mutationFn: register,
+		onSuccess: () => {
+			navigate({
+				to: "/check-email",
+				search: { email: registerContext.value.email },
+			});
+		},
 	});
 
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -140,13 +147,7 @@ function RouteComponent(): JSX.Element {
 	}
 
 	if (mutation.isSuccess) {
-		return (
-			<Success
-				header="You have successfully created an account."
-				backLink="/login"
-                className="fixed inset-0"
-			/>
-		);
+		return <FullScreenLoading />;
 	}
 
 	if (mutation.isError) {
