@@ -166,7 +166,7 @@ func main() {
 		MaxAge:           300,
 	})
 
-	handler := securityHeadersMiddleware(c.Handler(router))
+	handler := securityHeadersMiddleware(middleware.LoggingMiddleware(c.Handler(router)))
 	server := http.Server{
 		Addr:    host + ":" + port,
 		Handler: handler,

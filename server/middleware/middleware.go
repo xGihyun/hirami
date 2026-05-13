@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"slices"
 	"strings"
@@ -132,6 +133,44 @@ func (m *Middleware) RateLimit(limit int, window time.Duration) func(http.Handle
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rw *responseWriter) WriteHeader(status int) {
+	rw.status = status
+	rw.ResponseWriter.WriteHeader(status)
+}
+
+func LoggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rw, r)
+
+		ip := r.RemoteAddr
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			ip = strings.Split(xff, ",")[0]
+		}
+
+		userID := ""
+		if claims, ok := r.Context().Value(UserContextKey).(*UserClaims); ok && claims != nil {
+			userID = claims.UserID
+		}
+
+		slog.Info("request",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", rw.status,
+			"duration_ms", time.Since(start).Milliseconds(),
+			"ip", ip,
+			"user_id", userID,
+		)
+	})
 }
 
 // Example middleware chain helper
