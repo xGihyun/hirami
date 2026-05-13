@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type JSX } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";

@@ -72,7 +72,7 @@ function VerifyEmail(): JSX.Element {
 					<h1 className="text-2xl font-bold mb-2">Verification Failed</h1>
 					<p className="text-muted-foreground mb-6">{message}</p>
 					<Button asChild variant="outline">
-						<Link to="/check-email">Resend verification email</Link>
+						<Link to="/check-email" search={{ email: "" }}>Resend verification email</Link>
 					</Button>
 				</>
 			)}

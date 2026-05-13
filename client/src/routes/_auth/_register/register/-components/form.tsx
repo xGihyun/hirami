@@ -18,6 +18,7 @@ import {
 	BACKEND_URL,
 	IMAGE_FORMATS,
 	IMAGE_SIZE_LIMIT,
+	protectedFetch,
 	type ApiResponse,
 } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
@@ -90,9 +91,9 @@ export function RegisterForm(): JSX.Element {
 		onMutate: () => {
 			return toast.loading("Creating account");
 		},
-		onSuccess: (data, _variables, toastId) => {
+		onSuccess: (data, variables, toastId) => {
 			toast.success(data.message, { id: toastId });
-			navigate({ to: "/check-email" });
+			navigate({ to: "/check-email", search: { email: variables.email } });
 		},
 		onError: (error, _variables, toastId) => {
 			toast.error(error.message, { id: toastId });
@@ -207,8 +208,5 @@ export function RegisterForm(): JSX.Element {
 				</Button>
 			</form>
 		</Form>
-	);
-}
->
 	);
 }

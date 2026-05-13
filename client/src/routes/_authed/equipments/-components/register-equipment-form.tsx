@@ -17,6 +17,7 @@ import {
 	BACKEND_URL,
 	IMAGE_FORMATS,
 	IMAGE_SIZE_LIMIT,
+	protectedFetch,
 	type ApiResponse,
 } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -295,8 +296,5 @@ export function RegisterEquipmentForm(
 				</Button>
 			</form>
 		</Form>
-	);
-}
->
 	);
 }
