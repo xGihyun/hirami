@@ -18,13 +18,20 @@ import {
 	BACKEND_URL,
 	IMAGE_FORMATS,
 	IMAGE_SIZE_LIMIT,
+	protectedFetch,
 	type ApiResponse,
 } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 
 const formSchema = z.object({
 	email: z.email(),
-	password: z.string().nonempty(),
+	password: z
+		.string()
+		.min(8, "Password must be at least 8 characters long")
+		.regex(/[a-z]/, "Password must include at least one lowercase letter")
+		.regex(/[A-Z]/, "Password must include at least one uppercase letter")
+		.regex(/[0-9]/, "Password must include at least one number")
+		.regex(/[^a-zA-Z0-9]/, "Password must include at least one special character"),
 	firstName: z.string().nonempty(),
 	middleName: z.string().optional(),
 	lastName: z.string().nonempty(),
@@ -51,8 +58,9 @@ async function register(
 	if (value.middleName) formData.append("middleName", value.middleName);
 	formData.append("lastName", value.lastName);
 	if (value.avatar) formData.append("avatar", value.avatar);
+	formData.append("role", "borrower");
 
-	const response = await fetch(`${BACKEND_URL}/register`, {
+	const response = await protectedFetch(`${BACKEND_URL}/register`, {
 		method: "POST",
 		body: formData,
 	});
@@ -83,9 +91,9 @@ export function RegisterForm(): JSX.Element {
 		onMutate: () => {
 			return toast.loading("Creating account");
 		},
-		onSuccess: (data, _variables, toastId) => {
+		onSuccess: (data, variables, toastId) => {
 			toast.success(data.message, { id: toastId });
-			navigate({ to: "/login" });
+			navigate({ to: "/check-email", search: { email: variables.email } });
 		},
 		onError: (error, _variables, toastId) => {
 			toast.error(error.message, { id: toastId });

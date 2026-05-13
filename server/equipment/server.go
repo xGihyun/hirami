@@ -14,6 +14,7 @@ import (
 	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/api"
 	"github.com/xGihyun/hirami/sse"
+	"github.com/xGihyun/hirami/user"
 )
 
 type Server struct {
@@ -28,39 +29,49 @@ func NewServer(repo Repository, valkeyClient valkey.Client) *Server {
 	}
 }
 
-func (s *Server) SetupRoutes(mux *http.ServeMux) {
-	mux.Handle("POST /equipments", api.Handler(s.createEquipment))
-	mux.Handle("GET /equipments", api.Handler(s.getAll))
-	mux.Handle("GET /equipments/{equipmentTypeId}", api.Handler(s.getEquipmentByID))
-	mux.Handle("GET /equipments/{equipmentTypeId}/status", api.Handler(s.getEquipmentInventoryStatusByID))
-	mux.Handle("GET /equipment-names", api.Handler(s.getEquipmentNames))
-	mux.Handle("PATCH /equipments/{equipmentTypeId}", api.Handler(s.update))
-	mux.Handle("POST /equipments/{equipmentTypeId}/reallocate", api.Handler(s.reallocate))
-	mux.Handle("POST /equipments/{equipmentTypeId}/increase", api.Handler(s.increaseQuantity))
-	mux.Handle("DELETE /equipments/{equipmentTypeId}", api.Handler(s.deleteEquipment))
+func (s *Server) SetupRoutes(
+	mux *http.ServeMux,
+	auth func(http.Handler) http.Handler,
+	requireRole func(...user.Role) func(http.Handler) http.Handler,
+) {
+	// Equipment Management (Managers only)
+	mux.Handle("POST /equipments", auth(requireRole(user.EquipmentManager)(api.Handler(s.createEquipment))))
+	mux.Handle("PATCH /equipments/{equipmentTypeId}", auth(requireRole(user.EquipmentManager)(api.Handler(s.update))))
+	mux.Handle("POST /equipments/{equipmentTypeId}/reallocate", auth(requireRole(user.EquipmentManager)(api.Handler(s.reallocate))))
+	mux.Handle("POST /equipments/{equipmentTypeId}/increase", auth(requireRole(user.EquipmentManager)(api.Handler(s.increaseQuantity))))
+	mux.Handle("DELETE /equipments/{equipmentTypeId}", auth(requireRole(user.EquipmentManager)(api.Handler(s.deleteEquipment))))
 
-	mux.Handle("POST /borrow-requests", api.Handler(s.createBorrowRequest))
-	mux.Handle("PATCH /borrow-requests/{id}", api.Handler(s.updateBorrowRequest))
-	mux.Handle("PATCH /review-borrow-requests", api.Handler(s.reviewBorrowRequest))
-	mux.Handle("GET /borrow-requests", api.Handler(s.getBorrowRequests))
-	mux.Handle("GET /borrow-requests/{id}", api.Handler(s.getBorrowRequestByID))
-	mux.Handle("GET /borrow-requests/otp/{code}", api.Handler(s.getBorrowRequestByOTP))
+	// Equipment Catalog (All authed users)
+	mux.Handle("GET /equipments", auth(api.Handler(s.getAll)))
+	mux.Handle("GET /equipments/{equipmentTypeId}", auth(api.Handler(s.getEquipmentByID)))
+	mux.Handle("GET /equipments/{equipmentTypeId}/status", auth(api.Handler(s.getEquipmentInventoryStatusByID)))
+	mux.Handle("GET /equipment-names", auth(api.Handler(s.getEquipmentNames)))
 
-	mux.Handle("POST /return-requests", api.Handler(s.createReturnRequest))
-	mux.Handle("PATCH /return-requests/{id}", api.Handler(s.confirmReturnRequest))
-	mux.Handle("GET /return-requests", api.Handler(s.getReturnRequests))
-	mux.Handle("GET /return-requests/{id}", api.Handler(s.getReturnRequestByID))
-	mux.Handle("GET /return-requests/otp/{code}", api.Handler(s.getReturnRequestByOTP))
+	// Borrow Requests (All authed users)
+	mux.Handle("POST /borrow-requests", auth(api.Handler(s.createBorrowRequest)))
+	mux.Handle("PATCH /borrow-requests/{id}", auth(api.Handler(s.updateBorrowRequest)))
+	mux.Handle("PATCH /review-borrow-requests", auth(requireRole(user.EquipmentManager)(api.Handler(s.reviewBorrowRequest))))
+	mux.Handle("GET /borrow-requests", auth(api.Handler(s.getBorrowRequests)))
+	mux.Handle("GET /borrow-requests/{id}", auth(api.Handler(s.getBorrowRequestByID)))
+	mux.Handle("GET /borrow-requests/otp/{code}", auth(api.Handler(s.getBorrowRequestByOTP)))
 
-	mux.Handle("GET /borrow-history", api.Handler(s.getBorrowHistory))
-	mux.Handle("GET /borrow-history/pdf", api.Handler(s.getBorrowHistoryPDF))
+	// Return Requests (All authed users)
+	mux.Handle("POST /return-requests", auth(api.Handler(s.createReturnRequest)))
+	mux.Handle("PATCH /return-requests/{id}", auth(requireRole(user.EquipmentManager)(api.Handler(s.confirmReturnRequest))))
+	mux.Handle("GET /return-requests", auth(api.Handler(s.getReturnRequests)))
+	mux.Handle("GET /return-requests/{id}", auth(api.Handler(s.getReturnRequestByID)))
+	mux.Handle("GET /return-requests/otp/{code}", auth(api.Handler(s.getReturnRequestByOTP)))
 
-	mux.Handle("GET /users/{userId}/borrowed-equipments", api.Handler(s.getBorrowedItems))
+	// History and Stats
+	mux.Handle("GET /borrow-history", auth(api.Handler(s.getBorrowHistory)))
+	mux.Handle("GET /borrow-history/pdf", auth(api.Handler(s.getBorrowHistoryPDF)))
+	mux.Handle("GET /users/{userId}/borrowed-equipments", auth(api.Handler(s.getBorrowedItems)))
 
-	mux.Handle("POST /categories", api.Handler(s.createCategory))
-	mux.Handle("PATCH /categories/{id}", api.Handler(s.updateCategory))
-	mux.Handle("GET /categories", api.Handler(s.getCategories))
-	mux.Handle("DELETE /categories/{id}", api.Handler(s.deleteCategory))
+	// Categories (Managers only)
+	mux.Handle("POST /categories", auth(requireRole(user.EquipmentManager)(api.Handler(s.createCategory))))
+	mux.Handle("PATCH /categories/{id}", auth(requireRole(user.EquipmentManager)(api.Handler(s.updateCategory))))
+	mux.Handle("GET /categories", auth(api.Handler(s.getCategories)))
+	mux.Handle("DELETE /categories/{id}", auth(requireRole(user.EquipmentManager)(api.Handler(s.deleteCategory))))
 }
 
 const (

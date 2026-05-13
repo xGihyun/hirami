@@ -141,6 +141,7 @@ export const borrowRequestSchema = z.object({
 	expectedClaimAt: z.coerce.date(),
 	expectedReturnAt: z.coerce.date(),
 	actualReturnAt: z.coerce.date().nullable(),
+	claimedAt: z.coerce.date().nullable(),
 	returnConfirmations: returnConfirmationSchema.array(),
 	otp: otpSchema.nullable(),
 	anomaly: anomalyResultSchema.nullable(),

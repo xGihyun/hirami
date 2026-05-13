@@ -15,6 +15,7 @@ import { Route as LandingRouteImport } from './routes/landing'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthCheckEmailRouteImport } from './routes/_auth/check-email'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/_register'
 import { Route as AuthedUsersIndexRouteImport } from './routes/_authed/users/index'
 import { Route as AuthedScanIndexRouteImport } from './routes/_authed/scan/index'
@@ -28,6 +29,7 @@ import { Route as AuthPasswordResetIndexRouteImport } from './routes/_auth/passw
 import { Route as AuthOnboardingIndexRouteImport } from './routes/_auth/onboarding/index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 import { Route as AuthedEquipmentsCategoriesRouteImport } from './routes/_authed/equipments/categories'
+import { Route as AuthVerifyEmailTokenRouteImport } from './routes/_auth/verify-email/$token'
 import { Route as AuthPasswordResetTokenRouteImport } from './routes/_auth/password-reset/$token'
 import { Route as AuthedUsersUserIdIndexRouteImport } from './routes/_authed/users/$userId/index'
 import { Route as AuthedPersonalHistoryBorrowRequestItemIdIndexRouteImport } from './routes/_authed/personal-history/$borrowRequestItemId/index'
@@ -66,6 +68,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCheckEmailRoute = AuthCheckEmailRouteImport.update({
+  id: '/check-email',
+  path: '/check-email',
+  getParentRoute: () => AuthRoute,
 } as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: '/_register',
@@ -140,6 +147,11 @@ const AuthedEquipmentsCategoriesRoute =
     path: '/equipments/categories',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthVerifyEmailTokenRoute = AuthVerifyEmailTokenRouteImport.update({
+  id: '/verify-email/$token',
+  path: '/verify-email/$token',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthPasswordResetTokenRoute = AuthPasswordResetTokenRouteImport.update({
   id: '/password-reset/$token',
   path: '/password-reset/$token',
@@ -237,7 +249,9 @@ const AuthedEquipmentsEquipmentIdRegisterRegisterImageIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/landing': typeof LandingRoute
+  '/check-email': typeof AuthCheckEmailRoute
   '/password-reset/$token': typeof AuthPasswordResetTokenRoute
+  '/verify-email/$token': typeof AuthVerifyEmailTokenRoute
   '/equipments/categories': typeof AuthedEquipmentsCategoriesRoute
   '/login': typeof AuthLoginIndexRoute
   '/onboarding': typeof AuthOnboardingIndexRoute
@@ -269,7 +283,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/landing': typeof LandingRoute
+  '/check-email': typeof AuthCheckEmailRoute
   '/password-reset/$token': typeof AuthPasswordResetTokenRoute
+  '/verify-email/$token': typeof AuthVerifyEmailTokenRoute
   '/equipments/categories': typeof AuthedEquipmentsCategoriesRoute
   '/login': typeof AuthLoginIndexRoute
   '/onboarding': typeof AuthOnboardingIndexRoute
@@ -304,7 +320,9 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/landing': typeof LandingRoute
   '/_auth/_register': typeof AuthRegisterRouteWithChildren
+  '/_auth/check-email': typeof AuthCheckEmailRoute
   '/_auth/password-reset/$token': typeof AuthPasswordResetTokenRoute
+  '/_auth/verify-email/$token': typeof AuthVerifyEmailTokenRoute
   '/_authed/equipments/categories': typeof AuthedEquipmentsCategoriesRoute
   '/_auth/login/': typeof AuthLoginIndexRoute
   '/_auth/onboarding/': typeof AuthOnboardingIndexRoute
@@ -339,7 +357,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/landing'
+    | '/check-email'
     | '/password-reset/$token'
+    | '/verify-email/$token'
     | '/equipments/categories'
     | '/login'
     | '/onboarding'
@@ -371,7 +391,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/landing'
+    | '/check-email'
     | '/password-reset/$token'
+    | '/verify-email/$token'
     | '/equipments/categories'
     | '/login'
     | '/onboarding'
@@ -405,7 +427,9 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/landing'
     | '/_auth/_register'
+    | '/_auth/check-email'
     | '/_auth/password-reset/$token'
+    | '/_auth/verify-email/$token'
     | '/_authed/equipments/categories'
     | '/_auth/login/'
     | '/_auth/onboarding/'
@@ -472,6 +496,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_auth/check-email': {
+      id: '/_auth/check-email'
+      path: '/check-email'
+      fullPath: '/check-email'
+      preLoaderRoute: typeof AuthCheckEmailRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_auth/_register': {
       id: '/_auth/_register'
@@ -570,6 +601,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/equipments/categories'
       preLoaderRoute: typeof AuthedEquipmentsCategoriesRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/_auth/verify-email/$token': {
+      id: '/_auth/verify-email/$token'
+      path: '/verify-email/$token'
+      fullPath: '/verify-email/$token'
+      preLoaderRoute: typeof AuthVerifyEmailTokenRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/_auth/password-reset/$token': {
       id: '/_auth/password-reset/$token'
@@ -708,7 +746,9 @@ const AuthRegisterRouteWithChildren = AuthRegisterRoute._addFileChildren(
 
 interface AuthRouteChildren {
   AuthRegisterRoute: typeof AuthRegisterRouteWithChildren
+  AuthCheckEmailRoute: typeof AuthCheckEmailRoute
   AuthPasswordResetTokenRoute: typeof AuthPasswordResetTokenRoute
+  AuthVerifyEmailTokenRoute: typeof AuthVerifyEmailTokenRoute
   AuthLoginIndexRoute: typeof AuthLoginIndexRoute
   AuthOnboardingIndexRoute: typeof AuthOnboardingIndexRoute
   AuthPasswordResetIndexRoute: typeof AuthPasswordResetIndexRoute
@@ -716,7 +756,9 @@ interface AuthRouteChildren {
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthRegisterRoute: AuthRegisterRouteWithChildren,
+  AuthCheckEmailRoute: AuthCheckEmailRoute,
   AuthPasswordResetTokenRoute: AuthPasswordResetTokenRoute,
+  AuthVerifyEmailTokenRoute: AuthVerifyEmailTokenRoute,
   AuthLoginIndexRoute: AuthLoginIndexRoute,
   AuthOnboardingIndexRoute: AuthOnboardingIndexRoute,
   AuthPasswordResetIndexRoute: AuthPasswordResetIndexRoute,

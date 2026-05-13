@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { useRegisterEquipment } from "../../-context";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
+import { BACKEND_URL, protectedFetch, type ApiResponse } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { equipmentsQuery } from "@/lib/equipment/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -43,7 +43,7 @@ async function registerEquipment(
 	formData.append("quantity", value.quantity.toString());
 	if (value.image) formData.append("image", value.image);
 
-	const response = await fetch(`${BACKEND_URL}/equipments`, {
+	const response = await protectedFetch(`${BACKEND_URL}/equipments`, {
 		method: "POST",
 		body: formData,
 	});

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -14,6 +15,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/equipment"
+	"github.com/xGihyun/hirami/middleware"
 	"github.com/xGihyun/hirami/migrations"
 	"github.com/xGihyun/hirami/sse"
 	"github.com/xGihyun/hirami/user"
@@ -27,6 +29,7 @@ type app struct {
 	user      user.Server
 	equipment equipment.Server
 	sse       sse.Server
+	mw        *middleware.Middleware
 }
 
 func main() {
@@ -107,22 +110,35 @@ func main() {
 	}
 	defer pool.Close()
 
+	userRepo := user.NewRepository(pool)
+	mw := middleware.NewMiddleware(userRepo, valkeyClient)
+
 	router := http.NewServeMux()
 
 	router.HandleFunc("GET /", health)
 
+	testMode := os.Getenv("APP_ENV") == "test"
+
+	rateLimitFn := mw.RateLimit
+	if testMode {
+		rateLimitFn = func(limit int, window time.Duration) func(http.Handler) http.Handler {
+			return func(next http.Handler) http.Handler { return next }
+		}
+	}
+
 	app := app{
-		user:      *user.NewServer(user.NewRepository(pool), gmailService),
+		user:      *user.NewServer(userRepo, gmailService, testMode),
 		equipment: *equipment.NewServer(equipment.NewRepository(pool), valkeyClient),
 		sse:       *sse.NewServer(valkeyClient),
+		mw:        mw,
 	}
 
 	fs := http.FileServer(http.Dir("_uploads"))
 	router.Handle("GET /uploads/", http.StripPrefix("/uploads", fs))
 
 	router.HandleFunc("GET /events", app.sse.EventsHandler)
-	app.user.SetupRoutes(router)
-	app.equipment.SetupRoutes(router)
+	app.user.SetupRoutes(router, app.mw.AuthMiddleware, rateLimitFn)
+	app.equipment.SetupRoutes(router, app.mw.AuthMiddleware, app.mw.RequireRole)
 
 	app.equipment.StartExpirationWorker(ctx)
 
@@ -136,7 +152,21 @@ func main() {
 		panic("PORT not found.")
 	}
 
-	handler := cors.AllowAll().Handler(router)
+	webClientURL := os.Getenv("WEB_CLIENT_URL")
+	if webClientURL == "" {
+		webClientURL = "http://localhost:3000"
+	}
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{webClientURL, "tauri://localhost", "http://tauri.localhost"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	})
+
+	handler := securityHeadersMiddleware(middleware.LoggingMiddleware(c.Handler(router)))
 	server := http.Server{
 		Addr:    host + ":" + port,
 		Handler: handler,
@@ -147,6 +177,18 @@ func main() {
 	if err := server.ListenAndServe(); err != nil {
 		slog.Error(err.Error())
 	}
+}
+
+func securityHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-XSS-Protection", "1; mode=block")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none';")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func health(w http.ResponseWriter, r *http.Request) {

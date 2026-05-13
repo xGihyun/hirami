@@ -3,7 +3,7 @@ import {
 	type BorrowRequestItem,
 	type BorrowRequest,
 } from "@/lib/equipment/model";
-import { useState, type JSX } from "react";
+import { useEffect, useState, type JSX } from "react";
 import { HistoryItem } from "./history-item";
 import {
 	Caption,
@@ -24,6 +24,7 @@ import { getRemainingMs } from "@/lib/utils";
 
 type Props = {
 	history: BorrowRequest[];
+	initialRequestId?: string;
 };
 
 type Selected = {
@@ -33,6 +34,16 @@ type Selected = {
 
 export function HistoryList(props: Props): JSX.Element {
 	const [selectedItem, setSelectedItem] = useState<Selected | null>(null);
+
+	useEffect(() => {
+		if (!props.initialRequestId) return;
+		const transaction = props.history.find(
+			(t) => t.id === props.initialRequestId,
+		);
+		if (!transaction || transaction.requestedItems.length === 0) return;
+		setSelectedItem({ transaction, item: transaction.requestedItems[0] });
+	}, [props.initialRequestId, props.history]);
+
 	if (props.history.length === 0) {
 		return (
 			<LabelMedium className="text-muted text-center mt-10">
@@ -79,6 +90,14 @@ export function HistoryList(props: Props): JSX.Element {
 							{format(selectedItem.transaction.requestedAt, "h:mm a")} at{" "}
 							{format(selectedItem.transaction.requestedAt, "MM/dd/yyyy")}
 						</Caption>
+
+						{selectedItem.transaction.claimedAt ? (
+							<Caption>
+								Claimed On{" "}
+								{format(selectedItem.transaction.claimedAt, "h:mm a")} at{" "}
+								{format(selectedItem.transaction.claimedAt, "MM/dd/yyyy")}
+							</Caption>
+						) : null}
 
 						<Caption>
 							Will Return On{" "}

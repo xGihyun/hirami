@@ -51,6 +51,7 @@ function RouteComponent(): JSX.Element {
 				toast.success("Your borrow request has been approved.", {
 					duration: Number.POSITIVE_INFINITY,
 				});
+				navigate({ to: "/personal-history", search: { requestId: res.id } });
 				return;
 			}
 
@@ -71,7 +72,7 @@ function RouteComponent(): JSX.Element {
 			);
 			eventSource.close();
 		};
-	}, [auth.user]);
+	}, [auth.user, navigate]);
 
 	if (!auth.user) {
 		return <></>;

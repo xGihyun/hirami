@@ -911,10 +911,14 @@ func (r *repository) updateBorrowRequest(ctx context.Context, arg updateBorrowRe
 	defer tx.Rollback(ctx)
 
 	status := stringToBorrowRequestStatus[arg.Status]
-	query := `
+	claimedAtUpdate := ""
+	if status == claimed {
+		claimedAtUpdate = ", claimed_at = NOW()"
+	}
+	query := fmt.Sprintf(`
 	WITH updated_borrow_request AS (
 		UPDATE borrow_request
-		SET borrow_request_status_id = $1
+		SET borrow_request_status_id = $1%s
 		WHERE borrow_request_id = $2
 		RETURNING borrow_request_id, borrow_request_status_id
 	)
@@ -926,7 +930,7 @@ func (r *repository) updateBorrowRequest(ctx context.Context, arg updateBorrowRe
 		) AS status
 	FROM updated_borrow_request
 	JOIN borrow_request_status USING (borrow_request_status_id)
-	`
+	`, claimedAtUpdate)
 	row := tx.QueryRow(
 		ctx,
 		query,
@@ -1542,12 +1546,13 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 		borrow_request.expected_claim_at,
 		borrow_request.expected_return_at,
 		latest_return_data.created_at AS actual_return_at,
+		borrow_request.claimed_at,
 		jsonb_build_object(
 			'id', borrow_request_status.borrow_request_status_id,
 			'code', borrow_request_status.code,
 			'label', borrow_request_status.label
 		) AS status,
-		CASE 
+		CASE
 			WHEN anomaly_result.anomaly_result_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'borrowRequestId', anomaly_result.borrow_request_id,
@@ -1556,7 +1561,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 				'isFalsePositive', anomaly_result.is_false_positive
 			)
 		END AS anomaly,
-		CASE 
+		CASE
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
@@ -1572,7 +1577,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 	LEFT JOIN anomaly_result ON anomaly_result.borrow_request_id = borrow_request.borrow_request_id
 	LEFT JOIN borrow_request_otp ON borrow_request_otp.borrow_request_id = borrow_request.borrow_request_id
 	LEFT JOIN LATERAL (
-		SELECT jsonb_agg( 
+		SELECT jsonb_agg(
 			jsonb_build_object(
 				'id', all_return_confirmation.return_request_item_id,
 				'confirmedBy', all_return_confirmation.confirmed_by,
@@ -1605,7 +1610,7 @@ func (r *repository) getBorrowRequests(ctx context.Context) ([]borrowRequest, er
 	) requested_items_agg ON TRUE
 
 	WHERE borrow_request.borrow_request_status_id = $1
-	GROUP BY 
+	GROUP BY
 		person.person_id,
 		person.first_name,
 		person.middle_name,
@@ -1736,12 +1741,13 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 		borrow_request.expected_claim_at,
 		borrow_request.expected_return_at,
 		latest_return_data.created_at AS actual_return_at,
+		borrow_request.claimed_at,
 		jsonb_build_object(
 			'id', borrow_request_status.borrow_request_status_id,
 			'code', borrow_request_status.code,
 			'label', borrow_request_status.label
 		) AS status,
-		CASE 
+		CASE
 			WHEN anomaly_result.anomaly_result_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'borrowRequestId', anomaly_result.borrow_request_id,
@@ -1750,7 +1756,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 				'isFalsePositive', anomaly_result.is_false_positive
 			)
 		END AS anomaly,
-		CASE 
+		CASE
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
@@ -1787,7 +1793,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 	) requested_items_agg ON TRUE
 
 	WHERE borrow_request.borrow_request_id = $1
-	GROUP BY 
+	GROUP BY
 		person.person_id,
 		person.first_name,
 		person.middle_name,
@@ -1820,6 +1826,7 @@ func (r *repository) getBorrowRequestByID(ctx context.Context, id string) (borro
 		&req.ExpectedClaimAt,
 		&req.ExpectedReturnAt,
 		&req.ActualReturnAt,
+		&req.ClaimedAt,
 		&req.Status,
 		&req.Anomaly,
 		&req.OTP,
@@ -1930,12 +1937,13 @@ func (r *repository) getBorrowRequestByOTP(ctx context.Context, otp string) (bor
 		borrow_request.expected_claim_at,
 		borrow_request.expected_return_at,
 		latest_return_data.created_at AS actual_return_at,
+		borrow_request.claimed_at,
 		jsonb_build_object(
 			'id', borrow_request_status.borrow_request_status_id,
 			'code', borrow_request_status.code,
 			'label', borrow_request_status.label
 		) AS status,
-		CASE 
+		CASE
 			WHEN anomaly_result.anomaly_result_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'borrowRequestId', anomaly_result.borrow_request_id,
@@ -1944,7 +1952,7 @@ func (r *repository) getBorrowRequestByOTP(ctx context.Context, otp string) (bor
 				'isFalsePositive', anomaly_result.is_false_positive
 			)
 		END AS anomaly,
-		CASE 
+		CASE
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
@@ -1981,7 +1989,7 @@ func (r *repository) getBorrowRequestByOTP(ctx context.Context, otp string) (bor
 	) requested_items_agg ON TRUE
 
 	WHERE borrow_request_otp.code = $1
-	GROUP BY 
+	GROUP BY
 		person.person_id,
 		person.first_name,
 		person.middle_name,
@@ -2014,6 +2022,7 @@ func (r *repository) getBorrowRequestByOTP(ctx context.Context, otp string) (bor
 		&req.ExpectedClaimAt,
 		&req.ExpectedReturnAt,
 		&req.ActualReturnAt,
+		&req.ClaimedAt,
 		&req.Status,
 		&req.Anomaly,
 		&req.OTP,
@@ -2470,6 +2479,7 @@ type borrowRequest struct {
 	ExpectedClaimAt     time.Time            `json:"expectedClaimAt"`
 	ExpectedReturnAt    time.Time            `json:"expectedReturnAt"`
 	ActualReturnAt      *time.Time           `json:"actualReturnAt"`
+	ClaimedAt           *time.Time           `json:"claimedAt"`
 	ReturnConfirmations []returnConfirmation `json:"returnConfirmations"`
 
 	OTP     *OTP     `json:"otp"`
@@ -2576,12 +2586,13 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		borrow_request.expected_claim_at,
 		borrow_request.expected_return_at,
 		latest_return_data.created_at AS actual_return_at,
+		borrow_request.claimed_at,
 		jsonb_build_object(
 			'id', borrow_request_status.borrow_request_status_id,
 			'code', borrow_request_status.code,
 			'label', borrow_request_status.label
 		) AS status,
-		CASE 
+		CASE
 			WHEN anomaly_result.anomaly_result_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'borrowRequestId', anomaly_result.borrow_request_id,
@@ -2590,7 +2601,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 				'isFalsePositive', anomaly_result.is_false_positive
 			)
 		END AS anomaly,
-		CASE 
+		CASE
 			WHEN borrow_request_otp.borrow_request_otp_id IS NULL THEN NULL
 			ELSE jsonb_build_object(
 				'code', borrow_request_otp.code,
@@ -2606,7 +2617,7 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 	LEFT JOIN anomaly_result ON anomaly_result.borrow_request_id = borrow_request.borrow_request_id
 	LEFT JOIN borrow_request_otp ON borrow_request_otp.borrow_request_id = borrow_request.borrow_request_id
 	LEFT JOIN LATERAL (
-		SELECT jsonb_agg( 
+		SELECT jsonb_agg(
 			jsonb_build_object(
 				'id', all_return_confirmation.return_request_item_id,
 				'confirmedBy', all_return_confirmation.confirmed_by,
@@ -2727,8 +2738,8 @@ func (r *repository) getBorrowHistory(ctx context.Context, params borrowHistoryP
 		argIdx++
 	}
 
-	query += ` 
-	GROUP BY 
+	query += `
+	GROUP BY
 		person.person_id,
 		person.first_name,
 		person.middle_name,

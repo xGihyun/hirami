@@ -17,7 +17,7 @@ import z from "zod";
 import { useParams } from "@tanstack/react-router";
 import { NumberInput } from "@/components/number-input";
 import { Button } from "@/components/ui/button";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
+import { BACKEND_URL, type ApiResponse, protectedFetch } from "@/lib/api";
 import { useMutation } from "@tanstack/react-query";
 import { Failed } from "@/components/failed";
 import { FullScreenLoading } from "@/components/loading";
@@ -56,7 +56,7 @@ type ReallocateEquipmentSchema = z.infer<typeof reallocateEquipmentSchema>;
 async function reallocateEquipment(
 	value: ReallocateEquipmentSchema,
 ): Promise<ApiResponse> {
-	const response = await fetch(
+	const response = await protectedFetch(
 		`${BACKEND_URL}/equipments/${value.id}/reallocate`,
 		{
 			method: "POST",

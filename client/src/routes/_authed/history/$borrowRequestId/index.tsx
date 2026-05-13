@@ -74,9 +74,16 @@ function RouteComponent(): JSX.Element {
 
 				<div>
 					<LabelSmall>
-						Borrowed On {format(transaction.requestedAt, "h:mm a")} at{" "}
+						Requested On {format(transaction.requestedAt, "h:mm a")} at{" "}
 						{format(transaction.requestedAt, "MM/dd/yyyy")}
 					</LabelSmall>
+
+					{transaction.claimedAt ? (
+						<LabelSmall>
+							Claimed On {format(transaction.claimedAt, "h:mm a")} at{" "}
+							{format(transaction.claimedAt, "MM/dd/yyyy")}
+						</LabelSmall>
+					) : null}
 
 					<LabelSmall>
 						Expected Claim On {format(transaction.expectedClaimAt, "h:mm a")} at{" "}

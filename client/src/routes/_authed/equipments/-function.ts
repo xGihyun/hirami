@@ -1,5 +1,5 @@
 import z from "zod";
-import { type ApiResponse, BACKEND_URL } from "@/lib/api";
+import { type ApiResponse, BACKEND_URL, protectedFetch } from "@/lib/api";
 
 const borrowEquipmentItemSchema = z.object({
 	equipmentTypeId: z.string().nonempty(),
@@ -23,7 +23,7 @@ export type CreateBorrowRequest = z.infer<typeof createBorrowRequestSchema>;
 export async function createBorrowRequest(
 	value: CreateBorrowRequest,
 ): Promise<ApiResponse> {
-	const response = await fetch(`${BACKEND_URL}/borrow-requests`, {
+	const response = await protectedFetch(`${BACKEND_URL}/borrow-requests`, {
 		method: "POST",
 		body: JSON.stringify(value),
 		headers: {
