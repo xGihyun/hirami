@@ -120,6 +120,13 @@ export function ManagerHistoryList(props: Props): JSX.Element {
 									Requested on{" "}
 									{req && format(req.requestedAt, "MMMM d, yyyy - hh:mm a")}
 								</Caption>
+
+								{req?.claimedAt && (
+									<Caption className="text-muted">
+										Claimed on{" "}
+										{format(req.claimedAt, "MMMM d, yyyy - hh:mm a")}
+									</Caption>
+								)}
 								<Caption className="text-muted">
 									Will return on{" "}
 									{req &&

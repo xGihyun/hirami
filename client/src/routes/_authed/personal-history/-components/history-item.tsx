@@ -74,10 +74,18 @@ export function HistoryItem(props: Props): JSX.Element {
 					</LabelSmall>
 
 					<LabelSmall>
-						<span className="font-montserrat-bold">Borrow On:</span>{" "}
+						<span className="font-montserrat-bold">Requested On:</span>{" "}
 						{format(props.transaction.requestedAt, "h:mm a")} at{" "}
 						{format(props.transaction.requestedAt, "MM/dd/yyyy")}
 					</LabelSmall>
+
+					{props.transaction.claimedAt ? (
+						<LabelSmall>
+							<span className="font-montserrat-bold">Claimed On:</span>{" "}
+							{format(props.transaction.claimedAt, "h:mm a")} at{" "}
+							{format(props.transaction.claimedAt, "MM/dd/yyyy")}
+						</LabelSmall>
+					) : null}
 
 					<LabelSmall>
 						<span className="font-montserrat-bold">Will Return On:</span>{" "}

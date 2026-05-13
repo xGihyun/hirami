@@ -80,6 +80,14 @@ export function HistoryList(props: Props): JSX.Element {
 							{format(selectedItem.transaction.requestedAt, "MM/dd/yyyy")}
 						</Caption>
 
+						{selectedItem.transaction.claimedAt ? (
+							<Caption>
+								Claimed On{" "}
+								{format(selectedItem.transaction.claimedAt, "h:mm a")} at{" "}
+								{format(selectedItem.transaction.claimedAt, "MM/dd/yyyy")}
+							</Caption>
+						) : null}
+
 						<Caption>
 							Will Return On{" "}
 							{format(selectedItem.transaction.expectedReturnAt, "h:mm a")} at{" "}
