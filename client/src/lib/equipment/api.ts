@@ -1,3 +1,4 @@
+import { protectedFetch } from "../api";
 import { queryOptions } from "@tanstack/react-query";
 import { BACKEND_URL, Sort, type ApiResponse } from "../api";
 import {
@@ -44,7 +45,7 @@ async function getEquipments(
 		url.searchParams.append("search", params.search);
 	}
 
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -66,7 +67,7 @@ async function getEquipmentById(
 	id: string,
 ): Promise<EquipmentWithBorrower | null> {
 	const url = new URL(`${BACKEND_URL}/equipments/${id}`);
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -89,7 +90,7 @@ async function getEquipmentInventoryStatus(
 	id: string,
 ): Promise<EquipmentInventoryStatus> {
 	const url = new URL(`${BACKEND_URL}/equipments/${id}/status`);
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -109,7 +110,7 @@ export const getEquipmentInventoryStatusQuery = (id: string) =>
 
 async function getEquipmentNames(): Promise<string[]> {
 	const url = new URL(`${BACKEND_URL}/equipment-names`);
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -129,7 +130,7 @@ export const equipmentNamesQuery = () =>
 
 async function getCategories(): Promise<Category[]> {
 	const url = new URL(`${BACKEND_URL}/categories`);
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -151,7 +152,7 @@ export async function createCategory(value: {
 	backgroundColor?: string;
 	foregroundColor?: string;
 }): Promise<ApiResponse<Category>> {
-	const response = await fetch(`${BACKEND_URL}/categories`, {
+	const response = await protectedFetch(`${BACKEND_URL}/categories`, {
 		method: "POST",
 		body: JSON.stringify(value),
 		headers: {
@@ -173,7 +174,7 @@ export async function updateCategory(value: {
 	backgroundColor?: string;
 	foregroundColor?: string;
 }): Promise<ApiResponse<Category>> {
-	const response = await fetch(`${BACKEND_URL}/categories/${value.id}`, {
+	const response = await protectedFetch(`${BACKEND_URL}/categories/${value.id}`, {
 		method: "PATCH",
 		body: JSON.stringify(value),
 		headers: {
@@ -190,7 +191,7 @@ export async function updateCategory(value: {
 }
 
 export async function deleteCategory(id: string): Promise<ApiResponse> {
-	const response = await fetch(`${BACKEND_URL}/categories/${id}`, {
+	const response = await protectedFetch(`${BACKEND_URL}/categories/${id}`, {
 		method: "DELETE",
 	});
 
@@ -210,7 +211,7 @@ export async function deleteEquipment(
 	if (quantity !== undefined) {
 		url.searchParams.append("quantity", quantity.toString());
 	}
-	const response = await fetch(url, {
+	const response = await protectedFetch(url, {
 		method: "DELETE",
 	});
 
@@ -222,7 +223,7 @@ export async function deleteEquipment(
 //
 
 async function getBorrowRequests(): Promise<BorrowRequest[]> {
-	const response = await fetch(`${BACKEND_URL}/borrow-requests`, {
+	const response = await protectedFetch(`${BACKEND_URL}/borrow-requests`, {
 		method: "GET",
 	});
 
@@ -240,7 +241,7 @@ export const getBorrowRequestsQuery = queryOptions({
 });
 
 async function getBorrowRequestById(id: string): Promise<BorrowRequest> {
-	const response = await fetch(`${BACKEND_URL}/borrow-requests/${id}`, {
+	const response = await protectedFetch(`${BACKEND_URL}/borrow-requests/${id}`, {
 		method: "GET",
 	});
 
@@ -259,7 +260,7 @@ export const borrowRequestByIdQuery = (id: string) =>
 	});
 
 async function getBorrowRequestByOtp(otp: string): Promise<BorrowRequest> {
-	const response = await fetch(`${BACKEND_URL}/borrow-requests/otp/${otp}`, {
+	const response = await protectedFetch(`${BACKEND_URL}/borrow-requests/otp/${otp}`, {
 		method: "GET",
 	});
 
@@ -322,7 +323,7 @@ async function getBorrowHistory(
 		url.searchParams.append("equipmentIds", params.equipmentIds);
 	}
 
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -360,7 +361,7 @@ async function getBorrowedItems(
 		url.searchParams.append("category", params.category);
 	}
 
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -381,7 +382,7 @@ export const getBorrowedItemsQuery = (params: GetBorrowedItemParams) =>
 export async function updateBorrowRequest(
 	value: UpdateBorrowRequest,
 ): Promise<ApiResponse<UpdateBorrowResponse>> {
-	const response = await fetch(`${BACKEND_URL}/borrow-requests/${value.id}`, {
+	const response = await protectedFetch(`${BACKEND_URL}/borrow-requests/${value.id}`, {
 		method: "PATCH",
 		body: JSON.stringify(value),
 		headers: {
@@ -402,7 +403,7 @@ export async function updateBorrowRequest(
 export async function reviewBorrowRequest(
 	value: ReviewBorrowRequest,
 ): Promise<ApiResponse<ReviewBorrowResponse>> {
-	const response = await fetch(`${BACKEND_URL}/review-borrow-requests`, {
+	const response = await protectedFetch(`${BACKEND_URL}/review-borrow-requests`, {
 		method: "PATCH",
 		body: JSON.stringify(value),
 		headers: {
@@ -443,7 +444,7 @@ async function getReturnRequests(
 		url.searchParams.append("category", params.category);
 	}
 
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -463,7 +464,7 @@ export const returnRequestsQuery = (params: GetReturnRequestParams) =>
 
 async function getReturnRequestById(id: string): Promise<ReturnRequest> {
 	const url = new URL(`${BACKEND_URL}/return-requests/${id}`);
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -483,7 +484,7 @@ export const returnRequestByIdQuery = (id: string) =>
 
 async function getReturnRequestByOtp(otp: string): Promise<ReturnRequest> {
 	const url = new URL(`${BACKEND_URL}/return-requests/otp/${otp}`);
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -510,7 +511,7 @@ type ConfirmReturnRequest = {
 export async function confirmReturnRequest(
 	value: ConfirmReturnRequest,
 ): Promise<ApiResponse> {
-	const response = await fetch(
+	const response = await protectedFetch(
 		`${BACKEND_URL}/return-requests/${value.returnRequestId}`,
 		{
 			method: "PATCH",
@@ -540,7 +541,7 @@ export async function registerEquipment(
 		formData.append("categoryIds", value.categoryIds.join(","));
 	}
 
-	const response = await fetch(`${BACKEND_URL}/equipments`, {
+	const response = await protectedFetch(`${BACKEND_URL}/equipments`, {
 		method: "POST",
 		body: formData,
 	});

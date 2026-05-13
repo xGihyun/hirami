@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
+import { BACKEND_URL, type ApiResponse, protectedFetch } from "@/lib/api";
 import type { User } from "@/lib/user";
 import { useMutation } from "@tanstack/react-query";
 import { setCookie } from "@/lib/cookie";
@@ -29,7 +29,7 @@ import { PasswordInput } from "@/components/password-input";
 import { ComponentLoading, FullScreenLoading } from "@/components/loading";
 import { HiramiLogoDark } from "@/lib/assets/logo-dark";
 import { Failed } from "@/components/failed";
-import { ErrInvalidCredentials } from "@/lib/user/error";
+import { ErrInvalidCredentials, ErrAccountNotVerified } from "@/lib/user/error";
 
 const formSchema = z.object({
 	email: z.string().nonempty().email({ error: "Invalid email format." }),
@@ -45,7 +45,7 @@ async function login(
 	value: z.infer<typeof formSchema>,
 ): Promise<ApiResponse<LoginResponse>> {
 	console.log(BACKEND_URL);
-	const response = await fetch(`${BACKEND_URL}/login`, {
+	const response = await protectedFetch(`${BACKEND_URL}/login`, {
 		method: "POST",
 		body: JSON.stringify(value),
 		headers: { "Content-Type": "application/json" },
@@ -53,8 +53,12 @@ async function login(
 
 	const result: ApiResponse<LoginResponse> = await response.json();
 	if (response.status === 401) {
-		throw new ErrInvalidCredentials(
-			"Incorrect email or password.",
+		throw new ErrInvalidCredentials("Incorrect email or password.");
+	}
+
+	if (response.status === 403) {
+		throw new ErrAccountNotVerified(
+			result.message || "Your account is not verified. Please check your email.",
 		);
 	}
 
@@ -79,7 +83,11 @@ export function LoginForm(): JSX.Element {
 	const mutation = useMutation({
 		mutationFn: login,
 		onSuccess: async (result) => {
-			setCookie("session", result.data.token);
+			setCookie("session", result.data.token, {
+				path: "/",
+				maxAge: 7 * 24 * 60 * 60,
+				sameSite: "Strict",
+			});
 			await navigate({ to: "/equipments" });
 		},
 	});
@@ -88,7 +96,11 @@ export function LoginForm(): JSX.Element {
 		mutation.mutate(value);
 	}
 
-	if (mutation.isError && !(mutation.error instanceof ErrInvalidCredentials)) {
+	if (
+		mutation.isError &&
+		!(mutation.error instanceof ErrInvalidCredentials) &&
+		!(mutation.error instanceof ErrAccountNotVerified)
+	) {
 		return (
 			<Failed
 				header="Login failed."
@@ -176,8 +188,31 @@ export function LoginForm(): JSX.Element {
 								data-slot="form-message"
 								className="text-destructive font-montserrat-semibold text-xs leading-4 text-center"
 							>
-                                {mutation.error.message}
+								{mutation.error.message}
 							</p>
+						) : null}
+
+						{mutation.error instanceof ErrAccountNotVerified ? (
+							<div className="text-center space-y-1">
+								<p
+									data-slot="form-message"
+									className="text-destructive font-montserrat-semibold text-xs leading-4"
+								>
+									{mutation.error.message}
+								</p>
+								<button
+									type="button"
+									className="text-xs text-primary underline"
+									onClick={() =>
+										navigate({
+											to: "/check-email",
+											search: { email: form.getValues("email") },
+										})
+									}
+								>
+									Resend verification email
+								</button>
+							</div>
 						) : null}
 
 						<Button

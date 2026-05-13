@@ -4,6 +4,7 @@ import {
 	BACKEND_URL,
 	IMAGE_FORMATS,
 	IMAGE_SIZE_LIMIT,
+	protectedFetch,
 	toImageUrl,
 	type ApiResponse,
 } from "@/lib/api";
@@ -81,7 +82,7 @@ async function editEquipment(value: EditEquipmentSchema): Promise<ApiResponse> {
 	}
 	if (value.image) formData.append("image", value.image);
 
-	const response = await fetch(`${BACKEND_URL}/equipments/${value.id}`, {
+	const response = await protectedFetch(`${BACKEND_URL}/equipments/${value.id}`, {
 		method: "PATCH",
 		body: formData,
 	});

@@ -21,10 +21,13 @@ type Repository interface {
 	createPasswordResetToken(ctx context.Context, email, tokenHash string, expiresAt time.Time) error
 	resetPasswordWithToken(ctx context.Context, tokenHash, newPassword string) error
 
+	createEmailVerificationToken(ctx context.Context, userID, tokenHash string, expiresAt time.Time) error
+	verifyEmail(ctx context.Context, tokenHash string) error
+
 	GetByEmail(ctx context.Context, email string) (user, error)
 	invalidateSession(ctx context.Context, token string) error
 	createSession(ctx context.Context, token, userID string) (session, error)
-	validateSessionToken(ctx context.Context, token string) (sessionValidationResponse, error)
+	ValidateSessionToken(ctx context.Context, token string) (sessionValidationResponse, error)
 }
 
 type repository struct {
@@ -95,6 +98,7 @@ type signInResponse struct {
 }
 
 var ErrInvalidPassword = errors.New("invalid password")
+var ErrAccountInactive = errors.New("account is inactive")
 
 func (r *repository) login(ctx context.Context, arg loginRequest) (signInResponse, error) {
 	query := "SELECT password_hash, is_active FROM person WHERE email = ($1)"
@@ -108,7 +112,7 @@ func (r *repository) login(ctx context.Context, arg loginRequest) (signInRespons
 	}
 
 	if !isActive {
-		return signInResponse{}, ErrInvalidPassword
+		return signInResponse{}, ErrAccountInactive
 	}
 
 	isMatch := checkPasswordHash(arg.Password, passwordHash)
@@ -419,6 +423,54 @@ func (r *repository) createPasswordResetToken(ctx context.Context, email, tokenH
 	`
 
 	if _, err := r.querier.Exec(ctx, query, personID, tokenHash, expiresAt); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *repository) createEmailVerificationToken(ctx context.Context, userID, tokenHash string, expiresAt time.Time) error {
+	query := `
+		INSERT INTO email_verification_token (person_id, token_hash, expires_at)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (person_id)
+		DO UPDATE SET 
+			token_hash = EXCLUDED.token_hash, 
+			expires_at = EXCLUDED.expires_at,
+			created_at = NOW()
+	`
+
+	if _, err := r.querier.Exec(ctx, query, userID, tokenHash, expiresAt); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *repository) verifyEmail(ctx context.Context, tokenHash string) error {
+	var personID string
+
+	query := `
+		SELECT person_id FROM email_verification_token
+		WHERE token_hash = $1 AND expires_at > NOW()
+	`
+
+	if err := r.querier.QueryRow(ctx, query, tokenHash).Scan(&personID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("invalid or expired token")
+		}
+		return err
+	}
+
+	// Update is_active
+	query = `UPDATE person SET is_active = TRUE WHERE person_id = $1`
+	if _, err := r.querier.Exec(ctx, query, personID); err != nil {
+		return err
+	}
+
+	// Delete the token
+	query = `DELETE FROM email_verification_token WHERE person_id = $1`
+	if _, err := r.querier.Exec(ctx, query, personID); err != nil {
 		return err
 	}
 

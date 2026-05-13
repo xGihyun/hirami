@@ -1,3 +1,4 @@
+import { protectedFetch } from "../api";
 import { queryOptions } from "@tanstack/react-query";
 import {
 	BACKEND_URL,
@@ -41,7 +42,7 @@ async function getUsers(params?: GetUserParams): Promise<User[]> {
 		url.searchParams.append("search", params.search);
 	}
 
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -61,7 +62,7 @@ export const usersQuery = (params?: GetUserParams) =>
 
 async function getUserById(id: string): Promise<User> {
 	const url = new URL(`${BACKEND_URL}/users/${id}`);
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 
@@ -115,7 +116,7 @@ export async function editUser(
 	if (value.role) formData.append("role", value.role);
 	formData.append("isActive", value.isActive.toString());
 
-	const response = await fetch(`${BACKEND_URL}/users/${value.userId}`, {
+	const response = await protectedFetch(`${BACKEND_URL}/users/${value.userId}`, {
 		method: "PATCH",
 		body: formData,
 	});
@@ -132,7 +133,7 @@ export async function checkEmailExists(email: string): Promise<boolean> {
 	const url = new URL(`${BACKEND_URL}/users/exists`);
 	url.searchParams.append("email", email);
 
-	const response = await fetch(url.toString(), {
+	const response = await protectedFetch(url.toString(), {
 		method: "GET",
 	});
 

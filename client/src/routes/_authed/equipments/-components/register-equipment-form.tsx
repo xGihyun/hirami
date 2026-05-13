@@ -61,7 +61,7 @@ async function register(
 	formData.append("quantity", value.quantity.toString());
 	if (value.image) formData.append("image", value.image);
 
-	const response = await fetch(`${BACKEND_URL}/equipments`, {
+	const response = await protectedFetch(`${BACKEND_URL}/equipments`, {
 		method: "POST",
 		body: formData,
 	});
@@ -295,5 +295,8 @@ export function RegisterEquipmentForm(
 				</Button>
 			</form>
 		</Form>
+	);
+}
+>
 	);
 }

@@ -63,7 +63,7 @@ type sessionValidationResponse struct {
 	Session session `json:"session"`
 }
 
-func (r *repository) validateSessionToken(
+func (r *repository) ValidateSessionToken(
 	ctx context.Context,
 	token string,
 ) (sessionValidationResponse, error) {
@@ -86,10 +86,8 @@ func (r *repository) validateSessionToken(
 
 	now := time.Now()
 	if now.After(session.ExpiresAt) || now.Equal(session.ExpiresAt) {
-		deleteQuery := "DELETE FROM session WHERE session_id = ($1)"
-		if _, err := r.querier.Exec(ctx, deleteQuery, sessionID); err != nil {
-			return sessionValidationResponse{}, err
-		}
+		r.querier.Exec(ctx, "DELETE FROM session WHERE session_id = $1", sessionID)
+		return sessionValidationResponse{}, errors.New("session expired")
 	}
 
 	// If session is close to expiration (3 days), extend it
@@ -98,7 +96,7 @@ func (r *repository) validateSessionToken(
 		session.ExpiresAt = now.Add(7 * 24 * time.Hour)
 
 		updateQuery := `UPDATE session SET expires_at = ($1) WHERE session_id = ($2)`
-		if _, err := r.querier.Exec(ctx, updateQuery, session.ExpiresAt); err != nil {
+		if _, err := r.querier.Exec(ctx, updateQuery, session.ExpiresAt, sessionID); err != nil {
 			return sessionValidationResponse{}, err
 		}
 	}

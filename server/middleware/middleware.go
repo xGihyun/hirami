@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/valkey-io/valkey-go"
 	"github.com/xGihyun/hirami/user"
 )
 
@@ -18,18 +19,20 @@ type UserClaims struct {
 
 const UserContextKey = "user"
 
-type repository struct {
-	querier *pgxpool.Pool
+type Middleware struct {
+	userRepo     user.Repository
+	valkeyClient valkey.Client
 }
 
-func NewRepository(querier *pgxpool.Pool) *repository {
-	return &repository{
-		querier: querier,
+func NewMiddleware(repo user.Repository, valkeyClient valkey.Client) *Middleware {
+	return &Middleware{
+		userRepo:     repo,
+		valkeyClient: valkeyClient,
 	}
 }
 
 // RequireRole returns a middleware that checks if the user has the required role
-func RequireRole(allowedRoles ...user.Role) func(http.Handler) http.Handler {
+func (m *Middleware) RequireRole(allowedRoles ...user.Role) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims, ok := r.Context().Value(UserContextKey).(*UserClaims)
@@ -51,8 +54,7 @@ func RequireRole(allowedRoles ...user.Role) func(http.Handler) http.Handler {
 }
 
 // AuthMiddleware extracts and validates the user from the request
-// This should parse your JWT token or session and extract user info
-func AuthMiddleware(next http.Handler) http.Handler {
+func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Extract token from Authorization header
 		authHeader := r.Header.Get("Authorization")
@@ -69,12 +71,27 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		token := parts[1]
 
-		// TODO: Validate token and extract claims
-		// This depends on your authentication method (JWT, sessions, etc.)
-		claims, err := validateToken(token)
+		result, err := m.userRepo.ValidateSessionToken(r.Context(), token)
 		if err != nil {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			http.Error(w, "Invalid or expired session", http.StatusUnauthorized)
 			return
+		}
+
+		// Convert user.RoleDetail to user.Role
+		var role user.Role
+		switch result.User.Role.Code {
+		case "borrower":
+			role = user.Borrower
+		case "equipment_manager":
+			role = user.EquipmentManager
+		default:
+			http.Error(w, "Unknown user role", http.StatusInternalServerError)
+			return
+		}
+
+		claims := &UserClaims{
+			UserID: result.User.UserID,
+			Role:   role,
 		}
 
 		// Add claims to request context
@@ -83,11 +100,38 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// validateToken is a placeholder - implement based on your auth method
-func validateToken(_ string) (*UserClaims, error) {
-	// Example: parse JWT, validate signature, extract claims
-	// Return &UserClaims{UserID: "...", Role: "..."}, nil
-	return nil, errors.New("not implemented")
+func (m *Middleware) RateLimit(limit int, window time.Duration) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Get IP address
+			ip := r.RemoteAddr
+			if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+				ip = strings.Split(xff, ",")[0]
+			}
+
+			key := fmt.Sprintf("ratelimit:%s:%s", r.URL.Path, ip)
+			ctx := r.Context()
+
+			// Use Valkey to increment and check limit
+			// We use a simple fixed-window rate limiter
+			val, err := m.valkeyClient.Do(ctx, m.valkeyClient.B().Incr().Key(key).Build()).AsInt64()
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if val == 1 {
+				m.valkeyClient.Do(ctx, m.valkeyClient.B().Pexpire().Key(key).Milliseconds(window.Milliseconds()).Build())
+			}
+
+			if val > int64(limit) {
+				http.Error(w, "Rate limit exceeded", http.StatusTooManyRequests)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 // Example middleware chain helper

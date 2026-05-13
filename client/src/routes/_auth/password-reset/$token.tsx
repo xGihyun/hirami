@@ -1,4 +1,4 @@
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
+import { BACKEND_URL, type ApiResponse, protectedFetch } from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -64,7 +64,7 @@ const formSchema = z
 async function resetPassword(
 	value: z.infer<typeof formSchema>,
 ): Promise<ApiResponse> {
-	const response = await fetch(`${BACKEND_URL}/password-reset`, {
+	const response = await protectedFetch(`${BACKEND_URL}/password-reset`, {
 		method: "POST",
 		body: JSON.stringify(value),
 		headers: { "Content-Type": "application/json" },

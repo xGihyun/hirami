@@ -13,7 +13,7 @@ import z from "zod";
 import { useParams } from "@tanstack/react-router";
 import { NumberInput } from "@/components/number-input";
 import { Button } from "@/components/ui/button";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
+import { BACKEND_URL, protectedFetch, type ApiResponse } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Failed } from "@/components/failed";
 import { FullScreenLoading } from "@/components/loading";
@@ -39,7 +39,7 @@ type IncreaseQuantitySchema = z.infer<typeof increaseQuantitySchema>;
 async function increaseQuantity(
 	value: IncreaseQuantitySchema,
 ): Promise<ApiResponse> {
-	const response = await fetch(
+	const response = await protectedFetch(
 		`${BACKEND_URL}/equipments/${value.id}/increase`,
 		{
 			method: "POST",

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -29,18 +30,23 @@ func NewServer(repo Repository, svc *gmail.Service) *Server {
 	}
 }
 
-func (s *Server) SetupRoutes(mux *http.ServeMux) {
-	mux.Handle("POST /register", api.Handler(s.Register))
-	mux.Handle("POST /login", api.Handler(s.Login))
-	mux.Handle("POST /logout", api.Handler(s.Logout))
-	mux.Handle("GET /users", api.Handler(s.getAll))
-	mux.Handle("GET /users/exists", api.Handler(s.Exists))
-	mux.Handle("GET /users/{id}", api.Handler(s.Get))
-	mux.Handle("PATCH /users/{id}", api.Handler(s.Update))
-
-	mux.Handle("POST /password-reset-request", api.Handler(s.RequestPasswordReset))
-	mux.Handle("POST /password-reset", api.Handler(s.ResetPassword))
+func (s *Server) SetupRoutes(mux *http.ServeMux, auth func(http.Handler) http.Handler, rateLimit func(int, time.Duration) func(http.Handler) http.Handler) {
+	// Public routes with rate limiting
+	mux.Handle("POST /register", rateLimit(5, time.Hour)(api.Handler(s.Register)))
+	mux.Handle("POST /verify-email", rateLimit(10, time.Minute)(api.Handler(s.VerifyEmail)))
+	mux.Handle("POST /resend-verification", rateLimit(3, time.Hour)(api.Handler(s.ResendVerification)))
+	mux.Handle("POST /login", rateLimit(10, time.Minute)(api.Handler(s.Login)))
+	mux.Handle("POST /password-reset-request", rateLimit(3, time.Hour)(api.Handler(s.RequestPasswordReset)))
+	mux.Handle("POST /password-reset", rateLimit(5, time.Hour)(api.Handler(s.ResetPassword)))
+	
 	mux.HandleFunc("GET /app-redirect", s.AppRedirect)
+
+	// Protected routes
+	mux.Handle("POST /logout", auth(api.Handler(s.Logout)))
+	mux.Handle("GET /users", auth(api.Handler(s.getAll)))
+	mux.Handle("GET /users/exists", api.Handler(s.Exists)) // This could be public for UI checks
+	mux.Handle("GET /users/{id}", auth(api.Handler(s.Get)))
+	mux.Handle("PATCH /users/{id}", auth(api.Handler(s.Update)))
 
 	mux.Handle("GET /sessions", api.Handler(s.GetSession))
 }
@@ -140,11 +146,12 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 		middleName = &middleNameValue
 	}
 
-	var role *Role
+	roleVal := Borrower
 	if roleStr := r.FormValue("role"); roleStr != "" {
 		roleStr = strings.TrimSpace(strings.ToLower(roleStr))
 
-		roleVal, ok := stringToRole[roleStr]
+		var ok bool
+		roleVal, ok = stringToRole[roleStr]
 		if !ok {
 			return api.Response{
 				Error:   fmt.Errorf("sign up: invalid role %s", roleStr),
@@ -152,8 +159,6 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 				Message: "Invalid role. Must be 'borrower' or 'equipment_manager'.",
 			}
 		}
-
-		role = &roleVal
 	}
 
 	data := RegisterRequest{
@@ -163,10 +168,10 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 		MiddleName: middleName,
 		LastName:   strings.TrimSpace(r.FormValue("lastName")),
 		AvatarURL:  avatarURL,
-		Role:       role,
+		Role:       &roleVal,
 	}
 
-	if data.Email == "" || data.Password == "" || data.FirstName == "" || data.LastName == "" || data.Role == nil {
+	if data.Email == "" || data.Password == "" || data.FirstName == "" || data.LastName == "" {
 		return api.Response{
 			Error:   fmt.Errorf("sign up: missing mandatory fields"),
 			Code:    http.StatusBadRequest,
@@ -190,6 +195,34 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 		}
 	}
 
+	var (
+		hasUpper   bool
+		hasLower   bool
+		hasNumber  bool
+		hasSpecial bool
+	)
+
+	for _, char := range data.Password {
+		switch {
+		case 'a' <= char && char <= 'z':
+			hasLower = true
+		case 'A' <= char && char <= 'Z':
+			hasUpper = true
+		case '0' <= char && char <= '9':
+			hasNumber = true
+		case strings.ContainsRune("!@#$%^&*()-_=+[]{}|;:,.<>/?", char):
+			hasSpecial = true
+		}
+	}
+
+	if !hasUpper || !hasLower || !hasNumber || !hasSpecial {
+		return api.Response{
+			Error:   fmt.Errorf("sign up: password too weak"),
+			Code:    http.StatusBadRequest,
+			Message: "Password must include uppercase, lowercase, number, and special character.",
+		}
+	}
+
 	userID, err := s.repository.Register(ctx, data)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
@@ -207,11 +240,233 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 		}
 	}
 
+	// Email Verification
+	rawToken := generateResetToken(32)
+	tokenHash := hashToken(rawToken)
+	expiry := time.Now().Add(24 * time.Hour)
+
+	if err := s.repository.createEmailVerificationToken(ctx, userID, tokenHash, expiry); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("sign up: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to create verification token.",
+		}
+	}
+
+	fullName := html.EscapeString(fmt.Sprintf("%s %s", data.FirstName, data.LastName))
+	webClientURL := os.Getenv("WEB_CLIENT_URL")
+	if webClientURL == "" {
+		webClientURL = "http://localhost:3000"
+	}
+
+	verifyLink := fmt.Sprintf("%s/verify-email/%s", webClientURL, rawToken)
+	subject := "Verify Your Hirami Account"
+	bodyHTML := fmt.Sprintf(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Verify Your Email</title>
+</head>
+<body style="margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#f9fafb;">
+  <table width="100%%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="380" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;padding:40px 32px;max-width:380px;border:1px solid #e5e7eb;">
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <h1 style="margin:0;font-size:26px;font-weight:700;color:#111827;line-height:1.3;">
+                Welcome to Hirami!
+              </h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-bottom:28px;color:#374151;font-size:14px;line-height:1.6;text-align:justify;">
+              <p style="margin:0 0 8px 0;">
+                Hello <strong>%s</strong>,
+              </p>
+              <p style="margin:0;">
+                Thank you for registering. To complete your sign-up and verify your email address, please click the button below.
+                This link will expire in 24 hours.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Verify Email Address</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-top:32px;font-size:14px;color:#374151;line-height:1.6;">
+              Sincerely,<br/>
+              The Hirami Team
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+	`, fullName, verifyLink)
+
+	if err := api.SendGmail(s.gmailService, data.Email, subject, bodyHTML); err != nil {
+		// Log error but don't fail registration? 
+		// Actually, if verification fails to send, user can't login.
+		// So we should probably return an error or at least a warning.
+		return api.Response{
+			Error:   fmt.Errorf("sign up email: %w", err),
+			Code:    http.StatusInternalServerError,
+			Message: "Account created but failed to send verification email. Please contact support.",
+		}
+	}
+
 	return api.Response{
 		Code:    http.StatusCreated,
-		Message: "Successfully signed up.",
+		Message: "Successfully signed up. Please check your email to verify your account.",
 		Data:    userID,
 	}
+}
+
+func (s *Server) VerifyEmail(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	type verifyBody struct {
+		Token string `json:"token"`
+	}
+
+	var body verifyBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Token == "" {
+		return api.Response{
+			Error:   fmt.Errorf("verify email: invalid body"),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request.",
+		}
+	}
+
+	hashedToken := hashToken(body.Token)
+
+	if err := s.repository.verifyEmail(ctx, hashedToken); err != nil {
+		return api.Response{
+			Error:   fmt.Errorf("verify email: %w", err),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid or expired verification token.",
+		}
+	}
+
+	return api.Response{
+		Code:    http.StatusOK,
+		Message: "Email has been successfully verified. You can now log in.",
+	}
+}
+
+func (s *Server) ResendVerification(w http.ResponseWriter, r *http.Request) api.Response {
+	ctx := r.Context()
+
+	type requestBody struct {
+		Email string `json:"email"`
+	}
+
+	var data requestBody
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil || strings.TrimSpace(data.Email) == "" {
+		return api.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request.",
+		}
+	}
+
+	// Always return the same response to avoid revealing account existence
+	successResp := api.Response{
+		Code:    http.StatusOK,
+		Message: "If your email is registered and unverified, a new verification link has been sent.",
+	}
+
+	slog.Info("resend verification", "email", data.Email)
+
+	user, err := s.repository.GetByEmail(ctx, strings.TrimSpace(data.Email))
+	if err != nil {
+		slog.Info("resend verification: user not found", "email", data.Email, "err", err)
+		return successResp
+	}
+	if user.IsActive {
+		slog.Info("resend verification: user already active", "email", data.Email)
+		return successResp
+	}
+
+	slog.Info("resend verification: sending email", "email", data.Email, "userId", user.UserID)
+
+	rawToken := generateResetToken(32)
+	tokenHash := hashToken(rawToken)
+	expiry := time.Now().Add(24 * time.Hour)
+
+	if err := s.repository.createEmailVerificationToken(ctx, user.UserID, tokenHash, expiry); err != nil {
+		slog.Error("resend verification: failed to create token", "err", err)
+		return successResp
+	}
+
+	webClientURL := os.Getenv("WEB_CLIENT_URL")
+	if webClientURL == "" {
+		webClientURL = "http://localhost:3000"
+	}
+
+	fullName := html.EscapeString(fmt.Sprintf("%s %s", user.FirstName, user.LastName))
+	verifyLink := fmt.Sprintf("%s/verify-email/%s", webClientURL, rawToken)
+	subject := "Verify Your Hirami Account"
+	bodyHTML := fmt.Sprintf(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Verify Your Email</title>
+</head>
+<body style="margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background-color:#f9fafb;">
+  <table width="100%%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="380" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;padding:40px 32px;max-width:380px;border:1px solid #e5e7eb;">
+          <tr>
+            <td align="center" style="padding-bottom:24px;">
+              <h1 style="margin:0;font-size:26px;font-weight:700;color:#111827;line-height:1.3;">
+                Verify Your Email
+              </h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-bottom:28px;color:#374151;font-size:14px;line-height:1.6;text-align:justify;">
+              <p style="margin:0 0 8px 0;">
+                Hello <strong>%s</strong>,
+              </p>
+              <p style="margin:0;">
+                Here is your new email verification link for your Hirami account.
+                Click the button below to verify your email address.
+                This link will expire in 24 hours.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center">
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Verify Email Address</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-top:32px;font-size:14px;color:#374151;line-height:1.6;">
+              Sincerely,<br/>
+              The Hirami Team
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+	`, fullName, verifyLink)
+
+	api.SendGmail(s.gmailService, data.Email, subject, bodyHTML)
+
+	return successResp
 }
 
 func (s *Server) Login(w http.ResponseWriter, r *http.Request) api.Response {
@@ -243,6 +498,14 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) api.Response {
 				Error:   fmt.Errorf("sign in: %w", err),
 				Code:    http.StatusUnauthorized,
 				Message: "Invalid credentials.",
+			}
+		}
+
+		if errors.Is(err, ErrAccountInactive) {
+			return api.Response{
+				Error:   fmt.Errorf("sign in: %w", err),
+				Code:    http.StatusForbidden,
+				Message: "Your account is not verified or has been deactivated. Please check your email for the verification link.",
 			}
 		}
 
@@ -327,7 +590,7 @@ func (s *Server) GetSession(w http.ResponseWriter, r *http.Request) api.Response
 
 	token := r.URL.Query().Get("token")
 
-	result, err := s.repository.validateSessionToken(ctx, token)
+	result, err := s.repository.ValidateSessionToken(ctx, token)
 	if err != nil {
 		return api.Response{
 			Error:   fmt.Errorf("get session: %w", err),

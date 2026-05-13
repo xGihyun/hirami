@@ -1,5 +1,5 @@
 import type { User } from ".";
-import { BACKEND_URL, type ApiResponse } from "../api";
+import { BACKEND_URL, protectedFetch, type ApiResponse } from "../api";
 import type { RegisterUser } from "./model";
 import { ErrExistingAccount } from "./error";
 
@@ -24,7 +24,7 @@ export async function getAuthSession(
 	};
 
 	try {
-		const response = await fetch(`${BACKEND_URL}/sessions?token=${token}`);
+		const response = await protectedFetch(`${BACKEND_URL}/sessions?token=${token}`);
 
 		result = await response.json();
 
@@ -45,7 +45,7 @@ export async function registerUser(value: RegisterUser): Promise<ApiResponse> {
 	if (value.avatar) formData.append("avatar", value.avatar);
 	formData.append("role", value.role);
 
-	const response = await fetch(`${BACKEND_URL}/register`, {
+	const response = await protectedFetch(`${BACKEND_URL}/register`, {
 		method: "POST",
 		body: formData,
 	});

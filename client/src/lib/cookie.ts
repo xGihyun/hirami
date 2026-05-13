@@ -9,7 +9,13 @@ export function getCookie(key: string): string | undefined {
 	return match ? decodeURIComponent(match[1]) : undefined;
 }
 
-type CookieOptions = { path?: string; expires?: Date; secure?: boolean };
+type CookieOptions = {
+	path?: string;
+	expires?: Date;
+	secure?: boolean;
+	sameSite?: "Strict" | "Lax" | "None";
+	maxAge?: number;
+};
 
 export function setCookie(
 	key: string,
@@ -26,12 +32,20 @@ export function setCookie(
 		cookieString += `; expires=${options.expires.toUTCString()}`;
 	}
 
+	if (options.maxAge !== undefined) {
+		cookieString += `; max-age=${options.maxAge}`;
+	}
+
 	if (options.path) {
 		cookieString += `; path=${options.path}`;
 	}
 
 	if (options.secure) {
-		cookieString += `; secure`;
+		cookieString += `; Secure`;
+	}
+
+	if (options.sameSite) {
+		cookieString += `; SameSite=${options.sameSite}`;
 	}
 
 	document.cookie = cookieString;

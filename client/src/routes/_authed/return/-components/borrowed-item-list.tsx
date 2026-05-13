@@ -33,7 +33,7 @@ import { FullScreenLoading } from "@/components/loading.tsx";
 import { Success } from "@/components/success.tsx";
 import { Failed } from "@/components/failed.tsx";
 import z from "zod";
-import { BACKEND_URL, type ApiResponse } from "@/lib/api";
+import { BACKEND_URL, protectedFetch, type ApiResponse } from "@/lib/api";
 
 const returnEquipmentItemSchema = z.object({
 	borrowRequestItemId: z.string().nonempty(),
@@ -49,7 +49,7 @@ type ReturnEquipmentSchema = z.infer<typeof formSchema>;
 async function returnEquipments(
 	value: ReturnEquipmentSchema,
 ): Promise<ApiResponse> {
-	const response = await fetch(`${BACKEND_URL}/return-requests`, {
+	const response = await protectedFetch(`${BACKEND_URL}/return-requests`, {
 		method: "POST",
 		body: JSON.stringify(value),
 		headers: {
