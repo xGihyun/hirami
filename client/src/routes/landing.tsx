@@ -47,7 +47,7 @@ function LandingPage(): JSX.Element {
 
 					<div className="flex flex-wrap gap-4">
 						<Button size="lg" className="rounded-full px-8 h-14" asChild>
-							<a href="/hirami.apk" download>
+							<a href="https://drive.google.com/drive/folders/1JP0CuunnAjMe7jTQ3_rSmxEoo2w8X1sl?usp=sharing" target="_blank" rel="noreferrer">
 								<IconAndroid className="size-5 mr-2" />
 								DOWNLOAD APK
 							</a>
