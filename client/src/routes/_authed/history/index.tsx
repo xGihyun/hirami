@@ -72,12 +72,12 @@ function RouteComponent() {
 		<div className="relative space-y-4 min-w-0 ">
 			<header className="flex flex-col w-full justify-between gap-4">
 				<div className="flex justify-between items-center w-full">
-					<H2 className="text-center md:hidden block flex-1 pl-12">History</H2>
+					<H2 className="text-center md:hidden block flex-1 md:pl-12">History</H2>
 					<H1 className="text-start md:block hidden">History</H1>
 					<Button
 						variant="outline"
 						size="sm"
-						className="gap-2"
+						className="gap-2 hidden md:flex"
 						onClick={() => {
 							const url = new URL(`${BACKEND_URL}/borrow-history/pdf`);
 							if (search.category)
