@@ -66,7 +66,7 @@ function LandingPage(): JSX.Element {
 					</div>
 
 					<div className="pt-8 text-muted-foreground text-sm space-y-1">
-						<p>App Version 1.2 • Target SDK: 35 (Android 15)</p>
+						<p>App Version 1.0 • Target SDK: 35 (Android 15)</p>
 						<p>Minimum SDK: 21 (Android 5.0)</p>
 						<p>Last Updated: May 2026</p>
 					</div>
