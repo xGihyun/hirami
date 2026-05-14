@@ -893,21 +893,17 @@ func (s *Server) AppRedirect(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	redirectType := r.URL.Query().Get("type")
 
+	mobileClientURL := os.Getenv("MOBILE_CLIENT_URL")
+	if mobileClientURL == "" {
+		mobileClientURL = "hirami://password-reset"
+	}
+	scheme := strings.SplitN(mobileClientURL, "://", 2)[0]
+
 	var deepLink string
 	if redirectType == "verify-email" {
-		mobileClientURL := os.Getenv("MOBILE_CLIENT_URL")
-		if mobileClientURL == "" {
-			mobileClientURL = "hirami://verify-email"
-		} else {
-			mobileClientURL = strings.TrimSuffix(mobileClientURL, "/password-reset") + "/verify-email"
-		}
-		deepLink = fmt.Sprintf("%s/%s", mobileClientURL, token)
+		deepLink = fmt.Sprintf("%s://verify-email/%s", scheme, token)
 	} else {
-		mobileClientURL := os.Getenv("MOBILE_CLIENT_URL")
-		if mobileClientURL == "" {
-			mobileClientURL = "hirami://password-reset"
-		}
-		deepLink = fmt.Sprintf("%s/%s", mobileClientURL, token)
+		deepLink = fmt.Sprintf("%s://password-reset/%s", scheme, token)
 	}
 
 	w.Header().Set("Content-Type", "text/html")

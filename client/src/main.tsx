@@ -9,7 +9,7 @@ import "./styles.css";
 import reportWebVitals from "./reportWebVitals.ts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./auth.tsx";
-import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
+import { onOpenUrl, getCurrent } from "@tauri-apps/plugin-deep-link";
 
 import "@/lib/zod.ts";
 import { TooltipProvider } from "./components/ui/tooltip.tsx";
@@ -72,15 +72,13 @@ function handleDeepLink(url: string): void {
 	}
 }
 
-// const startUrls = await getCurrent();
-// console.log("Initial deep link check:", startUrls);
-// if (startUrls && startUrls.length > 0) {
-// handleDeepLink(startUrls[0]);
-// }
-
 (async () => {
+	const startUrls = await getCurrent();
+	if (startUrls && startUrls.length > 0) {
+		handleDeepLink(startUrls[0]);
+	}
+
 	await onOpenUrl((urls) => {
-		console.log("onOpenUrl triggered with:", urls);
 		if (urls && urls.length > 0) {
 			handleDeepLink(urls[0]);
 		}
