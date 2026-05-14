@@ -3,4 +3,7 @@
     <style name="Theme.app" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
     </style>
+    <style name="Theme.app.Starting" parent="Theme.app">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
 </resources>

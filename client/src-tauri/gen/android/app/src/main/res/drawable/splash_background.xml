@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape>
+            <gradient
+                android:angle="270"
+                android:startColor="@color/splash_secondary"
+                android:endColor="@color/splash_primary" />
+        </shape>
+    </item>
+    <item
+        android:gravity="center"
+        android:width="260dp"
+        android:height="203dp"
+        android:drawable="@drawable/ic_splash_logo" />
+</layer-list>

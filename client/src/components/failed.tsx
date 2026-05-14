@@ -79,7 +79,7 @@ export function Failed(props: Props): JSX.Element {
 						<Button onClick={props.retry}>Try Again</Button>
 
 						{props.backMessage ? (
-							<Button variant="ghost" asChild>
+							<Button variant="ghost" onClick={props.fn} asChild>
 								<Link to={props.backLink}>{props.backMessage}</Link>
 							</Button>
 						) : null}
