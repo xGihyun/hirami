@@ -9,7 +9,7 @@ import "./styles.css";
 import reportWebVitals from "./reportWebVitals.ts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "./auth.tsx";
-import { onOpenUrl } from "@tauri-apps/plugin-deep-link";
+import { onOpenUrl, getCurrent } from "@tauri-apps/plugin-deep-link";
 
 import "@/lib/zod.ts";
 import { TooltipProvider } from "./components/ui/tooltip.tsx";
@@ -56,14 +56,32 @@ if (rootElement && !rootElement.innerHTML) {
 function handleDeepLink(url: string): void {
 	console.log("Deep link URL received:", url);
 	try {
-		const urlWithoutProtocol = url.replace(/^hirami:\/\//, "");
-		const path = `/${urlWithoutProtocol}`;
+		// Remove protocol
+		let path = url.replace(/^hirami:\/\//, "");
+		
+		// In some Android environments, the URL might be hirami://hirami/path
+		// If it starts with hirami/, remove it as it's the host
+		if (path.startsWith("hirami/")) {
+			path = path.replace(/^hirami\//, "");
+		}
+		
+		// Ensure it starts with /
+		if (!path.startsWith("/")) {
+			path = `/${path}`;
+		}
+		
+		// Ensure we don't have double slashes at the beginning
+		path = path.replace(/^\/+/, "/");
 
 		console.log("Parsed path:", path);
 
-		if (path.startsWith("/password-reset/")) {
+		// Handle various deep link paths
+		if (path.startsWith("/password-reset/") || path.startsWith("/verify-email/")) {
 			console.log(`Navigating to: ${path}`);
-			router.navigate({ to: path });
+			// Use a small timeout to ensure the router is ready and not overridden by initial redirect
+			setTimeout(() => {
+				router.navigate({ to: path as any });
+			}, 500);
 		} else {
 			console.warn(`Ignoring unhandled deep link: ${path}`);
 		}
@@ -72,19 +90,25 @@ function handleDeepLink(url: string): void {
 	}
 }
 
-// const startUrls = await getCurrent();
-// console.log("Initial deep link check:", startUrls);
-// if (startUrls && startUrls.length > 0) {
-// handleDeepLink(startUrls[0]);
-// }
-
 (async () => {
+	// Register listener for deep links while app is running or backgrounded
 	await onOpenUrl((urls) => {
 		console.log("onOpenUrl triggered with:", urls);
 		if (urls && urls.length > 0) {
 			handleDeepLink(urls[0]);
 		}
 	});
+
+	// Check for initial deep link that might have started the app
+	try {
+		const initialUrls = await getCurrent();
+		console.log("Initial deep link check:", initialUrls);
+		if (initialUrls && initialUrls.length > 0) {
+			handleDeepLink(initialUrls[0]);
+		}
+	} catch (e) {
+		console.error("Failed to get initial deep link:", e);
+	}
 })();
 
 function App() {

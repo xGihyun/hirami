@@ -272,8 +272,13 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
 	if webClientURL == "" {
 		webClientURL = "http://localhost:3000"
 	}
+	serverURL := os.Getenv("SERVER_URL")
+	if serverURL == "" {
+		serverURL = "http://localhost:3002"
+	}
 
 	verifyLink := fmt.Sprintf("%s/verify-email/%s", webClientURL, rawToken)
+	mobileProxyLink := fmt.Sprintf("%s/app-redirect?type=verify-email&token=%s", serverURL, rawToken)
 	subject := "Verify Your Hirami Account"
 	bodyHTML := fmt.Sprintf(`
 <!DOCTYPE html>
@@ -308,7 +313,12 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
           </tr>
           <tr>
             <td align="center">
-              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Verify Email Address</a>
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Open in Browser</a>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top:12px;">
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#ffffff;color:#92400e;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;border:1px solid #92400e;">Open in Mobile App</a>
             </td>
           </tr>
           <tr>
@@ -323,7 +333,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) api.Response {
   </table>
 </body>
 </html>
-	`, fullName, verifyLink)
+	`, fullName, verifyLink, mobileProxyLink)
 
 	if err := api.SendGmail(s.gmailService, data.Email, subject, bodyHTML); err != nil {
 		// Log error but don't fail registration? 
@@ -423,9 +433,14 @@ func (s *Server) ResendVerification(w http.ResponseWriter, r *http.Request) api.
 	if webClientURL == "" {
 		webClientURL = "http://localhost:3000"
 	}
+	serverURL := os.Getenv("SERVER_URL")
+	if serverURL == "" {
+		serverURL = "http://localhost:3002"
+	}
 
 	fullName := html.EscapeString(fmt.Sprintf("%s %s", user.FirstName, user.LastName))
 	verifyLink := fmt.Sprintf("%s/verify-email/%s", webClientURL, rawToken)
+	mobileProxyLink := fmt.Sprintf("%s/app-redirect?type=verify-email&token=%s", serverURL, rawToken)
 	subject := "Verify Your Hirami Account"
 	bodyHTML := fmt.Sprintf(`
 <!DOCTYPE html>
@@ -461,7 +476,12 @@ func (s *Server) ResendVerification(w http.ResponseWriter, r *http.Request) api.
           </tr>
           <tr>
             <td align="center">
-              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Verify Email Address</a>
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#92400e;color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;">Open in Browser</a>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding-top:12px;">
+              <a href="%s" style="display:block;width:100%%;padding:16px 0;background-color:#ffffff;color:#92400e;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;text-align:center;box-sizing:border-box;border:1px solid #92400e;">Open in Mobile App</a>
             </td>
           </tr>
           <tr>
@@ -476,7 +496,7 @@ func (s *Server) ResendVerification(w http.ResponseWriter, r *http.Request) api.
   </table>
 </body>
 </html>
-	`, fullName, verifyLink)
+	`, fullName, verifyLink, mobileProxyLink)
 
 	api.SendGmail(s.gmailService, data.Email, subject, bodyHTML)
 
@@ -871,11 +891,24 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) ap
 
 func (s *Server) AppRedirect(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
-	mobileClientURL := os.Getenv("MOBILE_CLIENT_URL")
-	if mobileClientURL == "" {
-		mobileClientURL = "hirami://password-reset"
+	redirectType := r.URL.Query().Get("type")
+
+	var deepLink string
+	if redirectType == "verify-email" {
+		mobileClientURL := os.Getenv("MOBILE_CLIENT_URL")
+		if mobileClientURL == "" {
+			mobileClientURL = "hirami://verify-email"
+		} else {
+			mobileClientURL = strings.TrimSuffix(mobileClientURL, "/password-reset") + "/verify-email"
+		}
+		deepLink = fmt.Sprintf("%s/%s", mobileClientURL, token)
+	} else {
+		mobileClientURL := os.Getenv("MOBILE_CLIENT_URL")
+		if mobileClientURL == "" {
+			mobileClientURL = "hirami://password-reset"
+		}
+		deepLink = fmt.Sprintf("%s/%s", mobileClientURL, token)
 	}
-	deepLink := fmt.Sprintf("%s/%s", mobileClientURL, token)
 
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprintf(w, `
